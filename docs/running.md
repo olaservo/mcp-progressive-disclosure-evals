@@ -118,7 +118,7 @@ CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude --plugin-dir mods/groups
 
 ## Refreshing when #19 or #22 change
 
-1. In a clone of the WG repo, `git fetch origin pull/19/head:pr-19 pull/22/head:pr-22 -f` and diff against the commits named in `NOTES.md`.
+1. In a clone of the WG repo, `git fetch origin pull/19/head:pr-19 pull/22/head:pr-22 -f` and diff against the commits named in the README.
 2. Update `src/groups.ts` and `src/variants.ts` for any change in wire shapes or option definitions.
 3. `npm run typecheck`, then `npm run deploy:all`.
 4. `npm run compare -- --urls ...` and save the output under `results/`. For the full catalog, `npm run vendor:full`, `npm run dev`, `npm run compare`, then `npm run vendor`.

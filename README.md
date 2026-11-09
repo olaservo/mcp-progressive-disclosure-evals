@@ -20,12 +20,11 @@ Against the working group's four criteria: groups deliver initial context size a
 
 ## Read more
 
-- [`explainer.html`](explainer.html): a one-page recap. [`drafts/wg-findings-writeup.md`](drafts/wg-findings-writeup.md) is the long form, the text for the working group.
+- [The explainer page](https://www.olahungerford.com/mcp-progressive-disclosure-evals/explainer.html): a one-page recap with the charts. [`drafts/wg-findings-writeup.md`](drafts/wg-findings-writeup.md) is the long form, the text for the working group.
 - [`docs/results.md`](docs/results.md): every table, the notes behind each, and the limits.
 - [`docs/running.md`](docs/running.md): sources, variants, how to run the servers and the trials, the deployed Workers, the Claude Code mod.
 - [`results/traces/traces-public/`](results/traces/traces-public/): the 180 redacted sessions with their own README; also attached as a zip to the [`traces-2026-11-08`](https://github.com/olaservo/mcp-progressive-disclosure-evals/releases/tag/traces-2026-11-08) release.
-- [`drafts/`](drafts/): the comments drafted for #19 and #22, the methodology review and the plan for the real-client run.
-- [`NOTES.md`](NOTES.md): the session log, what was done in what order and what went wrong.
+- [`drafts/`](drafts/): the write-up and the comments drafted for #19 and #22.
 
 ## Quick start
 
