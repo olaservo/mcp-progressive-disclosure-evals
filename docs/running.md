@@ -4,14 +4,7 @@
 
 - Tools: 238 forge-generated tools from 10 products (turnstile, durableObjects, emailSending, emailRouting, workers, d1, kv, r2, queues, containers) of [cloudflare/mcp](https://github.com/cloudflare/mcp) at `4938f2f3`. The full server has 3,036 tools in 1,030 toolsets across 136 products. Cloudflare serves them behind Code Mode by default, three tools (`docs`, `search`, `execute`) at about 1,100 tokens, and exposes them as direct tools only with `?codemode=false`, which its README documents as an escape hatch for composing with another code-mode system. The `flat` variant here is that direct-tool mode. Cloudflare's own README table puts the full-schema direct list at 1,170,523 tokens for 2,594 tools, which agrees with the 1,378,777 measured here for 3,036. Groups against Code Mode itself is not measured.
 - Skills: `turnstile-spin`, `durable-objects`, `cloudflare-email-service`, `workers-best-practices` and `wrangler` from [cloudflare/skills](https://github.com/cloudflare/skills) at `1a33048`.
-- `src/vendor` is committed, so nothing below is needed to run the demo. `npm run vendor` regenerates it from two checkouts that are not in this repo: cloudflare/mcp at `../servers/cloudflare-mcp` and cloudflare/skills at `.upstream/cloudflare-skills`. The script refuses a checkout at any other commit, so a `git pull` in either clone cannot change the vendored catalog unnoticed. To move to a newer commit, update `PINNED` in `scripts/vendor.mjs` and pass `--unpinned`. To recreate the checkouts at the commits used here:
-
-  ```bash
-  git clone https://github.com/cloudflare/mcp ../servers/cloudflare-mcp && git -C ../servers/cloudflare-mcp checkout 4938f2f3
-  git clone https://github.com/cloudflare/skills .upstream/cloudflare-skills && git -C .upstream/cloudflare-skills checkout 1a33048
-  ```
-
-  Other paths work as arguments to `node scripts/vendor.mjs <mcp> <skills> [--full]`. `npm run vendor:full` vendors all 136 products. The committed `src/vendor` and the deployed Workers use the subset. The full build is for local runs. It bundles to 22.5 MiB, 1.6 MiB gzipped.
+- `src/vendor` is committed, so nothing below is needed to run the 238-tool subset. `npm run vendor` regenerates it and `npm run vendor:full` vendors all 136 products (3,036 tools). Both fetch the two pinned commits into `.upstream/` on first use: a sparse, blob-less fetch of cloudflare/mcp limited to `src/generated/forge-mcp`, about 3 MB of git data and 28 MB checked out, and a shallow fetch of cloudflare/skills. Later runs reuse the checkouts. The script refuses a checkout at any other commit, so a `git pull` in either clone cannot change the vendored catalog unnoticed. To move to a newer commit, update `PINNED` in `scripts/vendor.mjs` and pass `--unpinned`. Existing checkouts elsewhere work as arguments: `node scripts/vendor.mjs <mcp> <skills> [--full]`. The committed `src/vendor` and the deployed Workers use the subset. The full build is for local runs; it bundles to 22.5 MiB, 1.6 MiB gzipped, and `npm run vendor` restores the subset.
 
 Tool calls are dry runs. They return the Cloudflare API request the tool would send and never send it.
 

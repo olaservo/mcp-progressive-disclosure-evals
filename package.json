@@ -8,8 +8,8 @@
     "node": ">=24"
   },
   "scripts": {
-    "vendor": "node scripts/vendor.mjs ../servers/cloudflare-mcp .upstream/cloudflare-skills",
-    "vendor:full": "node scripts/vendor.mjs ../servers/cloudflare-mcp .upstream/cloudflare-skills --full",
+    "vendor": "node scripts/vendor.mjs",
+    "vendor:full": "node scripts/vendor.mjs --full",
     "select": "tsx scripts/select.ts",
     "dev": "wrangler dev",
     "typecheck": "tsc --noEmit",

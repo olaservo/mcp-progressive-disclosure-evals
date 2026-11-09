@@ -1,14 +1,53 @@
 // Copies a subset of cloudflare/mcp's forge-generated tools and of cloudflare/skills into src/vendor.
-// Usage: node scripts/vendor.mjs <cloudflare-mcp checkout> <cloudflare-skills checkout> [--full] [--unpinned]
-// --full vendors every forge product (3,036 tools). That build is for local runs; see the README.
+// Usage: node scripts/vendor.mjs [<cloudflare-mcp checkout> <cloudflare-skills checkout>] [--full] [--unpinned]
+// With no checkouts given, the pinned commits are fetched into .upstream/ (a sparse, blob-less fetch of
+// cloudflare/mcp, about 3 MB of git data) and reused on later runs.
+// --full vendors every forge product (3,036 tools). That build is for local runs; see docs/running.md.
 // --unpinned accepts checkouts at other commits than PINNED. Update PINNED when moving to them.
-import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync, existsSync } from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync, existsSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { execFileSync } from 'node:child_process'
 
 const full = process.argv.includes('--full')
-const [mcpRoot, skillsRoot] = process.argv.slice(2).filter((arg) => !arg.startsWith('--'))
-if (!mcpRoot || !skillsRoot) throw new Error('usage: node scripts/vendor.mjs <cloudflare-mcp> <cloudflare-skills> [--full]')
+const unpinned = process.argv.includes('--unpinned')
+const root = join(import.meta.dirname, '..')
+const given = process.argv.slice(2).filter((arg) => !arg.startsWith('--'))
+if (given.length === 1) throw new Error('usage: node scripts/vendor.mjs [<cloudflare-mcp> <cloudflare-skills>] [--full] [--unpinned]')
+
+// The commits src/vendor and the results were produced from.
+const PINNED = { mcp: '4938f2f30a8fc80df21557add48b3089e4a15623', skills: '1a33048817d06df12882cb881dfc754e7039954a' }
+const UPSTREAM = {
+  mcp: { url: 'https://github.com/cloudflare/mcp', dir: join(root, '.upstream', 'cloudflare-mcp'), sparse: 'src/generated/forge-mcp' },
+  skills: { url: 'https://github.com/cloudflare/skills', dir: join(root, '.upstream', 'cloudflare-skills') }
+}
+const git = (dir, ...args) => execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }).trim()
+const commit = (dir) => git(dir, 'rev-parse', 'HEAD')
+
+// Fetches one pinned commit into .upstream/<name>, or moves an earlier fetch there to it.
+function ensureUpstream(name) {
+  const { url, dir, sparse } = UPSTREAM[name]
+  const pin = PINNED[name]
+  if (existsSync(join(dir, '.git')) && commit(dir) === pin) return dir
+  if (!existsSync(join(dir, '.git'))) {
+    mkdirSync(dir, { recursive: true })
+    git(dir, 'init', '-q')
+    git(dir, 'remote', 'add', 'origin', url)
+    if (sparse) git(dir, 'sparse-checkout', 'set', sparse)
+  }
+  console.log(`fetching ${url} at ${pin.slice(0, 8)} into ${relative(root, dir)}`)
+  git(dir, 'fetch', '-q', '--depth', '1', '--filter=blob:none', 'origin', pin)
+  git(dir, 'checkout', '-q', '--detach', 'FETCH_HEAD')
+  return dir
+}
+
+const mcpRoot = given[0] ?? ensureUpstream('mcp')
+const skillsRoot = given[1] ?? ensureUpstream('skills')
+const heads = { mcp: commit(mcpRoot), skills: commit(skillsRoot) }
+if (!unpinned) {
+  for (const [name, pin] of Object.entries(PINNED)) {
+    if (heads[name] !== pin) throw new Error(`${name} checkout is at ${heads[name].slice(0, 8)}, expected ${pin.slice(0, 8)}. Check out the pinned commit, or pass --unpinned and update PINNED.`)
+  }
+}
 
 const forge = join(mcpRoot, 'src', 'generated', 'forge-mcp')
 // Forge product directories served as toolsets.
@@ -17,23 +56,18 @@ export const PRODUCTS = full ? readdirSync(forge).filter((name) => name !== '_' 
 // Skills from cloudflare/skills served by the skills-capable variants.
 export const SKILLS = ['turnstile-spin', 'durable-objects', 'cloudflare-email-service', 'workers-best-practices', 'wrangler']
 
-// The commits src/vendor and the results were produced from.
-const PINNED = { mcp: '4938f2f30a8fc80df21557add48b3089e4a15623', skills: '1a33048817d06df12882cb881dfc754e7039954a' }
-const commit = (dir) => execFileSync('git', ['-C', dir, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
-const heads = { mcp: commit(mcpRoot), skills: commit(skillsRoot) }
-if (!process.argv.includes('--unpinned')) {
-  for (const [name, pin] of Object.entries(PINNED)) {
-    if (heads[name] !== pin) throw new Error(`${name} checkout is at ${heads[name].slice(0, 8)}, expected ${pin.slice(0, 8)}. Check out the pinned commit, or pass --unpinned and update PINNED.`)
-  }
-}
-
 const out = join(import.meta.dirname, '..', 'src', 'vendor')
 rmSync(out, { recursive: true, force: true })
 mkdirSync(join(out, 'forge'), { recursive: true })
 
-for (const entry of ['_', 'outputs.ts', 'schemas.ts', ...PRODUCTS]) {
-  cpSync(join(forge, entry), join(out, 'forge', entry), { recursive: true })
+// Copies with line endings normalized, so a checkout made with core.autocrlf on vendors the same bytes.
+const copyTree = (from, to) => {
+  if (statSync(from).isDirectory()) {
+    mkdirSync(to, { recursive: true })
+    for (const name of readdirSync(from)) copyTree(join(from, name), join(to, name))
+  } else writeFileSync(to, readFileSync(from, 'utf8').replaceAll('\r\n', '\n'))
 }
+for (const entry of ['_', 'outputs.ts', 'schemas.ts', ...PRODUCTS]) copyTree(join(forge, entry), join(out, 'forge', entry))
 
 // Every directory with a tools.ts becomes one toolset, keyed by its path.
 const toolsets = []
