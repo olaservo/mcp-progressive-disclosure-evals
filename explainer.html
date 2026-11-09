@@ -56,8 +56,6 @@
   .chart .s-flat { stroke: var(--allschemas); stroke-width: 2.2; fill: none; } .chart .p-flat { fill: var(--allschemas); }
   .chart .s-groups { stroke: var(--groups); stroke-width: 2.2; fill: none; } .chart .p-groups { fill: var(--groups); }
   .chart .s-task { stroke: var(--label); stroke-width: 2; stroke-dasharray: 5 4; fill: none; } .chart .p-task { fill: var(--label); }
-  .chart .range { stroke: var(--border); stroke-width: 3; }
-  .chart .d-groups { fill: var(--groups); } .chart .d-flat { fill: var(--bg); stroke: var(--search); stroke-width: 2; }
   .chart .arrow { stroke: var(--label); stroke-width: 1.2; } .chart .arrowhead { fill: var(--label); }
 </style>
 </head>
@@ -81,7 +79,7 @@
 
 <p>I built both on a real catalog to see what the numbers look like. The server I used for this experiment is Cloudflare's own API MCP server, which includes 3,036 generated tools from 136 products, along with five of Cloudflare's published skills. One Worker serves it four ways: flat, and under each of the three positioning options the working group is weighing. Everything below was measured on the 2026-11-07 drafts of both documents.</p>
 
-<p>Each finding is a paragraph and a chart. The tables and the detail sit in collapsed sections underneath; open the ones you want.</p>
+<p>Each finding is a paragraph and a chart or a small table. The full tables and the detail sit in collapsed sections underneath; open the ones you want.</p>
 
 <details>
 <summary>How the server was built <span>&middot; the four variants and the three positioning options</span></summary>
@@ -137,37 +135,14 @@
 <p>At 3,036 tools the flat list is 6.2 MB. Task load does not change with catalog size, so the saving is all in the read before the pick, and the question at scale becomes whether the model picks the right group out of 139. Once a group holds 20-odd tools, schemas are most of the load: the email group's 24 schemas cost <code>opt1</code> 7,822 tokens, close to the 8,768 that <code>opt2</code> spends on Turnstile, where the skill body is most of the cost. Option 1's paraphrase of the skill is the cheapest at 2,190 tokens and drops the skill's seven framework guides.</p>
 </details>
 
-<p><strong>2. Groups did not change what tool or skill the model picked.</strong> I gave sixteen models twenty tasks that describe a job without naming the product ("Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed") and asked where they would look first. Every hosted model landed within two tasks of itself whether it saw 13 groups, 139 groups, 238 flat tool names or 3,036 of them. The draft already says this in its own evidence section: groups keep unread schemas out of context, but they do not beat using a flat list when it came to selection.</p>
+<p><strong>2. Groups did not measurably change what tool or skill the model picked.</strong> I gave sixteen models twenty tasks that describe a job without naming the product ("Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed") and asked where they would look first. Every hosted model landed within two tasks of itself whether it saw 13 groups, 139 groups, 238 flat tool names or 3,036 of them, and two tasks is inside the noise of a single 20-task run. The draft already says this in its own evidence section: groups keep unread schemas out of context, but they do not beat using a flat list when it came to selection.</p>
 
-<figure class="chart">
-<svg viewBox="0 0 680 470" role="img" aria-labelledby="sel-title">
-  <title id="sel-title">Correct picks out of 20 per model, 139 groups against 3,036 flat tool names</title>
-  <text class="head" x="0" y="18">correct picks of 20, full catalog: 139 groups against 3,036 flat names</text>
-  <circle class="d-groups" cx="8" cy="36" r="4.5"/><text class="small" x="18" y="40">139 groups and 5 skills</text>
-  <circle class="d-flat" cx="170" cy="36" r="5.5"/><text class="small" x="181" y="40">3,036 tool names, flat, same skill index</text>
-  <text class="small" x="0" y="60">hosted</text>
-  <text x="0" y="78">Opus 5.5</text><circle class="d-flat" cx="650" cy="74" r="5.5"/><circle class="d-groups" cx="650" cy="74" r="4.5"/>
-  <text x="0" y="100">Sonnet 5.5</text><line class="range" x1="629" y1="96" x2="650" y2="96"/><circle class="d-flat" cx="650" cy="96" r="5.5"/><circle class="d-groups" cx="629" cy="96" r="4.5"/>
-  <text x="0" y="122">Haiku 5.5</text><line class="range" x1="587" y1="118" x2="629" y2="118"/><circle class="d-flat" cx="587" cy="118" r="5.5"/><circle class="d-groups" cx="629" cy="118" r="4.5"/>
-  <text x="0" y="144">GPT-6 Astra</text><line class="range" x1="629" y1="140" x2="650" y2="140"/><circle class="d-flat" cx="629" cy="140" r="5.5"/><circle class="d-groups" cx="650" cy="140" r="4.5"/>
-  <text x="0" y="166">GPT-6.1 Sol</text><line class="range" x1="608" y1="162" x2="650" y2="162"/><circle class="d-flat" cx="608" cy="162" r="5.5"/><circle class="d-groups" cx="650" cy="162" r="4.5"/>
-  <text x="0" y="188">GPT-6.1 Terra</text><line class="range" x1="587" y1="184" x2="629" y2="184"/><circle class="d-flat" cx="587" cy="184" r="5.5"/><circle class="d-groups" cx="629" cy="184" r="4.5"/>
-  <text x="0" y="210">GPT-6 Luna</text><line class="range" x1="608" y1="206" x2="650" y2="206"/><circle class="d-flat" cx="650" cy="206" r="5.5"/><circle class="d-groups" cx="608" cy="206" r="4.5"/>
-  <text x="0" y="232">Gemini 4 Argon</text><line class="range" x1="629" y1="228" x2="650" y2="228"/><circle class="d-flat" cx="650" cy="228" r="5.5"/><circle class="d-groups" cx="629" cy="228" r="4.5"/>
-  <text x="0" y="254">Gemini 3.8 Flash</text><line class="range" x1="608" y1="250" x2="650" y2="250"/><circle class="d-flat" cx="650" cy="250" r="5.5"/><circle class="d-groups" cx="608" cy="250" r="4.5"/>
-  <text x="0" y="276">Kimi K3.1 Pro</text><line class="range" x1="608" y1="272" x2="650" y2="272"/><circle class="d-flat" cx="650" cy="272" r="5.5"/><circle class="d-groups" cx="608" cy="272" r="4.5"/>
-  <text class="small" x="0" y="300">open weights, through the Hugging Face router, thinking off</text>
-  <text x="0" y="318">Gemma 4 26B</text><line class="range" x1="608" y1="314" x2="629" y2="314"/><circle class="d-flat" cx="608" cy="314" r="5.5"/><circle class="d-groups" cx="629" cy="314" r="4.5"/>
-  <text x="0" y="340">GLM-5.3 Flash</text><line class="range" x1="608" y1="336" x2="629" y2="336"/><circle class="d-flat" cx="629" cy="336" r="5.5"/><circle class="d-groups" cx="608" cy="336" r="4.5"/>
-  <text x="0" y="362">DeepSeek V4.1 Flash</text><line class="range" x1="587" y1="358" x2="629" y2="358"/><circle class="d-flat" cx="629" cy="358" r="5.5"/><circle class="d-groups" cx="587" cy="358" r="4.5"/>
-  <text x="0" y="384">Qwen3.6 35B-A3B</text><line class="range" x1="545" y1="380" x2="608" y2="380"/><circle class="d-flat" cx="608" cy="380" r="5.5"/><circle class="d-groups" cx="545" cy="380" r="4.5"/>
-  <text x="0" y="406">Qwen3 14B</text><circle class="d-groups" cx="503" cy="402" r="4.5"/><text class="small" x="514" y="406">flat list over its 40k context</text>
-  <text x="0" y="428">Qwen 3.5 9B</text><line class="range" x1="335" y1="424" x2="440" y2="424"/><circle class="d-flat" cx="335" cy="424" r="5.5"/><circle class="d-groups" cx="440" cy="424" r="4.5"/>
-  <line class="line" x1="230" y1="442" x2="650" y2="442"/>
-  <text class="small mid" x="230" y="460">0</text><text class="small mid" x="335" y="460">5</text><text class="small mid" x="440" y="460">10</text><text class="small mid" x="545" y="460">15</text><text class="small mid" x="650" y="460">20</text>
-</svg>
-<figcaption>One sample per task, so two scores within two of each other are the same result. One dot where the two scores agree. The hosted models sit at the right edge either way. The mid-size open models lose ground on 139 templated group descriptions, and the 9B model loses more on 3,036 names than on 139 groups.</figcaption>
-</figure>
+<table>
+<tr><th>Full catalog, 139 groups against 3,036 flat names</th><th class="n">Groups higher</th><th class="n">Flat higher</th><th class="n">Tie</th><th class="n">Largest gap</th></tr>
+<tr><td>Hosted, 10 models</td><td class="n">4</td><td class="n">5</td><td class="n">1</td><td class="n">2 tasks</td></tr>
+<tr><td>Open weights, the 5 models that fit the flat list</td><td class="n">2</td><td class="n">3</td><td class="n">0</td><td class="n">5 tasks</td></tr>
+</table>
+<p class="footnote" style="margin-top:0.8rem">One run of 20 tasks per cell. A 95% interval on 19 of 20 spans 15 to 20, so a gap of one or two tasks is noise, and every hosted gap is one or two in a mixed direction. The 5-task gap is Qwen 3.5 9B, which scores 10 on 139 groups and 5 on 3,036 names. The full scores are in the section below.</p>
 
 <p>One tweak that did change the selection result between lines was adding the five-line skills index to the prompt, which lifted the 'flat list' variant scores by up to 17 of 20 for some models.</p>
 
@@ -221,7 +196,7 @@
   <text class="mid" x="210" y="54">13 groups + 5 skills</text><text class="small mid" x="210" y="67">about 0.7k tokens</text>
   <line class="arrow" x1="300" y1="54" x2="328" y2="54" marker-end="url(#ar)"/>
   <rect class="box" x="330" y="36" width="200" height="36" rx="4"/>
-  <text class="mid" x="430" y="54">open_group: 6 schemas + SKILL.md</text><text class="small mid" x="430" y="67">8.8k tokens, one round trip</text>
+  <text class="mid" x="430" y="54">open_group: 6 tools + SKILL.md</text><text class="small mid" x="430" y="67">8.8k tokens, one round trip</text>
   <line class="arrow" x1="530" y1="54" x2="558" y2="54" marker-end="url(#ar)"/>
   <rect class="box" x="560" y="36" width="110" height="36" rx="4"/><text class="mid" x="615" y="58">tool call</text>
   <text x="0" y="120">host tool search</text><text class="small" x="0" y="135">3 to 4 turns</text>

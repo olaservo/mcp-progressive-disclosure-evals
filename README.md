@@ -11,7 +11,7 @@ Three measurements:
 ## Findings
 
 - The flat `tools/list` for 3,036 tools is 1.38M tokens, more than any model can read. The groups list for the same catalog is 5.5k. Task load is the same whether the catalog has 238 tools or 3,036, and schemas are most of it once a group holds more than a handful of tools.
-- Groups did not change what the hosted models picked. Every hosted model landed within two tasks of itself across groups and flat modes at both sizes. The five-line skills index in the prompt moved flat scores by up to 17 of 20 and moved no groups score.
+- Groups did not measurably change what the hosted models picked. Every hosted model landed within two tasks of itself across groups and flat modes at both sizes, which is inside the noise of one 20-task run per cell. The five-line skills index in the prompt moved flat scores by up to 17 of 20 and moved no groups score.
 - Templated group descriptions cost the mid-size open models up to 6 of 20 tasks at 139 groups. The SEP's guidance that descriptions carry task vocabulary is what this measures.
 - Through Claude Code, Sonnet and Opus completed 20 of 20 tasks under groups, under the host's tool search, and with all schemas up front. Groups read 2.3M input tokens per model against 16.5M to 18.4M with all schemas up front, cost one more turn, and matched the host's tool search on completion and tokens. The prompt cache held across group opens.
 - Option 2 of the positioning document works as written on the shipped SDK. One rule is missing: `skills/list` should not count as a listing for placement. Option 3's rename delivers a skill's body with no entry, digests or root for relative links.
