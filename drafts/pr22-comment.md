@@ -1,6 +1,6 @@
 # Draft comment for progressive-disclosure-wg#22, at `5e9ff2f`
 
-Post as a review comment on the "Interop rules" section, or as a top-level PR comment. Everything below the rule is the comment. Only the shared-identifier form of Option 3 was deployed; the sentence about a new identifier is a reading of the SEP, and says so.
+Post as a review comment on the "Interop rules" section, or as a top-level PR comment. Everything below the rule is the comment.
 
 ---
 
@@ -12,6 +12,6 @@ I'd add one sentence here and in the SEP's Placement section: "For placement, `s
 
 Three smaller things:
 
-- On Option 3, I renamed the groups methods to `skills/list` and `skills/get` under the existing `io.modelcontextprotocol/skills` identifier. The SDK 2.4.0 `SkillsClient` rejects that listing with "skills/list returned invalid entries", each entry missing `uri`, `frontmatter` and `resources`. The doc does not say which identifier the rename would use. Under a new one, which the SEP's Backward Compatibility section asks of a breaking change, nothing would crash; a SEP-2640 client would see a server with no skills, the migration cost the table already lists. Either way, a SKILL.md body delivered as `instructions` loses its entry, its digests, and the root for its seven `references/*.md` links. "Group instructions without a skill" already says this.
+- On Option 3, I served the same bundles under `skills/list` and `skills/get`, with each SKILL.md folder flattened to `instructions` plus scoped resources, as the option describes. It costs the same tokens as Option 2. What the flattening loses is the skill's entry, its digests, and the root for its seven `references/*.md` links; the response does not say that `skill://turnstile-spin/` is their base. That is the mapping contract in the table, in concrete form. "Group instructions without a skill" already says most of this.
 - The Background prose and the capability table say `group/list` and `group/get` (lines 28, 29, 40 and 54). The examples and the SEP's Naming section say `groups/list` and `groups/get`. The accepted decision in `docs/decisions.md` (2026-10-27) has the singular. The SEP and the decision log disagree, and one of them should change.
 - For the rule of thumb: my server offers both a workflow group that lists the Turnstile skill and a plain `turnstile-api` toolset group. In a selection trial, models split between them by task: setting up Turnstile went to the skill group, rotating a leaked secret to the API group. A server that offers both for one product should say in the descriptions which to load when, or offer one.

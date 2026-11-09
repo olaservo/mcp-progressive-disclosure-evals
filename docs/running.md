@@ -22,7 +22,7 @@ Tool calls are dry runs. They return the Cloudflare API request the tool would s
 | `flat` | Today, and Option 1's Skills server | All 238 in `tools/list` | None | SEP-2640 Skills extension |
 | `opt1` | Option 1's Groups server | Scoped | Toolset groups, and workflow groups with authored instructions | None |
 | `opt2` | Option 2, complementary | Scoped | Toolset groups, and a workflow group per skill that scopes its tools and lists the skill's `SKILL.md` in `resources` (#22 Example 3) | SEP-2640 Skills extension, with nothing in `resources/list` |
-| `opt3` | Option 3, Groups renamed to Skills | Scoped | `skills/list` and `skills/get` under `io.modelcontextprotocol/skills`. Each SKILL.md folder maps to its body as `instructions` and its other files as scoped `skill://` resources. Toolsets are skills too. | Replaced |
+| `opt3` | Option 3, Groups renamed to Skills | Scoped | Option 2's bundles under the skills method names, `skills/list` and `skills/get`, served under the existing `io.modelcontextprotocol/skills` identifier. Each SKILL.md folder is flattened to its body as `instructions` and its other files as scoped `skill://` resources. Toolsets are skills too. | Replaced |
 
 Groups follow the draft SEP in [progressive-disclosure-wg#19](https://github.com/modelcontextprotocol/progressive-disclosure-wg/pull/19) at `15b2a5c`: `io.modelcontextprotocol/groups`, `groups/list` and `groups/get`, with scoped primitives directly on the `groups/get` result. The WG prototype in [#20](https://github.com/modelcontextprotocol/progressive-disclosure-wg/pull/20) targets SDK 1.x; `src/groups.ts` implements the same shapes on `@modelcontextprotocol/server` 2.4.0. Skills use the SDK's native `@modelcontextprotocol/server/ext/skills`.
 

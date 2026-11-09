@@ -89,7 +89,7 @@
 <tr><td><code>flat</code></td><td>Today, and Option 1's Skills server</td><td>All in <code>tools/list</code></td><td>None</td><td>SEP-2640</td></tr>
 <tr><td><code>opt1</code></td><td>Option 1's Groups server</td><td>Scoped</td><td>Toolset groups, and workflow groups with authored instructions</td><td>None</td></tr>
 <tr><td><code>opt2</code></td><td>Option 2, complementary</td><td>Scoped</td><td>Toolset groups, and a workflow group per skill that scopes its tools and lists the SKILL.md</td><td>SEP-2640, nothing in <code>resources/list</code></td></tr>
-<tr><td><code>opt3</code></td><td>Option 3, rename</td><td>Scoped</td><td><code>skills/list</code> and <code>skills/get</code> under the groups identifier; each SKILL.md folder maps to instructions plus scoped resources</td><td>Replaced</td></tr>
+<tr><td><code>opt3</code></td><td>Option 3, rename</td><td>Scoped</td><td>Option 2's bundles under the skills method names, <code>skills/list</code> and <code>skills/get</code>, with each SKILL.md folder flattened to <code>instructions</code> plus scoped resources</td><td>Replaced</td></tr>
 </table>
 </details>
 
@@ -130,9 +130,8 @@
 <tr><td>flat</td><td class="n">157,763</td><td class="n">1,378,777</td><td>6,570 / 1,369 / 1,493</td></tr>
 <tr><td>opt1</td><td class="n">556</td><td class="n">5,308</td><td>2,190 / 897 / 7,822</td></tr>
 <tr><td>opt2</td><td class="n">743</td><td class="n">5,495</td><td>8,768 / 2,305 / 9,319</td></tr>
-<tr><td>opt3</td><td class="n">664</td><td class="n">5,416</td><td>9,037 / 2,313 / 9,291</td></tr>
 </table>
-<p>At 3,036 tools the flat list is 6.2 MB. Task load does not change with catalog size, so the saving is all in the read before the pick, and the question at scale becomes whether the model picks the right group out of 139. Once a group holds 20-odd tools, schemas are most of the load: the email group's 24 schemas cost <code>opt1</code> 7,822 tokens, close to the 8,768 that <code>opt2</code> spends on Turnstile, where the skill body is most of the cost. Option 1's paraphrase of the skill is the cheapest at 2,190 tokens and drops the skill's seven framework guides.</p>
+<p>Option 3 is left out of the table: it measures within 100 tokens of Option 2 at every point, since it serves the same bundles under other method names. At 3,036 tools the flat list is 6.2 MB. Task load does not change with catalog size, so the saving is all in the read before the pick, and the question at scale becomes whether the model picks the right group out of 139. Once a group holds 20-odd tools, schemas are most of the load: the email group's 24 schemas cost <code>opt1</code> 7,822 tokens, close to the 8,768 that <code>opt2</code> spends on Turnstile, where the skill body is most of the cost. Option 1's paraphrase of the skill is the cheapest at 2,190 tokens and drops the skill's seven framework guides.</p>
 </details>
 
 <p><strong>2. Groups did not measurably change what tool or skill the model picked.</strong> I gave sixteen models twenty tasks that describe a job without naming the product ("Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed") and asked where they would look first. Every hosted model landed within two tasks of itself whether it saw 13 groups, 139 groups, 238 flat tool names or 3,036 of them, and two tasks is inside the noise of a single 20-task run. The draft already says this in its own evidence section: groups keep unread schemas out of context, but they do not beat using a flat list when it came to selection.</p>
@@ -280,7 +279,7 @@
 <li><strong>Option 2 works as the positioning document's Example 3 describes.</strong> The <code>turnstile-spin</code> group scopes the six Turnstile tools and lists <code>skill://turnstile-spin/SKILL.md</code>; a host confirms it with <code>skills/get</code> and reads it with digests verified.</li>
 <li><strong>Placement meets the SDK's default.</strong> The SDK's <code>SkillCatalog</code> lists every SKILL.md in <code>resources/list</code>, so a group that scopes one breaks the placement rule. A skill source without <code>listResources</code> fixes it. Neither document says whether <code>skills/list</code> counts as a listing. Proposed sentence for both: "For placement, <code>skills/list</code> is not a listing. A skill a group lists stays in <code>skills/list</code>."</li>
 <li><strong>Scoped tools are callable without <code>groups/get</code></strong> and stay out of that connection's <code>tools/list</code>. A client that does not declare the extension gets every tool.</li>
-<li><strong>Option 3 under the existing skills identifier</strong> makes the SDK's <code>SkillsClient</code> reject the listing. Under a new identifier a Skills client sees no skills rather than crashing. Either way the SKILL.md body arrives as <code>instructions</code> with no entry, no digests and no root for its relative links.</li>
+<li><strong>Option 3 flattens the skill.</strong> When a SKILL.md folder becomes <code>instructions</code> plus scoped resources, the skill loses its entry (name, description, frontmatter), its digests, and the root that its relative <code>references/*.md</code> links resolve against. That is the concrete form of the mapping contract the document lists as Option 3's cost. The breaking change for shipped Skills clients is in the document's own table and needed no measuring.</li>
 <li><strong>Naming.</strong> The positioning document's prose and the accepted decision in <code>docs/decisions.md</code> say <code>group/list</code>; the examples and the SEP say <code>groups/list</code>.</li>
 </ul>
 </details>

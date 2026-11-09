@@ -21,7 +21,7 @@ One Cloudflare Worker on `@modelcontextprotocol/server` 2.4.0 serves Cloudflare'
 | `flat` | Today, and Option 1's Skills server | All in `tools/list` | None | SEP-2640 |
 | `opt1` | Option 1's Groups server | Scoped | Toolset groups, and workflow groups with authored instructions | None |
 | `opt2` | Option 2, complementary | Scoped | Toolset groups, and a workflow group per skill that scopes its tools and lists the SKILL.md | SEP-2640, nothing in `resources/list` |
-| `opt3` | Option 3, rename | Scoped | `skills/list` and `skills/get` under `io.modelcontextprotocol/skills`; each SKILL.md folder maps to instructions plus scoped resources | Replaced |
+| `opt3` | Option 3, rename | Scoped | Option 2's bundles under the skills method names, `skills/list` and `skills/get`, with each SKILL.md folder flattened to `instructions` plus scoped resources | Replaced |
 
 ## What the code showed
 
@@ -30,7 +30,7 @@ Deterministic, reproduced locally, against the deployed Workers, and from a fres
 - **Option 2 works as Example 3 describes.** The `turnstile-spin` group scopes the six Turnstile tools and lists `skill://turnstile-spin/SKILL.md`; a host confirms it with `skills/get` and reads it with digests verified.
 - **Placement meets the SDK's default.** `SkillCatalog` lists every SKILL.md in `resources/list`, so a group that scopes one breaks the placement rule. A `SkillSource` without `listResources` fixes it. Neither document says whether `skills/list` counts as a listing. Proposed sentence for both: "For placement, `skills/list` is not a listing. A skill a group lists stays in `skills/list`."
 - **Scoped tools are callable without `groups/get`** and stay out of that connection's `tools/list`. A client that does not declare the extension gets every tool.
-- **Option 3.** Under the existing `io.modelcontextprotocol/skills` identifier the SDK's `SkillsClient` rejects the listing ("skills/list returned invalid entries"). Under a new identifier, which the SEP asks of a breaking change, a SEP-2640 client would see no skills rather than crash. Either way the SKILL.md body arrives as `instructions` with no entry, no digests and no root for its `references/*.md` links.
+- **Option 3 flattens the skill.** When a SKILL.md folder becomes `instructions` plus scoped resources, the skill loses its entry (name, description, frontmatter), its digests, and the root that its relative `references/*.md` links resolve against. That is the concrete form of the mapping contract #22 lists as Option 3's cost. The breaking change for shipped SEP-2640 clients is in #22's own table and needed no measuring.
 - **Option 1's paraphrase is cheapest and drifts.** 2,190 task-load tokens against 8,768 for Option 2, and it drops the skill's seven framework guides.
 - **Naming.** #22's prose and the accepted decision in `docs/decisions.md` say `group/list`; the examples and the SEP say `groups/list`.
 
@@ -43,9 +43,8 @@ tiktoken `o200k_base` over compact JSON. "Upfront" is everything read before the
 | flat | 157,763 | 1,378,777 | 6,570 / 1,369 / 1,493 |
 | opt1 | 556 | 5,308 | 2,190 / 897 / 7,822 |
 | opt2 | 743 | 5,495 | 8,768 / 2,305 / 9,319 |
-| opt3 | 664 | 5,416 | 9,037 / 2,313 / 9,291 |
 
-At 3,036 tools the flat list is 6.2 MB, more than any context window holds. Task load does not change with catalog size, so the saving is all in the read before the pick, and the question at scale is whether the model picks the right group out of 139. Once a group holds 20-odd tools, schemas are most of the load: the email group's 24 schemas cost `opt1` 7,822 tokens, close to the 8,768 that `opt2` spends on Turnstile, where the skill body is most of the cost.
+Option 3 is left out of the table: it measures within 100 tokens of Option 2 at every point, since it serves the same bundles under other method names. At 3,036 tools the flat list is 6.2 MB, more than any context window holds. Task load does not change with catalog size, so the saving is all in the read before the pick, and the question at scale is whether the model picks the right group out of 139. Once a group holds 20-odd tools, schemas are most of the load: the email group's 24 schemas cost `opt1` 7,822 tokens, close to the 8,768 that `opt2` spends on Turnstile, where the skill body is most of the cost.
 
 ## Selection
 
