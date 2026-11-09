@@ -3,7 +3,8 @@ node_modules/
 .wrangler/
 dist/
 
-mods/.groups-flat/
+mods/.groups-*/
 # raw headless sessions embed the system prompt and account ids; the redacted copy is committed
 results/traces/traces/
+results/traces/traces2/
 results/traces/smoke*/

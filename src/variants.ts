@@ -1,14 +1,16 @@
-import { McpServer, ProtocolError, ResourceTemplate, type CallToolResult, type Resource, type Tool } from '@modelcontextprotocol/server'
+import { McpServer, ProtocolError, ResourceTemplate, type CallToolResult, type Resource } from '@modelcontextprotocol/server'
 import { memorySkillFiles, SkillsExtension, type SkillCatalog } from '@modelcontextprotocol/server/ext/skills'
 import { buildRequest } from './vendor/forge/_/tool.js'
 import { SOURCE, skillFiles } from './vendor/skills.js'
+import { describeGroup } from './group-descriptions.js'
 import { attachGroups, clientNegotiated, GROUPS_NAMING, type Group, type Naming, type ServedGroup } from './groups.js'
-import { WORKFLOWS, forgeToolsByName, productToolsets, skillFilePaths, skillFrontmatter, wireTool, workflowTools, type Toolset, type Workflow } from './catalog.js'
+import { REC_WORKFLOWS, WORKFLOWS, flatToolsets, forgeToolsByName, productToolsets, recWorkflowTools, skillFilePaths, skillFrontmatter, wireTool, workflowTools, type Toolset, type Workflow } from './catalog.js'
 
 export const VARIANTS = {
   flat: "Today's cloudflare/mcp direct-tool mode, which is also Option 1's Skills server: every tool in tools/list, skills over the Skills extension.",
   opt1: "Option 1's Groups server: groups only, with the workflow written into group instructions. No skills.",
   opt2: 'Option 2: the Skills extension unchanged, plus groups. A workflow group scopes its tools and lists the skill\'s SKILL.md in resources.',
+  'opt2-rec': 'Option 2 built the way #19 recommends: one level of groups sized to a task, task-vocabulary descriptions, and a workflow group per skill. A client that negotiated groups gets only the skills no group lists in skills/list.',
   opt3: 'Option 3: Groups renamed to Skills. skills/list and skills/get serve code-defined skills; each SKILL.md folder maps to instructions plus scoped resources.'
 } as const
 export type Variant = keyof typeof VARIANTS
@@ -19,14 +21,10 @@ const SKILLS_EXTENSION_ID = 'io.modelcontextprotocol/skills'
 const OPT3_NAMING: Naming = { extensionId: SKILLS_EXTENSION_ID, noun: 'skills' }
 const API_BASE = 'https://api.cloudflare.com/client/v4'
 const HOUR = { ttlMs: 60 * 60 * 1000, cacheScope: 'public' } as const
+/** opt2-rec's skills/list depends on the caller's negotiated extensions. */
+const HOUR_PRIVATE = { ttlMs: 60 * 60 * 1000, cacheScope: 'private' } as const
 
-const INFO_TOOL: Tool = {
-  name: 'demo_info',
-  title: 'About this server',
-  description: 'Which positioning option this server demonstrates and where its tools and skills come from.',
-  inputSchema: { type: 'object', properties: {} },
-  annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
-}
+const ABOUT = `Tools from ${SOURCE.forge.repository} at ${SOURCE.forge.commit.slice(0, 8)}, skills from ${SOURCE.skills.repository} at ${SOURCE.skills.commit.slice(0, 7)}. Tool calls are dry runs that return the Cloudflare API request and send nothing.`
 
 const allForgeTools = () => [...forgeToolsByName.values()].map(wireTool)
 
@@ -96,6 +94,34 @@ function mimeOf(path: string): string {
   return 'text/plain'
 }
 
+/**
+ * The recommended build: every group top level, products over the size cap split by area, descriptions in the
+ * words a user would bring, and a workflow group per skill that says when to open it instead of the product group.
+ */
+function recGroups(): ServedGroup[] {
+  const workflows = REC_WORKFLOWS.map((workflow): ServedGroup => {
+    const { name, description } = skillFrontmatter(workflow.skill)
+    const tools = recWorkflowTools(workflow.toolPaths)
+    const skill: Resource = { uri: `skill://${workflow.skill}/SKILL.md`, name, description, mimeType: 'text/markdown' }
+    return {
+      group: { name, title: name, description: workflow.description },
+      topLevel: true,
+      instructions: `${workflow.instructions} These tools call the Cloudflare API and change account state, so confirm the target account and zone with the user first.\n\nTools in this group: ${tools.map((tool) => tool.name).join(', ')}.`,
+      tools: tools.map(wireTool),
+      resources: [skill]
+    }
+  })
+  const products = flatToolsets().map((set): ServedGroup => {
+    const label = set.name.replaceAll('-', ' ')
+    return {
+      group: { name: set.name, title: label, description: describeGroup(set.name) ?? `Cloudflare ${label}: ${set.tools.length} API tools.` },
+      topLevel: true,
+      tools: set.tools.map(wireTool)
+    }
+  })
+  return [...workflows, ...products]
+}
+
 // ---- Skills (SEP-2640) ----------------------------------------------------------------------
 
 let catalog: Promise<SkillCatalog> | undefined
@@ -106,12 +132,14 @@ const skillCatalog = () => (catalog ??= SkillsExtension.load(memorySkillFiles(sk
  * SEP's placement rule forbids a resource being both scoped and listed. This source serves the same entries
  * through skills/list, skills/get and resources/read, and lists nothing in resources/list.
  */
-async function unlistedSkills(): Promise<SkillsExtension> {
+async function unlistedSkills({ hideGrouped = false } = {}): Promise<SkillsExtension> {
   const { entries } = await skillCatalog()
+  const grouped = new Set(REC_WORKFLOWS.map((workflow) => workflow.skill))
   return new SkillsExtension({
-    cacheHint: HOUR,
+    cacheHint: hideGrouped ? HOUR_PRIVATE : HOUR,
     source: {
-      list: async () => ({ skills: [...entries] }),
+      // opt2-rec: a client that negotiated groups reaches the grouped skills through their groups. skills/get still answers for them.
+      list: async (_params, ctx) => ({ skills: hideGrouped && clientNegotiated(ctx) ? entries.filter((entry) => !grouped.has(entry.frontmatter.name)) : [...entries] }),
       get: async (uri) => entries.find((entry) => entry.uri === uri),
       read: async (uri) => {
         const text = skillFiles[uri.slice('skill://'.length)]
@@ -125,8 +153,8 @@ async function unlistedSkills(): Promise<SkillsExtension> {
 
 const groupsByVariant = new Map<Variant, ServedGroup[]>()
 function groupsFor(variant: Variant): ServedGroup[] | undefined {
-  const build = { opt1: () => [...opt1WorkflowGroups(), ...toolsetGroups()], opt2: () => [...opt2WorkflowGroups(), ...toolsetGroups()], opt3: () => [...opt3Skills(), ...toolsetGroups()] }[
-    variant as 'opt1' | 'opt2' | 'opt3'
+  const build = { opt1: () => [...opt1WorkflowGroups(), ...toolsetGroups()], opt2: () => [...opt2WorkflowGroups(), ...toolsetGroups()], opt3: () => [...opt3Skills(), ...toolsetGroups()], 'opt2-rec': recGroups }[
+    variant as 'opt1' | 'opt2' | 'opt3' | 'opt2-rec'
   ]
   if (!build) return undefined
   if (!groupsByVariant.has(variant)) groupsByVariant.set(variant, build())
@@ -134,12 +162,13 @@ function groupsFor(variant: Variant): ServedGroup[] | undefined {
 }
 
 export async function createServer(variant: Variant): Promise<McpServer> {
-  const mcp = new McpServer({ name: `cloudflare-groups-demo-${variant}`, version: '0.2.0' }, { instructions: VARIANTS[variant] })
+  const mcp = new McpServer({ name: `cloudflare-groups-demo-${variant}`, version: '0.2.0' }, { instructions: `${VARIANTS[variant]} ${ABOUT}` })
   const groups = groupsFor(variant)
   const naming = variant === 'opt3' ? OPT3_NAMING : GROUPS_NAMING
 
   if (variant === 'flat') (await skillCatalog()).attach(mcp)
   if (variant === 'opt2') (await unlistedSkills()).attach(mcp)
+  if (variant === 'opt2-rec') (await unlistedSkills({ hideGrouped: true })).attach(mcp)
   if (groups) attachGroups(mcp, groups, naming)
 
   if (variant === 'opt3') {
@@ -156,9 +185,9 @@ export async function createServer(variant: Variant): Promise<McpServer> {
   mcp.server.setRequestHandler('tools/list', async (_request, ctx) => {
     // Graceful degradation: a client that did not negotiate the extension gets the flattened list.
     const scoped = groups !== undefined && clientNegotiated(ctx, naming.extensionId)
-    return { tools: scoped ? [INFO_TOOL] : [INFO_TOOL, ...allForgeTools()], ...HOUR }
+    return { tools: scoped ? [] : allForgeTools(), ...HOUR }
   })
-  mcp.server.setRequestHandler('tools/call', async (request) => callTool(variant, request.params.name, request.params.arguments ?? {}))
+  mcp.server.setRequestHandler('tools/call', async (request) => callTool(request.params.name, request.params.arguments ?? {}))
   return mcp
 }
 
@@ -166,10 +195,7 @@ export async function createServer(variant: Variant): Promise<McpServer> {
  * Scoped tools stay callable whether or not their group was fetched: discovery gating is not access
  * control. Calls are dry runs that return the Cloudflare API request the tool would send.
  */
-function callTool(variant: Variant, name: string, args: Record<string, unknown>): CallToolResult {
-  if (name === INFO_TOOL.name) {
-    return { content: [{ type: 'text', text: JSON.stringify({ variant, about: VARIANTS[variant], source: SOURCE }, null, 2) }] }
-  }
+function callTool(name: string, args: Record<string, unknown>): CallToolResult {
   const tool = forgeToolsByName.get(name)
   if (!tool) return { isError: true, content: [{ type: 'text', text: `Tool ${name} not found` }] }
   try {

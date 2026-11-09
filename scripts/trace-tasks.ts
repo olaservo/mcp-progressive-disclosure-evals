@@ -3,7 +3,8 @@
 // first step may hit. `done` reads the calls the session made and the final answer.
 
 export type Call = { name: string; args: Record<string, unknown>; isError: boolean }
-export type Picks = { groups: string[]; skills: string[]; tools: Call[] }
+/** `groupLoadsSkill`: the session ran under the round-one mod, whose open_group inlined the group's SKILL.md. */
+export type Picks = { groups: string[]; skills: string[]; tools: Call[]; groupLoadsSkill?: boolean }
 export type TraceTask = {
   id: string
   task: string
@@ -42,7 +43,7 @@ export class Room extends DurableObject {
 
 const called = (picks: Picks, re: RegExp) => picks.tools.some((c) => re.test(c.name) && !c.isError)
 const argsText = (picks: Picks, re: RegExp) => picks.tools.filter((c) => re.test(c.name)).map((c) => JSON.stringify(c.args)).join('\n')
-const loaded = (picks: Picks, skill: string) => picks.skills.includes(skill) || picks.groups.includes(skill)
+const loaded = (picks: Picks, skill: string) => picks.skills.includes(skill) || (!!picks.groupLoadsSkill && picks.groups.includes(skill))
 
 export const TRACE_TASKS: TraceTask[] = [
   {
@@ -140,7 +141,7 @@ export const TRACE_TASKS: TraceTask[] = [
   {
     id: 'push-build',
     task: 'Push the new build of our edge function demo-api (the bundle is at dist/index.js) and make it live.',
-    firstPick: ['workers-api', 'workers-scripts', 'workers-versions', 'workers-deployments', 'skill:wrangler', 'workers_'],
+    firstPick: ['workers-api', 'workers-scripts', 'workers-versions', 'workers-deployments', 'workers-legacy', 'skill:wrangler', 'workers_'],
     // The bundle is a file the session cannot read, so a model that names the upload step and says it cannot read
     // dist/index.js counts, as does a dry-run upload with placeholder content.
     done: (p, a) =>
@@ -151,7 +152,7 @@ export const TRACE_TASKS: TraceTask[] = [
   {
     id: 'nightly',
     task: 'Run our edge function demo-api every night at 02:00 UTC.',
-    firstPick: ['workers-api', 'workers-scripts', 'skill:wrangler', 'workers_'],
+    firstPick: ['workers-api', 'workers-scripts', 'workers-core', 'skill:wrangler', 'workers_'],
     done: (p, a) => (called(p, /^workers_scripts_schedules_update$/) && /0 2 \* \* \*/.test(argsText(p, /schedules/))) || (loaded(p, 'wrangler') && /0 2 \* \* \*/.test(a))
   },
   {

@@ -1,6 +1,8 @@
 // Asks models which group, skill or tool they would load for a task, given only what a client sees before groups/get.
 // Every mode shows the server's skills/list index, since a Skills-extension client would show it too.
-// Usage: tsx scripts/select.ts --url <mcp url> [--mode groups|flat|flat-schemas] [--tasks v1|v2] [--models a,b,c] [--seeds N] [--limit N] [--env <.env path>] [--label name]
+// Usage: tsx scripts/select.ts --url <mcp url> [--mode groups|flat|flat-schemas] [--tasks v1|v2] [--models a,b,c] [--seeds N] [--limit N] [--env <.env path>] [--label name] [--list-all-skills]
+// --list-all-skills reads skills/list on a second client that declares only the Skills extension, so a server that leaves
+// grouped skills out for a groups client still shows every skill.
 // Model ids route by prefix: claude-* through the Anthropic SDK, gpt-* through the OpenAI SDK, kimi-* through the OpenAI SDK
 // against api.moonshot.ai, gemini-* through the Google GenAI SDK, decisions:<model> through the OpenAI Decisions API and
 // jev-* through TypeSafe's System One API (both classifiers, groups mode only), and anything else through the Hugging Face
@@ -33,6 +35,10 @@ const label = opt('label', mode)!
 const envFile = opt('env')
 // --replay <jsonl> re-prints the summary from a finished run without calling any model.
 const replay = opt('replay')
+// --retry <jsonl> asks again only the trials of a finished run that ended in an error, against the run's own server and mode.
+const retry = opt('retry')
+const parallel = args.includes('--parallel')
+const listAllSkills = args.includes('--list-all-skills')
 
 // Keys come from --env or the environment. Values are never printed.
 if (envFile) {
@@ -50,8 +56,9 @@ const hfToken = () => {
 /**
  * `full` adds answers that are also right in the 3,036-tool catalog, whose 139 groups cover products the subset lacks.
  * `skills` are skill names accepted in every mode beyond the workflow skills whose names are already in `groups`.
+ * `split` names the opt2-rec groups that hold the task's tools where that server splits a product the others keep whole.
  */
-type Task = { task: string; groups: string[]; tools: string[]; skills?: string[]; full?: { groups?: string[]; tools?: string[] } }
+type Task = { task: string; groups: string[]; tools: string[]; skills?: string[]; split?: string[]; full?: { groups?: string[]; split?: string[]; tools?: string[] } }
 
 /** Tasks with the answers that count as correct. `groups` is for groups mode, `tools` are name prefixes for flat modes. */
 const TASKS_V1: Task[] = [
@@ -77,33 +84,39 @@ const TASKS_V2: Task[] = [
   { task: "The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it.", groups: ['turnstile-spin', 'turnstile-api'], tools: ['turnstile_widgets_rotateSecret'] },
   { task: 'Forward everything sent to billing@ at our domain to a Gmail inbox.', groups: ['cloudflare-email-service', 'email-routing-api'], tools: ['emailRouting_'] },
   { task: 'Set up a sender address so our edge function can email order receipts after checkout.', groups: ['cloudflare-email-service', 'email-sending-api'], tools: ['emailSending_'] },
-  { task: 'Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not.', groups: ['cloudflare-email-service', 'email-sending-api'], tools: ['emailSending_subdomains_dns'], full: { groups: ['dns-api', 'email-auth-api', 'email-domains-api'], tools: ['dns_records', 'emailAuth_', 'emailDomains_'] } },
+  { task: 'Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not.', groups: ['cloudflare-email-service', 'email-sending-api'], tools: ['emailSending_subdomains_dns'], full: { groups: ['dns-api', 'email-auth-api', 'email-domains-api'], split: ['dns-records'], tools: ['dns_records', 'emailAuth_', 'emailDomains_'] } },
   { task: 'Build a per-chat-room state holder that serializes writes and wakes itself once an hour.', groups: ['durable-objects', 'durable-objects-api'], tools: ['durableObjects_'] },
   { task: 'Which of our stateful object classes have instances that currently hold stored data?', groups: ['durable-objects', 'durable-objects-api'], tools: ['durableObjects_'] },
   { task: 'Review our stateful coordination class for alarm-handling bugs.', groups: ['durable-objects'], tools: ['durableObjects_'] },
   { task: 'Process image-resize jobs in the background, retrying any job that fails.', groups: ['queues-api'], tools: ['queues_'], full: { groups: ['workflows-api'], tools: ['workflows_'] } },
   { task: 'Add a dead-letter destination for messages that fail repeatedly on the orders pipeline.', groups: ['queues-api'], tools: ['queues_'] },
-  { task: 'Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed.', groups: ['r2-api'], tools: ['r2_'] },
-  { task: 'Expire files under tmp/ in our object store after 7 days.', groups: ['r2-api'], tools: ['r2_buckets_lifecycle'] },
+  { task: 'Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed.', groups: ['r2-api'], split: ['r2-buckets'], tools: ['r2_'] },
+  { task: 'Expire files under tmp/ in our object store after 7 days.', groups: ['r2-api'], split: ['r2-buckets'], tools: ['r2_buckets_lifecycle'] },
   { task: 'Store small read-heavy feature flags at the edge. Eventual consistency is fine.', groups: ['kv-api'], tools: ['kv_'], full: { groups: ['flagship-api'], tools: ['flagship_'] } },
   { task: 'Remove every entry whose key begins with "session:" from the edge key-value store.', groups: ['kv-api'], tools: ['kv_'] },
   { task: 'We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage.', groups: ['d1-api'], tools: ['d1_'] },
-  { task: 'Push a new build of our edge function and make it live.', groups: ['workers-api'], tools: ['workers_'], skills: ['wrangler'], full: { groups: ['workers-builds-api', 'builds-api'], tools: ['workersBuilds_', 'builds_'] } },
-  { task: 'Run our edge function every night at 02:00.', groups: ['workers-api'], tools: ['workers_scripts_schedules'], skills: ['wrangler'] },
+  { task: 'Push a new build of our edge function and make it live.', groups: ['workers-api'], split: ['workers-versions', 'workers-deployments', 'workers-legacy'], tools: ['workers_'], skills: ['wrangler'], full: { groups: ['workers-builds-api', 'builds-api'], split: ['builds-core', 'builds-triggers', 'builds-deploy-hooks', 'builds-workers'], tools: ['workersBuilds_', 'builds_'] } },
+  { task: 'Run our edge function every night at 02:00.', groups: ['workers-api'], split: ['workers-core'], tools: ['workers_scripts_schedules'], skills: ['wrangler'] },
   { task: 'Run our Docker image at the edge and show the running instances.', groups: ['containers-api'], tools: ['containers_'] },
   { task: "What is the recommended structure for an edge function's fetch handler?", groups: ['none'], tools: ['none'], skills: ['workers-best-practices'] },
   // No fit in the subset. The full catalog has accounts_tokens_roll and user_tokens_roll.
-  { task: 'Rotate the account API token our deployment pipeline uses.', groups: ['none'], tools: ['none'], full: { groups: ['accounts-api', 'user-api'], tools: ['accounts_tokens', 'user_tokens'] } }
+  { task: 'Rotate the account API token our deployment pipeline uses.', groups: ['none'], tools: ['none'], full: { groups: ['accounts-api', 'user-api'], split: ['accounts-tokens', 'user-tokens'], tools: ['accounts_tokens', 'user_tokens'] } }
 ]
 const taskSets = { v1: TASKS_V1, v2: TASKS_V2 }
 const tasks = limit > 0 ? taskSets[taskSet].slice(0, limit) : taskSets[taskSet]
 
-/** The accepted answers for a task against the catalog the header describes. A `none` entry drops out once the full catalog gives the task a fit. */
-function expectedFor(task: Task, header: { tools: number; groups: number }): string[] {
-  const full = header.groups > 20 || header.tools > 1000
-  const base = mode === 'groups' ? task.groups : task.tools
-  const extra = full ? ((mode === 'groups' ? task.full?.groups : task.full?.tools) ?? []) : []
-  const primitives = extra.length > 0 ? [...base.filter((e) => e !== 'none'), ...extra] : base
+/**
+ * The accepted answers for a task against the catalog the header describes. A `none` entry drops out once the full catalog
+ * gives the task a fit. Headers that record the served group names (2026-11-09 on) keep only the group answers that exist.
+ */
+function expectedFor(task: Task, header: { tools: number; groups: number; groupNames?: string[] }): string[] {
+  const full = header.groupNames ? header.groupNames.length > 60 : header.groups > 20 || header.tools > 1000
+  // Split names apply only to runs that record the served names, so a replay of an older run scores as it did.
+  const recorded = header.groupNames !== undefined
+  const base = mode === 'groups' ? [...task.groups, ...(recorded ? (task.split ?? []) : [])] : task.tools
+  const extra = full ? ((mode === 'groups' ? [...(task.full?.groups ?? []), ...(recorded ? (task.full?.split ?? []) : [])] : task.full?.tools) ?? []) : []
+  const served = mode === 'groups' && header.groupNames ? (name: string) => name === 'none' || header.groupNames!.includes(name) : () => true
+  const primitives = (extra.length > 0 ? [...base.filter((e) => e !== 'none'), ...extra] : base).filter(served)
   // A skill is accepted where its workflow group is (they share a name), plus the task's own `skills`.
   const skills = [...task.groups.filter(isSkillGroup), ...(task.skills ?? [])]
   return [...primitives, ...skills.map((name) => `skill:${name}`)]
@@ -134,6 +147,7 @@ const geminiLevel = (model: string) => (model.startsWith('gemini-3.6') ? 'minima
 // In flat-schemas mode: the full tools/list result as compact JSON, which is what a flat server actually sends.
 // Every mode adds the skills/list index when the server declares the Skills extension (Option 3 serves none).
 async function catalog(): Promise<{ text: string; instruction: string; groups: Named[]; skills: Named[]; tools: string[] }> {
+  type Entry = { frontmatter?: { name: string; description?: string } }
   const client = new Client({ name: 'groups-select', version: '0.1.0' }, { capabilities: { extensions: { [GROUPS]: {}, [SKILLS]: {} } }, versionNegotiation: { mode: 'auto' } })
   await client.connect(new StreamableHTTPClientTransport(new URL(url)))
   const caps = client.getServerCapabilities() ?? {}
@@ -141,7 +155,9 @@ async function catalog(): Promise<{ text: string; instruction: string; groups: N
   const lines =
     mode === 'flat-schemas'
       ? ['Tools (the tools/list result):', JSON.stringify({ tools })]
-      : ['Top-level tools (callable now):', ...tools.map((tool) => `- ${tool.name}: ${firstLine(tool.description)}`)]
+      : tools.length > 0
+        ? ['Top-level tools (callable now):', ...tools.map((tool) => `- ${tool.name}: ${firstLine(tool.description)}`)]
+        : ['Top-level tools (callable now): none.']
   let groups: Named[] = []
   // Option 3 serves renamed groups under the Skills identifier, so its skills/list is not a SEP-2640 index.
   const noun = caps.extensions?.[GROUPS] !== undefined ? 'groups' : 'skills'
@@ -152,8 +168,7 @@ async function catalog(): Promise<{ text: string; instruction: string; groups: N
   let skills: Named[] = []
   if (caps.extensions?.[SKILLS] !== undefined) {
     // SEP-2640 entries carry `frontmatter`; Option 3's renamed groups under the same identifier do not, and drop out.
-    type Entry = { frontmatter?: { name: string; description?: string } }
-    const entries = ((await client.request({ method: 'skills/list', params: {} }, Loose)) as { skills?: Entry[] }).skills ?? []
+    const entries = listAllSkills ? await skillsOnlyListing() : ((await client.request({ method: 'skills/list', params: {} }, Loose)) as { skills?: Entry[] }).skills ?? []
     skills = entries.flatMap((entry) => (entry.frontmatter ? [{ name: entry.frontmatter.name, description: entry.frontmatter.description }] : []))
     if (skills.length > 0) lines.push('', 'Skills (instructions that load on demand with skills/get and resources/read):', ...skills.map((skill) => `- ${skill.name}: ${firstLine(skill.description)}`))
   }
@@ -164,6 +179,15 @@ async function catalog(): Promise<{ text: string; instruction: string; groups: N
       ? `Reply with {"group":"<name>"} to load one group,${skillClause} {"tool":"<name>"} to call a top-level tool, or {"none":true} if nothing listed fits.`
       : `Reply with {"tool":"<name>"} for the tool you would call first,${skillClause} or {"none":true} if nothing listed fits.`
   return { text: lines.join('\n'), instruction, groups, skills, tools: tools.map((tool) => tool.name) }
+}
+
+/** skills/list as a client that declares only the Skills extension sees it. */
+async function skillsOnlyListing(): Promise<{ frontmatter?: { name: string; description?: string } }[]> {
+  const client = new Client({ name: 'groups-select-skills', version: '0.1.0' }, { capabilities: { extensions: { [SKILLS]: {} } }, versionNegotiation: { mode: 'auto' } })
+  await client.connect(new StreamableHTTPClientTransport(new URL(url)))
+  const entries = ((await client.request({ method: 'skills/list', params: {} }, Loose)) as { skills?: { frontmatter?: { name: string; description?: string } }[] }).skills ?? []
+  await client.close()
+  return entries
 }
 
 const SYSTEM = 'You are an agent connected to an MCP server. Decide where to look first for the capability a task needs. Reply with one JSON object and nothing else.'
@@ -371,24 +395,28 @@ function score(answer: Answer, expected: string[]): { correct: boolean; rightNam
   return { correct: hits(keyed) || skillOk || noneOk, rightName: hits(answer.group) || hits(answer.tool) || skillOk || noneOk }
 }
 
-interface Header { mode: string; taskSet?: string; url: string; tools: number; groups: number; skills?: number; promptTokens: number; tasks: number; seeds: number; reasoning?: Record<string, string> }
+interface Header { mode: string; taskSet?: string; url: string; tools: number; groups: number; groupNames?: string[]; skills?: number; listAllSkills?: boolean; promptTokens: number; tasks: number; seeds: number; reasoning?: Record<string, string> }
 
 const shortName = (model: string) => model.replace(/^.*\//, '').replace(/:.*$/, '')
-const isSkillGroup = (name: string) => !name.endsWith('-api') && name !== 'none'
+/** The workflow groups, which share their skill's name. Every other group is a product group. */
+const WORKFLOW_GROUPS = ['turnstile-spin', 'durable-objects', 'cloudflare-email-service']
+const isSkillGroup = (name: string) => WORKFLOW_GROUPS.includes(name)
 const pickOf = (answer: Answer) => (answer.group ? `group:${answer.group}` : answer.skill ? `skill:${answer.skill}` : answer.tool ? `tool:${answer.tool}` : answer.none ? 'none' : 'unparsed')
 
 function summary(header: Header, trials: Trial[], out: string): void {
   const modelsSeen = [...new Set(trials.map((t) => t.model))]
-  console.log(`\n${header.mode} mode, task set ${header.taskSet ?? 'v1'}, ${header.url}. ${header.tools} top-level tools, ${header.groups} groups, ${header.skills ?? 0} skills listed, ${header.promptTokens} prompt tokens (o200k_base) before the task. ${header.tasks} tasks x ${header.seeds} samples.\n`)
-  console.log('| Model | Reasoning | Correct | Right name, either key | Picked a group | Picked a skill | None | Unparsed or error | Avg input tokens | Cache read |')
-  console.log('| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: |')
+  console.log(`\n${header.mode} mode, task set ${header.taskSet ?? 'v1'}, ${header.url}. ${header.tools} top-level tools, ${header.groups} groups, ${header.skills ?? 0} skills listed${header.listAllSkills ? ' (skills/list read as a Skills-only client)' : ''}, ${header.promptTokens} prompt tokens (o200k_base) before the task. ${header.tasks} tasks x ${header.seeds} samples.\n`)
+  console.log('| Model | Reasoning | Correct | Right name, either key | Picked a group | Picked a skill | Skill only, tool task | None | Unparsed or error | Avg input tokens | Cache read |')
+  console.log('| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |')
+  // A skill picked for a task whose answer is a group or tool: it loads instructions without the tools the task needs.
+  const toolTask = (t: Trial) => t.expected.some((e) => !isSkillEntry(e) && e !== 'none')
   for (const model of modelsSeen) {
     const mine = trials.filter((t) => t.model === model)
     const withUsage = mine.filter((t) => t.answer.inputTokens)
     const avgIn = Math.round(withUsage.reduce((sum, t) => sum + (t.answer.inputTokens ?? 0), 0) / Math.max(1, withUsage.length))
     const cached = mine.reduce((sum, t) => sum + (t.answer.cacheRead ?? 0), 0)
     const setting = header.reasoning?.[model] ?? (model.startsWith('claude-') ? 'effort low' : 'enable_thinking false, temperature 0.2, seeded')
-    console.log(`| ${model} | ${setting} | ${mine.filter((t) => t.correct).length}/${mine.length} | ${mine.filter((t) => t.rightName).length}/${mine.length} | ${mine.filter((t) => t.answer.group).length} | ${mine.filter((t) => t.answer.skill).length} | ${mine.filter((t) => t.answer.none).length} | ${mine.filter((t) => t.pick === 'unparsed').length} | ${avgIn} | ${cached} |`)
+    console.log(`| ${model} | ${setting} | ${mine.filter((t) => t.correct).length}/${mine.length} | ${mine.filter((t) => t.rightName).length}/${mine.length} | ${mine.filter((t) => t.answer.group).length} | ${mine.filter((t) => t.answer.skill).length} | ${mine.filter((t) => t.answer.skill && toolTask(t)).length} | ${mine.filter((t) => t.answer.none).length} | ${mine.filter((t) => t.pick === 'unparsed').length} | ${avgIn} | ${cached} |`)
   }
 
   // Every model's pick per task. A wrong pick is prefixed MISS; a right name under the wrong key ends in *.
@@ -435,7 +463,31 @@ function summary(header: Header, trials: Trial[], out: string): void {
   console.log(`\nRaw trials: ${out}`)
 }
 
-if (replay) {
+if (retry) {
+  const lines = readFileSync(retry, 'utf8').split('\n').filter(Boolean)
+  const header = JSON.parse(lines[0]!) as Header
+  mode = header.mode as Mode
+  taskSet = (header.taskSet ?? 'v1') as 'v1' | 'v2'
+  if (header.url !== url) throw new Error(`--retry: pass --url ${header.url}, the run's server`)
+  const { text, instruction, groups, skills } = await catalog()
+  const trials = lines.slice(1).map((line) => JSON.parse(line) as Trial)
+  let redone = 0
+  for (const [i, t] of trials.entries()) {
+    if (!t.answer.raw.startsWith('error:')) continue
+    let answer: Answer
+    try {
+      answer = await ask(t.model, text, groups, skills, t.task, instruction, t.seed)
+    } catch (error) {
+      answer = { raw: `error: ${error instanceof Error ? error.message : String(error)}` }
+    }
+    trials[i] = { ...t, answer, pick: pickOf(answer), ...score(answer, t.expected) }
+    redone++
+    process.stderr.write(`${t.model} #${t.seed} ${trials[i]!.correct ? 'ok  ' : 'MISS'} ${trials[i]!.pick} <- ${t.task.slice(0, 50)}\n`)
+    writeFileSync(retry, [header, ...trials].map((x) => JSON.stringify(x)).join('\n') + '\n')
+  }
+  console.error(`${redone} errored trials asked again`)
+  summary(header, trials, retry)
+} else if (replay) {
   const lines = readFileSync(replay, 'utf8').split('\n').filter(Boolean)
   const header = JSON.parse(lines[0]!) as Header
   mode = header.mode as Mode
@@ -454,18 +506,21 @@ if (replay) {
 } else {
   const { text, instruction, groups, skills, tools } = await catalog()
   const promptTokens = encoding.encode(`${SYSTEM}\n${text}\n${instruction}`).length
-  const header: Header = { mode, taskSet, url, tools: tools.length, groups: groups.length, skills: skills.length, promptTokens, tasks: tasks.length, seeds, reasoning: Object.fromEntries(models.map((model) => [model, reasoning(model)])) }
+  const header: Header = { mode, taskSet, url, tools: tools.length, groups: groups.length, groupNames: mode === 'groups' ? groups.map((group) => group.name) : undefined, skills: skills.length, listAllSkills: listAllSkills || undefined, promptTokens, tasks: tasks.length, seeds, reasoning: Object.fromEntries(models.map((model) => [model, reasoning(model)])) }
   console.error(`${mode} mode, task set ${taskSet}, against ${url}: ${tools.length} top-level tools, ${groups.length} groups, ${skills.length} skills, ${promptTokens} prompt tokens before the task`)
   if (process.env.SELECT_DUMP_PROMPT) console.error(`--- prompt ---\n${text}\n${instruction}\n--- end ---`)
 
   mkdirSync('results', { recursive: true })
   const out = join('results', `${new Date().toISOString().slice(0, 10)}-${taskSet === 'v2' ? 'select2' : 'select'}-${label}.jsonl`)
   const trials: Trial[] = []
-  for (const model of models) {
+  // With --parallel every model runs at once, each through its tasks in order. The file is kept in model order.
+  const order = (t: Trial) => models.indexOf(t.model)
+  const save = () => writeFileSync(out, [header, ...[...trials].sort((a, b) => order(a) - order(b))].map((t) => JSON.stringify(t)).join('\n') + '\n')
+  async function runModel(model: string): Promise<void> {
     const maxContext = MAX_CONTEXT[model]
     if (maxContext !== undefined && promptTokens > maxContext) {
       console.error(`${model}: skipped, ${promptTokens} prompt tokens exceed its ${maxContext} context`)
-      continue
+      return
     }
     for (const entry of tasks) {
       const { task } = entry
@@ -480,10 +535,13 @@ if (replay) {
         const expected = expectedFor(entry, header)
         const trial: Trial = { model, seed, task, expected, answer, pick, ...score(answer, expected) }
         trials.push(trial)
-        writeFileSync(out, [header, ...trials].map((t) => JSON.stringify(t)).join('\n') + '\n')
+        save()
         process.stderr.write(`${model} #${seed} ${trial.correct ? 'ok  ' : 'MISS'} ${pick} <- ${task.slice(0, 50)}\n`)
       }
     }
   }
+  if (parallel) await Promise.all(models.map(runModel))
+  else for (const model of models) await runModel(model)
+  trials.sort((a, b) => order(a) - order(b))
   summary(header, trials, out)
 }

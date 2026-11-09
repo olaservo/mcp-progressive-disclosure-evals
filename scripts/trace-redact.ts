@@ -82,6 +82,12 @@ let keptRows = 0
 let droppedRows = 0
 for (const file of walk(src)) {
   const rel = relative(src, file)
+  // A session's group-open log (the mod's GROUPS_LOG) holds group names, counts and the server URL: scrubbed and copied whole.
+  if (file.endsWith('.groups.jsonl')) {
+    mkdirSync(resolve(join(out, rel), '..'), { recursive: true })
+    writeFileSync(join(out, rel), scrub(readFileSync(file, 'utf8')))
+    continue
+  }
   const { kept, dropped } = redactFile(file, join(out, rel))
   files++
   keptRows += kept
@@ -94,6 +100,7 @@ if (existsSync(index)) {
     const row = JSON.parse(l) as Record<string, unknown>
     delete row.stderr
     if (typeof row.file === 'string') row.file = relative(src, row.file).replace(/\\/g, '/')
+    if (typeof row.groupsLog === 'string') row.groupsLog = relative(src, row.groupsLog).replace(/\\/g, '/')
     return scrub(JSON.stringify(row))
   })
   writeFileSync(join(out, 'index.jsonl'), rows.join('\n') + '\n')

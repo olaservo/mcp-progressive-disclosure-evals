@@ -11,6 +11,7 @@
     "vendor": "node scripts/vendor.mjs",
     "vendor:full": "node scripts/vendor.mjs --full",
     "select": "tsx scripts/select.ts",
+    "describe": "tsx scripts/describe-groups.ts",
     "dev": "wrangler dev",
     "typecheck": "tsc --noEmit",
     "compare": "tsx scripts/compare.ts",

@@ -1,8 +1,10 @@
 {
   "name": "groups",
-  "version": "0.1.0",
-  "description": "Progressive disclosure through the MCP Groups extension (progressive-disclosure-wg#19) inside Claude Code: list_groups, open_group and read_skill against a groups server over HTTP, with a group's scoped tools registered on open as deferred definitions.",
-  "author": { "name": "olaservo" },
+  "version": "0.2.0",
+  "description": "Progressive disclosure through the MCP Groups extension (progressive-disclosure-wg#19) inside Claude Code: list_groups, open_group and read_skill against a groups server over HTTP, with a group's scoped tools registered on open as deferred definitions, and skills read through skills/get with their digests checked.",
+  "author": {
+    "name": "olaservo"
+  },
   "userConfig": {
     "url": {
       "type": "string",
@@ -20,6 +22,12 @@
       "type": "boolean",
       "title": "List skills in the prompt",
       "description": "Show the server's skills/list index next to its groups in the system prompt section",
+      "default": true
+    },
+    "dedupGroupedSkills": {
+      "type": "boolean",
+      "title": "List a grouped skill once",
+      "description": "Leave a skill whose name is also a group out of the prompt's skills list, and open the group first when read_skill names it",
       "default": true
     }
   }

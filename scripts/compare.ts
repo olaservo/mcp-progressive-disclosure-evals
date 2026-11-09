@@ -5,7 +5,7 @@ import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/cli
 import { SkillsClient } from '@modelcontextprotocol/client/ext/skills'
 import { getEncoding } from 'js-tiktoken'
 
-const VARIANTS = ['flat', 'opt1', 'opt2', 'opt3'] as const
+const VARIANTS = ['flat', 'opt1', 'opt2', 'opt2-rec', 'opt3'] as const
 type Variant = (typeof VARIANTS)[number]
 const GROUPS = 'io.modelcontextprotocol/groups'
 const SKILLS = 'io.modelcontextprotocol/skills'
@@ -29,13 +29,28 @@ const size = (value: unknown) => JSON.stringify(value).length
 const encoding = getEncoding('o200k_base')
 const count = (value: unknown) => encoding.encode(typeof value === 'string' ? value : JSON.stringify(value)).length
 
+/** The Workers answer 429 past 120 requests a minute per client. The comparison keeps under 100 a minute and waits out a 429. */
+const sentAt: number[] = []
+async function patientFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
+  for (;;) {
+    while (sentAt.length >= 100 && Date.now() - sentAt[0]! < 60_000) await new Promise((resolve) => setTimeout(resolve, 60_000 - (Date.now() - sentAt[0]!) + 50))
+    while (sentAt.length >= 100) sentAt.shift()
+    sentAt.push(Date.now())
+    const response = await fetch(input, init)
+    if (response.status !== 429) return response
+    const wait = 20
+    console.error(`429 from ${String(input)}; waiting ${wait}s`)
+    await new Promise((resolve) => setTimeout(resolve, wait * 1000))
+  }
+}
+
 async function connect(variant: Variant, modern: boolean): Promise<Client> {
   const client = new Client(
     { name: 'groups-compare', version: '0.2.0' },
     // The modern client speaks 2026-07-28, where capabilities ride on every request. The other is a 2025-era client.
     modern ? { capabilities: { extensions: { [GROUPS]: {}, [SKILLS]: {} } }, versionNegotiation: { mode: 'auto' } } : { capabilities: { extensions: { [SKILLS]: {} } } }
   )
-  await client.connect(new StreamableHTTPClientTransport(new URL(urlFor(variant))))
+  await client.connect(new StreamableHTTPClientTransport(new URL(urlFor(variant)), { fetch: patientFetch }))
   return client
 }
 
@@ -170,6 +185,19 @@ for (const variant of VARIANTS) {
   }
 }
 
+/** Every top-level group's groups/get, as the model would see it after opening that group. */
+async function groupLoads(variant: Variant): Promise<{ name: string; tools: number; tokens: number }[]> {
+  const client = await connect(variant, true)
+  const listed = ((await client.request({ method: 'groups/list', params: {} }, Loose)) as { groups: Named[] }).groups
+  const loads = []
+  for (const { name } of listed) {
+    const got = (await client.request({ method: 'groups/get', params: { name } }, Loose)) as Body
+    loads.push({ name, tools: got.tools?.length ?? 0, tokens: count(got.instructions ?? '') + count(got.tools ?? []) + count(got.resources ?? []) })
+  }
+  await client.close()
+  return loads
+}
+
 const total = rows[0] ? rows[0].legacyTools : 0
 console.log(`${total} tools. One task per cloudflare/skills workflow: ${TASKS.map((task) => `${task.label} (${task.skill})`).join(', ')}.`)
 console.log('Token counts are tiktoken o200k_base over the compact JSON the model would see.\n')
@@ -180,4 +208,16 @@ console.log()
 for (const row of rows) {
   console.log(`${row.variant} / ${row.task.skill}:`)
   for (const note of row.notes) console.log(`  - ${note}`)
+}
+
+for (const variant of ['opt2', 'opt2-rec'] as const) {
+  try {
+    const loads = await groupLoads(variant)
+    console.log(`\n${variant}: task-load tokens per top-level group (groups/get: instructions, tools and resources), ${loads.length} groups.\n`)
+    console.log('| Group | Tools | Task-load tokens |')
+    console.log('| :-- | --: | --: |')
+    for (const load of loads) console.log(`| ${load.name} | ${load.tools} | ${load.tokens} |`)
+  } catch (error) {
+    console.error(`${variant} group loads: ${error instanceof Error ? error.message : String(error)}`)
+  }
 }

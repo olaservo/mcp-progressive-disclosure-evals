@@ -16,6 +16,7 @@
     "flat": { "name": "pd-groups-flat", "vars": { "VARIANT": "flat" }, "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 120, "period": 60 } }] },
     "opt1": { "name": "pd-groups-opt1", "vars": { "VARIANT": "opt1" }, "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1002", "simple": { "limit": 120, "period": 60 } }] },
     "opt2": { "name": "pd-groups-opt2", "vars": { "VARIANT": "opt2" }, "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1003", "simple": { "limit": 120, "period": 60 } }] },
+    "opt2-rec": { "name": "pd-groups-opt2-rec", "vars": { "VARIANT": "opt2-rec" }, "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1005", "simple": { "limit": 120, "period": 60 } }] },
     "opt3": { "name": "pd-groups-opt3", "vars": { "VARIANT": "opt3" }, "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1004", "simple": { "limit": 120, "period": 60 } }] }
   }
 }

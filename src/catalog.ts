@@ -129,3 +129,83 @@ export function skillFrontmatter(skill: string): { name: string; description: st
 export function skillFilePaths(skill: string): string[] {
   return Object.keys(skillFiles).filter((path) => path.startsWith(`${skill}/`))
 }
+
+// ---- The recommended server: one level, sized to a task ---------------------------------------
+
+/**
+ * A product stays one group unless it has more than this many tools or this many characters of tool JSON
+ * (about 15k tokens). A larger product is split by its second-level directories.
+ */
+export const SPLIT_TOOLS = 25
+export const SPLIT_CHARS = 60_000
+/** An area with fewer tools joins the product's `-core` group. A `-core` group left this small joins the largest area. */
+const MIN_AREA_TOOLS = 4
+
+export interface FlatToolset {
+  name: string
+  product: string
+  /** The forge paths the group holds, for the description script. */
+  paths: string[]
+  tools: ForgeTool[]
+}
+
+const wireChars = (tools: ForgeTool[]) => tools.reduce((sum, tool) => sum + JSON.stringify(wireTool(tool)).length, 0)
+
+export function flatToolsets(): FlatToolset[] {
+  const products = [...new Set(toolsets.map(({ path }) => path.split('/')[0]!))]
+  return products.flatMap((product): FlatToolset[] => {
+    const all = toolsUnder(product)
+    const pathsUnder = (prefix: string, exact = false) => toolsets.map(({ path }) => path).filter((path) => path === prefix || (!exact && path.startsWith(prefix + '/')))
+    if (all.length <= SPLIT_TOOLS && wireChars(all) <= SPLIT_CHARS) {
+      return [{ name: `${kebab(product)}-api`, product, paths: pathsUnder(product), tools: all }]
+    }
+    const areas = [...new Set(toolsets.map(({ path }) => path.split('/')).filter((parts) => parts[0] === product && parts.length > 1).map((parts) => parts[1]!))]
+    const core: FlatToolset = { name: `${kebab(product)}-core`, product, paths: pathsUnder(product, true), tools: toolsUnder(product, { exact: true }) }
+    const groups: FlatToolset[] = []
+    for (const area of areas) {
+      const prefix = `${product}/${area}`
+      const tools = toolsUnder(prefix)
+      if (tools.length < MIN_AREA_TOOLS) {
+        core.tools.push(...tools)
+        core.paths.push(...pathsUnder(prefix))
+      } else {
+        groups.push({ name: `${kebab(product)}-${kebab(area)}`, product, paths: pathsUnder(prefix), tools })
+      }
+    }
+    if (core.tools.length >= MIN_AREA_TOOLS || groups.length === 0) return [core, ...groups]
+    const largest = groups.reduce((a, b) => (b.tools.length > a.tools.length ? b : a))
+    largest.tools.push(...core.tools)
+    largest.paths.push(...core.paths)
+    return groups
+  })
+}
+
+/** Workflow bundles for the recommended server: the skill plus the tools its procedure touches. A path takes its subdirectories unless it ends in `$`. */
+export const REC_WORKFLOWS: { skill: string; toolPaths: string[]; description: string; instructions: string }[] = [
+  {
+    skill: 'turnstile-spin',
+    toolPaths: ['turnstile/widgets'],
+    description:
+      "Set up a bot check (CAPTCHA alternative) on a site's forms end to end: create a Turnstile widget for the site's hostnames, add it to the frontend, verify the challenge token on the server with Siteverify, and rotate a leaked secret. Open this to add or repair bot protection on a site; open turnstile-api to list or edit existing widgets.",
+    instructions: 'The turnstile-spin skill has the procedure: load skill://turnstile-spin/SKILL.md before starting.'
+  },
+  {
+    skill: 'durable-objects',
+    toolPaths: ['durableObjects'],
+    description:
+      'Write or review Durable Objects: stateful per-entity classes in a Worker (chat rooms, counters, rate limiters, coordination) with transactional storage, alarms that wake an object on a schedule, and WebSockets. Open this to build or review a Durable Object class; open durable-objects-api to list deployed namespaces and the objects that hold storage.',
+    instructions: 'The durable-objects skill has the guidance: load skill://durable-objects/SKILL.md before writing or reviewing a class.'
+  },
+  {
+    skill: 'cloudflare-email-service',
+    toolPaths: ['emailSending$', 'emailSending/subdomains', 'emailRouting$', 'emailRouting/rules', 'emailRouting/addresses', 'emailRouting/dns', 'emailRouting/settings'],
+    description:
+      "Send and receive email on a domain end to end: forward an address to another inbox (Email Routing rules and verified destinations), send transactional mail such as receipts from a Worker (sending subdomains), and check or fix the SPF, DKIM and DMARC records. Open this to set up email; open email-routing-api or email-sending-api to change one existing setting.",
+    instructions: 'The cloudflare-email-service skill has the procedure: load skill://cloudflare-email-service/SKILL.md before starting.'
+  }
+]
+
+export function recWorkflowTools(paths: string[]): ForgeTool[] {
+  const seen = new Set<string>()
+  return paths.flatMap((path) => (path.endsWith('$') ? toolsUnder(path.slice(0, -1), { exact: true }) : toolsUnder(path))).filter((tool) => !seen.has(tool.name) && seen.add(tool.name))
+}

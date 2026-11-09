@@ -1,12 +1,20 @@
-import { expect, test } from 'claude-code/testing'
+import { expect, mock, test } from 'claude-code/testing'
 
 // A groups server, canned. The hooks beneath the plugin stand for the engine: $.http.fetch is answered
 // here by method header, and each request is recorded so the test can check what the mod sent.
 type Sent = { url: string; method?: string; name?: string; body: Record<string, unknown> }
 
-function server() {
+const SKILL_BODY = (uri: string) => `# Body of ${uri}`
+
+async function sha256(text: string): Promise<string> {
+  const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))
+  return `sha256:${[...bytes].map((b) => b.toString(16).padStart(2, '0')).join('')}`
+}
+
+/** `tamper` serves a SKILL.md whose bytes differ from the digest skills/get publishes. */
+function server({ tamper = false } = {}) {
   const sent: Sent[] = []
-  const answer = (e: Record<string, unknown>) => {
+  const answer = async (e: Record<string, unknown>) => {
     const init = (e.init ?? {}) as { headers?: Record<string, string>; body?: string }
     const headers = init.headers ?? {}
     const body = JSON.parse(String(init.body ?? '{}')) as Record<string, unknown>
@@ -19,8 +27,18 @@ function server() {
         result = { groups: [{ name: 'turnstile-spin', description: 'Set up Turnstile bot verification.' }, { name: 'kv-api', description: 'Call the KV API directly.' }] }
         break
       case 'skills/list':
-        result = { skills: [{ uri: 'skill://wrangler/SKILL.md', frontmatter: { name: 'wrangler', description: 'Run Wrangler CLI commands.' } }] }
+        result = {
+          skills: [
+            { uri: 'skill://wrangler/SKILL.md', frontmatter: { name: 'wrangler', description: 'Run Wrangler CLI commands.' } },
+            { uri: 'skill://turnstile-spin/SKILL.md', frontmatter: { name: 'turnstile-spin', description: 'Set up Turnstile.' } }
+          ]
+        }
         break
+      case 'skills/get': {
+        const uri = String(params.uri)
+        result = { skill: { uri, frontmatter: { name: uri.split('/')[2] }, resources: [{ uri, digest: await sha256(SKILL_BODY(uri)), size: 1 }] }, ttlMs: 0, cacheScope: 'public' }
+        break
+      }
       case 'groups/get':
         if (params.name !== 'turnstile-spin') return { status: 200, ok: true, headers: {}, text: JSON.stringify({ jsonrpc: '2.0', id: body.id, error: { code: -32002, message: `Not found: ${String(params.name)}` } }) }
         result = {
@@ -30,7 +48,7 @@ function server() {
         }
         break
       case 'resources/read':
-        result = { contents: [{ uri: params.uri, mimeType: 'text/markdown', text: `# Body of ${String(params.uri)}` }] }
+        result = { contents: [{ uri: params.uri, mimeType: 'text/markdown', text: SKILL_BODY(String(params.uri)) + (tamper ? ' tampered' : '') }] }
         break
       case 'tools/call':
         result = { content: [{ type: 'text', text: JSON.stringify({ dryRun: true, tool: params.name, arguments: params.arguments }) }] }
@@ -44,11 +62,18 @@ function server() {
 }
 
 const URL = 'https://groups.example/mcp'
+const COMPOSE = { model: 'claude-sonnet-5-5', promptModel: 'claude-sonnet-5-5', surfaces: [], tools: [], outputStyle: null, traits: [] } as never
 
-test('open_group registers the scoped tools and routes their calls', { options: { url: URL } }, async ($, on) => {
+test('open_group registers the scoped tools, routes their calls, and does not load the skill', { options: { url: URL } }, async ($, on) => {
   const { sent, answer } = server()
   const registered: string[] = []
-  on('http.fetch', (_, e) => ({ value: answer(e as unknown as Record<string, unknown>) }))
+  const written: { path: string; text: string }[] = []
+  mock.env(on, { GROUPS_LOG: '/logs/opens.jsonl' })
+  on('fs.write', (_, e) => {
+    written.push(e as unknown as { path: string; text: string })
+    return { value: undefined }
+  })
+  on('http.fetch', async (_, e) => ({ value: await answer(e as unknown as Record<string, unknown>) }))
   on('tool.register', (_, e) => {
     registered.push((e as { name: string }).name)
     return { value: { tool: `mcp__groups__${(e as { name: string }).name}` } }
@@ -68,16 +93,24 @@ test('open_group registers the scoped tools and routes their calls', { options: 
   expect(meta['io.modelcontextprotocol/protocolVersion']).toBe('2026-07-28')
   expect(Object.keys(((meta['io.modelcontextprotocol/clientCapabilities'] as { extensions: object }).extensions)).join(',')).toBe('io.modelcontextprotocol/groups,io.modelcontextprotocol/skills')
 
-  // Opening a group fetches it, registers its tool, and returns the instructions and the listed skill's body.
+  // Opening a group fetches it, registers its tool, and names the skill without reading it.
   const opened = await $.tool.call({ tool: 'mcp__groups__open_group', name: 'turnstile-spin' })
   const text = String(opened.result ?? '')
   expect(opened.deny).toBe(undefined)
   expect(text.includes('Follow the turnstile-spin skill')).toBe(true)
   expect(text.includes('Tools now available: turnstile_widgets_list')).toBe(true)
-  expect(text.includes('# Body of skill://turnstile-spin/SKILL.md')).toBe(true)
+  expect(text.includes('skill://turnstile-spin/SKILL.md')).toBe(true)
+  expect(text.includes('# Body of')).toBe(false)
+  expect(sent.some((s) => s.method === 'resources/read')).toBe(false)
   expect(registered.includes('turnstile_widgets_list')).toBe(true)
   expect(sent.find((s) => s.method === 'groups/get')?.name).toBe('turnstile-spin')
-  expect(sent.find((s) => s.method === 'resources/read')?.name).toBe('skill://turnstile-spin/SKILL.md')
+
+  // The open is logged to GROUPS_LOG.
+  expect(String(written.at(-1)?.path).endsWith('opens.jsonl')).toBe(true)
+  const row = JSON.parse(String(written.at(-1)?.text).trim()) as { group: string; via: string; added: number }
+  expect(row.group).toBe('turnstile-spin')
+  expect(row.via).toBe('open_group')
+  expect(row.added).toBe(1)
 
   // A scoped call goes to tools/call with the tool's own arguments and the mcp-name header.
   const ran = await $.tool.call({ tool: 'mcp__groups__turnstile_widgets_list', path: { account_id: 'demo' } })
@@ -95,24 +128,73 @@ test('open_group registers the scoped tools and routes their calls', { options: 
   expect(registered.length).toBe(before)
 })
 
-test('an unknown group is refused and read_skill reads a listed skill', { options: { url: URL } }, async ($, on) => {
+test('read_skill goes through skills/get, checks the digest, and opens a grouped skill first', { options: { url: URL } }, async ($, on) => {
   const { sent, answer } = server()
-  on('http.fetch', (_, e) => ({ value: answer(e as unknown as Record<string, unknown>) }))
+  const composed: string[] = []
+  mock.env(on, {})
+  on('http.fetch', async (_, e) => ({ value: await answer(e as unknown as Record<string, unknown>) }))
+  on('tool.register', (_, e) => ({ value: { tool: `mcp__groups__${(e as { name: string }).name}` } }))
+  on('command.register', () => ({ value: { command: 'groups' } }))
+  on('ui.status', () => ({ value: undefined }))
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('prompt.compose', () => ({ sections: [] }))
+
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: false })
+
+  // The prompt lists turnstile-spin once, as a group.
+  const prompt = await $.prompt.compose(COMPOSE)
+  for (const s of (prompt as { sections: { text: string }[] }).sections) composed.push(s.text)
+  const section = composed.join('\n')
+  expect(section.includes('- wrangler: Run Wrangler CLI commands.')).toBe(true)
+  expect(section.split('turnstile-spin').length - 1).toBe(1)
+
+  const missing = await $.tool.call({ tool: 'mcp__groups__open_group', name: 'no-such-group' })
+  expect(String(missing.deny ?? '').includes('Not found: no-such-group')).toBe(true)
+
+  // A listed skill, by URI: skills/get, then resources/read.
+  const skill = await $.tool.call({ tool: 'mcp__groups__read_skill', name: 'skill://wrangler/SKILL.md' })
+  expect(skill.deny).toBe(undefined)
+  expect(String(skill.result ?? '').includes('# Body of skill://wrangler/SKILL.md')).toBe(true)
+  expect(sent.find((s) => s.method === 'skills/get')?.name).toBe('skill://wrangler/SKILL.md')
+  expect(sent.find((s) => s.method === 'resources/read')?.name).toBe('skill://wrangler/SKILL.md')
+
+  // A skill that is also a group: the group opens first, then the skill loads.
+  const grouped = await $.tool.call({ tool: 'mcp__groups__read_skill', name: 'turnstile-spin' })
+  const groupedText = String(grouped.result ?? '')
+  expect(grouped.deny).toBe(undefined)
+  expect(groupedText.includes("Opened 'turnstile-spin'.")).toBe(true)
+  expect(groupedText.includes('# Body of skill://turnstile-spin/SKILL.md')).toBe(true)
+
+  const listed = await $.tool.call({ tool: 'mcp__groups__list_groups' })
+  expect(String(listed.result ?? '').includes('- kv-api: Call the KV API directly.')).toBe(true)
+})
+
+test('read_skill refuses a file whose bytes do not match the published digest', { options: { url: URL } }, async ($, on) => {
+  const { answer } = server({ tamper: true })
+  on('http.fetch', async (_, e) => ({ value: await answer(e as unknown as Record<string, unknown>) }))
   on('tool.register', (_, e) => ({ value: { tool: `mcp__groups__${(e as { name: string }).name}` } }))
   on('command.register', () => ({ value: { command: 'groups' } }))
   on('ui.status', () => ({ value: undefined }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
 
   await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: false })
-
-  const missing = await $.tool.call({ tool: 'mcp__groups__open_group', name: 'no-such-group' })
-  expect(String(missing.deny ?? '').includes('Not found: no-such-group')).toBe(true)
-
   const skill = await $.tool.call({ tool: 'mcp__groups__read_skill', name: 'wrangler' })
-  expect(skill.deny).toBe(undefined)
-  expect(String(skill.result ?? '').includes('# Body of skill://wrangler/SKILL.md')).toBe(true)
-  expect(sent.find((s) => s.method === 'resources/read')?.name).toBe('skill://wrangler/SKILL.md')
+  expect(String(skill.deny ?? '').includes('does not match the digest')).toBe(true)
+})
 
-  const listed = await $.tool.call({ tool: 'mcp__groups__list_groups' })
-  expect(String(listed.result ?? '').includes('- kv-api: Call the KV API directly.')).toBe(true)
+test('with dedupGroupedSkills off, a grouped skill is listed and read without opening its group', { options: { url: URL, dedupGroupedSkills: false } }, async ($, on) => {
+  const { sent, answer } = server()
+  on('http.fetch', async (_, e) => ({ value: await answer(e as unknown as Record<string, unknown>) }))
+  on('tool.register', (_, e) => ({ value: { tool: `mcp__groups__${(e as { name: string }).name}` } }))
+  on('command.register', () => ({ value: { command: 'groups' } }))
+  on('ui.status', () => ({ value: undefined }))
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('prompt.compose', () => ({ sections: [] }))
+
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: false })
+  const prompt = (await $.prompt.compose(COMPOSE)) as { sections: { text: string }[] }
+  expect(prompt.sections.map((s) => s.text).join('\n').split('turnstile-spin').length - 1).toBe(2)
+  const skill = await $.tool.call({ tool: 'mcp__groups__read_skill', name: 'turnstile-spin' })
+  expect(String(skill.result ?? '').includes("Opened 'turnstile-spin'.")).toBe(false)
+  expect(sent.some((s) => s.method === 'groups/get')).toBe(false)
 })
