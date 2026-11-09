@@ -1,4 +1,4 @@
-// Renders the long write-up from markdown to a page in the same style as groups-positioning.html.
+// Renders the long write-up from markdown to a page in the same style as explainer.html.
 // The markdown is the source of truth: edit drafts/wg-findings-writeup.md, run `npm run pages:build`, commit both.
 // The Google Doc copy is made by importing the same markdown into Docs by hand.
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -56,9 +56,9 @@ const page = `<!DOCTYPE html>
 <main>
 <header class="masthead">
 <h1>${escapeHtml(title)}</h1>
-<p>The long form behind <a href="groups-positioning.html">the one-page explainer</a>: every table, every accepted answer, every limit.</p>
+<p>The long form behind <a href="explainer.html">the one-page explainer</a>: every table, every accepted answer, every limit.</p>
 <nav aria-label="Related pages">
-  <a href="groups-positioning.html">the explainer</a> &middot;
+  <a href="explainer.html">the explainer</a> &middot;
   <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals" target="_blank">the demo repository</a> &middot;
   <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals/releases/tag/traces-2026-11-08" target="_blank">the session traces</a> &middot;
   <a href="https://modelcontextprotocol.io/community/working-groups/progressive-disclosure" target="_blank">the working group's charter</a>

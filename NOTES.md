@@ -200,7 +200,7 @@ A fourth session. Reviewed the methodology against the specs and PR threads, pla
 - Audited the tracked files and the full git history for key and token shapes (none), account ids (none) and the home path (none). Removed the key-file path, the GCP project nickname and the Gemini key's last four characters from this file; the older wording remains in history as a path and a suffix.
 - Added `LICENSE` (Apache-2.0) and `NOTICE` naming the two Cloudflare sources vendored under `src/vendor`. The trace sessions keep CC-BY-4.0 in their own README.
 - Cost protection for the Workers, from the Cloudflare docs read through the `cloudflare` skill: on the Free plan a Worker stops with Error 1027 after 100,000 requests a day and bills nothing; on the Paid plan overage is billed and there is no spend cap. Added the Workers Rate Limiting binding (GA since 2025-09) to every Worker, 120 requests a minute per client IP per location, answered with 429 in `src/index.ts`, and redeployed all four. Tested: 200 sequential-ish requests from one IP got 429 from request 104; a 260-request burst in two seconds all passed, which the docs describe (counters are eventually consistent per location). The account is on the Free plan, confirmed by the user in the dashboard.
-- Wrote `groups-positioning.html`, a one-page explainer in the style of the skills-research pages, for copying into olaservo.github.io.
+- Wrote `explainer.html`, a one-page explainer in the style of the skills-research pages, for copying into olaservo.github.io.
 
 ## Refreshing when #19 or #22 change
 
@@ -216,7 +216,7 @@ Any comment for #19 or #22 is drafted to a `.md` file first and posted only afte
 
 - `drafts/pr22-comment.md`, `drafts/pr19-comment.md` (short) and `drafts/wg-findings-writeup.md` (long) await review before posting. They link to the repo by URL, which resolves once it is public.
 - The demo repo is private and audited for going public (section 11). Flip it with `gh repo edit --visibility public`, then decide whether the long write-up goes to a WG Discussion or a PR to `docs/experimental-findings.md`, which is empty on `main`.
-- `groups-positioning.html` is written but not yet copied into olaservo.github.io. That is a PR to the site repo, as the skills-research pages do it. Its skills paragraph links the published catalog-regimes page (www.olahungerford.com/skills-research). A Skills-over-MCP version of the skills research and a tools-against-skills comparison page are still listed as future work in skills-research-temp's TODO.md; when they exist, link them here too.
+- `explainer.html` is written but not yet copied into olaservo.github.io. That is a PR to the site repo, as the skills-research pages do it. Its skills paragraph links the published catalog-regimes page (www.olahungerford.com/skills-research). A Skills-over-MCP version of the skills research and a tools-against-skills comparison page are still listed as future work in skills-research-temp's TODO.md; when they exist, link them here too.
 - `writeup.html` is rendered from the markdown write-up by `npm run pages:build` and committed alongside it. The Google Docs copy is made by importing the markdown by hand and is not synced back.
 - GPT-6 Astra has not run the schema control (about 32 USD at list price).
 - Decide whether to restrict or delete the unrestricted Gemini key in AI Studio. The dialog was left open on 2026-11-07.

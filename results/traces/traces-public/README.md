@@ -1,4 +1,4 @@
-# Groups positioning traces
+# Trace sessions: groups, host tool search and all schemas up front
 
 180 Claude Code sessions in which an agent does the same 20 Cloudflare tasks three ways: through the draft MCP Groups extension, through a flat MCP server behind the host's tool search, and through the same flat server with every tool schema in the prompt. Three models: Claude Sonnet, Haiku and Opus 5.5. One session per task, model and condition. Run on 2026-11-08.
 
@@ -49,7 +49,7 @@ The sessions and index are CC-BY-4.0. Some tool results reproduce text from clou
 ```
 @misc{hungerford2026groupstraces,
   author = {Hungerford, Ola},
-  title  = {Groups positioning traces: the MCP Groups extension, host tool search and all schemas up front on 20 Cloudflare tasks},
+  title  = {Trace sessions: the MCP Groups extension, host tool search and all schemas up front on 20 Cloudflare tasks},
   year   = {2026},
   url    = {https://github.com/olaservo/mcp-progressive-disclosure-evals/releases/tag/traces-2026-11-08}
 }

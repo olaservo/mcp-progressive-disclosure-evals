@@ -1,280 +1,44 @@
-# Groups positioning demo
+# MCP progressive disclosure evals
 
-The Cloudflare API MCP server's direct tools and skills, served under each option in [progressive-disclosure-wg#22](https://github.com/modelcontextprotocol/progressive-disclosure-wg/pull/22) ("Positioning: Groups and Skills over MCP", at `5e9ff2f`). One Worker codebase, one wrangler env per option, so the options can be deployed and compared side by side.
+Measurements of the MCP working group's draft [Groups extension](https://github.com/modelcontextprotocol/progressive-disclosure-wg/pull/19) on a large real catalog: Cloudflare's API MCP server (3,036 tools) with five of Cloudflare's published skills. One Cloudflare Worker serves the catalog flat and under each option in the [positioning document](https://github.com/modelcontextprotocol/progressive-disclosure-wg/pull/22) for Groups against Skills over MCP, so the options can be compared side by side. Measured on 2026-11-07 and 2026-11-08 against #19 at `15b2a5c` and #22 at `5e9ff2f`.
 
-Groups follow the draft SEP in [progressive-disclosure-wg#19](https://github.com/modelcontextprotocol/progressive-disclosure-wg/pull/19) at `15b2a5c`: `io.modelcontextprotocol/groups`, `groups/list` and `groups/get`, with scoped primitives directly on the `groups/get` result. The WG prototype in [#20](https://github.com/modelcontextprotocol/progressive-disclosure-wg/pull/20) targets SDK 1.x; `src/groups.ts` implements the same shapes on `@modelcontextprotocol/server` 2.4.0. Skills use the SDK's native `@modelcontextprotocol/server/ext/skills`.
+Three measurements:
 
-## Sources
+1. **Tokens.** What a client reads before and after it commits to a task, per variant, at 238 and 3,036 tools.
+2. **Selection.** Sixteen models and two classifier APIs pick a group, skill or tool for 20 tasks that describe a job without naming the product.
+3. **Task completion.** A Claude Code mod that speaks the extension runs the same 20 tasks as 180 headless sessions, against the flat server behind the host's tool search and the flat server with all 238 schemas in the prompt up front.
 
-- Tools: 238 forge-generated tools from 10 products (turnstile, durableObjects, emailSending, emailRouting, workers, d1, kv, r2, queues, containers) of [cloudflare/mcp](https://github.com/cloudflare/mcp) at `4938f2f3`. The full server has 3,036 tools in 1,030 toolsets across 136 products. Cloudflare serves them behind Code Mode by default, three tools (`docs`, `search`, `execute`) at about 1,100 tokens, and exposes them as direct tools only with `?codemode=false`, which its README documents as an escape hatch for composing with another code-mode system. The `flat` variant here is that direct-tool mode. Cloudflare's own README table puts the full-schema direct list at 1,170,523 tokens for 2,594 tools, which agrees with the 1,378,777 measured below for 3,036. A comparison of groups with Code Mode itself is not part of this demo.
-- Skills: `turnstile-spin`, `durable-objects`, `cloudflare-email-service`, `workers-best-practices` and `wrangler` from [cloudflare/skills](https://github.com/cloudflare/skills) at `1a33048`.
-- `src/vendor` is committed, so nothing below is needed to run the demo. `npm run vendor` regenerates it from two checkouts that are not in this repo: cloudflare/mcp at `../servers/cloudflare-mcp` and cloudflare/skills at `.upstream/cloudflare-skills`. The script refuses a checkout at any other commit, so a `git pull` in either clone cannot change the vendored catalog unnoticed. To move to a newer commit, update `PINNED` in `scripts/vendor.mjs` and pass `--unpinned`. To recreate the checkouts at the commits used here:
+## Findings
 
-  ```bash
-  git clone https://github.com/cloudflare/mcp ../servers/cloudflare-mcp && git -C ../servers/cloudflare-mcp checkout 4938f2f3
-  git clone https://github.com/cloudflare/skills .upstream/cloudflare-skills && git -C .upstream/cloudflare-skills checkout 1a33048
-  ```
+- The flat `tools/list` for 3,036 tools is 1.38M tokens, more than any model can read. The groups list for the same catalog is 5.5k. Task load is the same whether the catalog has 238 tools or 3,036, and schemas are most of it once a group holds more than a handful of tools.
+- Groups did not change what the hosted models picked. Every hosted model landed within two tasks of itself across groups and flat modes at both sizes. The five-line skills index in the prompt moved flat scores by up to 17 of 20 and moved no groups score.
+- Templated group descriptions cost the mid-size open models up to 6 of 20 tasks at 139 groups. The SEP's guidance that descriptions carry task vocabulary is what this measures.
+- Through Claude Code, Sonnet and Opus completed 20 of 20 tasks under groups, under the host's tool search, and with all schemas up front. Groups read 2.3M input tokens per model against 16.5M to 18.4M with all schemas up front, cost one more turn, and matched the host's tool search on completion and tokens. The prompt cache held across group opens.
+- Option 2 of the positioning document works as written on the shipped SDK. One rule is missing: `skills/list` should not count as a listing for placement. Option 3's rename delivers a skill's body with no entry, digests or root for relative links.
 
-  Other paths work as arguments to `node scripts/vendor.mjs <mcp> <skills> [--full]`. `npm run vendor:full` vendors all 136 products. The committed `src/vendor` and the deployed Workers use the subset. The full build is for local runs. It bundles to 22.5 MiB, 1.6 MiB gzipped.
+Against the working group's four criteria: groups deliver initial context size and total tokens, leave completion unchanged for frontier models, add a turn, and on this catalog a host with tool search gets the token result without a protocol change. What groups add is the bundle, instructions and a skill delivered with the tools, scoped to the caller, and a path for clients without tool search.
 
-Tool calls are dry runs. They return the Cloudflare API request the tool would send and never send it.
+## Read more
 
-## Variants
+- [`explainer.html`](explainer.html): a one-page recap. [`writeup.html`](writeup.html) is the long form, rendered from [`drafts/wg-findings-writeup.md`](drafts/wg-findings-writeup.md), which is the text for the working group.
+- [`docs/results.md`](docs/results.md): every table, the notes behind each, and the limits.
+- [`docs/running.md`](docs/running.md): sources, variants, how to run the servers and the trials, the deployed Workers, the Claude Code mod.
+- [`results/traces/traces-public/`](results/traces/traces-public/): the 180 redacted sessions with their own README; also attached as a zip to the [`traces-2026-11-08`](https://github.com/olaservo/mcp-progressive-disclosure-evals/releases/tag/traces-2026-11-08) release.
+- [`drafts/`](drafts/): the comments drafted for #19 and #22, the methodology review and the plan for the real-client run.
+- [`NOTES.md`](NOTES.md): the session log, what was done in what order and what went wrong.
 
-| Variant | #22 option | Tools | Discovery | Skills |
-| :-- | :-- | :-- | :-- | :-- |
-| `flat` | Today, and Option 1's Skills server | All 238 in `tools/list` | None | SEP-2640 Skills extension |
-| `opt1` | Option 1's Groups server | Scoped | Toolset groups, and workflow groups with authored instructions | None |
-| `opt2` | Option 2, complementary | Scoped | Toolset groups, and a workflow group per skill that scopes its tools and lists the skill's `SKILL.md` in `resources` (#22 Example 3) | SEP-2640 Skills extension, with nothing in `resources/list` |
-| `opt3` | Option 3, Groups renamed to Skills | Scoped | `skills/list` and `skills/get` under `io.modelcontextprotocol/skills`. Each SKILL.md folder maps to its body as `instructions` and its other files as scoped `skill://` resources. Toolsets are skills too. | Replaced |
-
-Toolset groups mirror forge's directory tree two levels deep: `workers-api` lists `workers-scripts`, `workers-routes` and so on in its `groups`. Product groups end in `-api` because a workflow group is already called `durable-objects`, and group names share one namespace.
-
-For a client that does not declare the extension on the request, every variant falls back to a flat `tools/list` of all 238 tools. A 2025-era client never declares it, since per-request client capabilities are a 2026-07-28 feature.
-
-## Run
+## Quick start
 
 Node 24 or later.
 
 ```bash
 npm ci
-npm run dev                         # every variant at http://localhost:8787/<variant>/mcp
-npm run compare                     # the comparison below, against localhost
-npx wrangler deploy --env opt2      # one variant as its own Worker, served at /mcp
-npm run deploy:all                  # all four
-npm run compare -- --urls flat=https://pd-groups-flat.<sub>.workers.dev/mcp,opt2=...
-npm run vendor:full && npm run dev   # the 3,036-tool catalog, locally; npm run vendor restores the subset
+npm run dev        # every variant at http://localhost:8787/<variant>/mcp
+npm run compare    # the token comparison against localhost
 ```
 
-The selection trial reads keys from the environment or from a `.env` file passed as `--env`: `HF_TOKEN` (or an `hf auth login`) for open models, `ANTHROPIC_API_KEY` for `claude-*`, `OPENAI_API_KEY` for `gpt-*` and `decisions:*`, `GEMINI_API_KEY` for `gemini-*`, `MOONSHOT_API_KEY` for `kimi-*`, `TYPESAFE_API_KEY` for `jev-*`. A model id routes by prefix to its vendor's SDK; anything else goes to the Hugging Face router as `<org>/<model>:<provider>`. `--tasks v1` is the 14 product-named tasks, `--tasks v2` the 20 that describe the job without naming the product. `--mode` is `groups`, `flat` (tool names and first lines) or `flat-schemas` (the whole `tools/list` result). Since 2026-11-08 every mode also shows the server's `skills/list` index as names and descriptions, and a `{"skill":"<name>"}` answer is accepted where the matching workflow group is, plus `workers-best-practices` for the fetch-handler question and `wrangler` for the deploy and schedule tasks. `SELECT_DUMP_PROMPT=1` prints the catalog text the model sees. The runs in `results/` were:
-
-```bash
-npm run select -- --env path/to/.env --label subset-opt2-groups
-npm run select -- --env path/to/.env --url https://pd-groups-flat.olahungerford.workers.dev/mcp --mode flat --label subset-flat
-npm run select -- --env path/to/.env --url http://localhost:8787/opt2/mcp --label full-opt2-groups            # after vendor:full and npm run dev
-npm run select -- --env path/to/.env --url http://localhost:8787/flat/mcp --mode flat --models Qwen/Qwen3.5-9B:deepinfra,claude-opus-5-5 --seeds 2 --label full-flat
-OPEN=Qwen/Qwen3.5-9B:deepinfra,Qwen/Qwen3-14B:deepinfra,zai-org/GLM-5.3-Flash:baseten,deepseek-ai/DeepSeek-V4.1-Flash:baseten,Qwen/Qwen3.6-35B-A3B:deepinfra,google/gemma-4-26B-A4B-it:deepinfra
-npm run select -- --tasks v2 --models $OPEN --label subset-groups
-npm run select -- --tasks v2 --mode flat --url https://pd-groups-flat.olahungerford.workers.dev/mcp --models $OPEN --label subset-flat
-npm run select -- --tasks v2 --mode flat-schemas --url https://pd-groups-flat.olahungerford.workers.dev/mcp --models $OPEN --label subset-flat-schemas
-npm run select -- --tasks v2 --url http://localhost:8787/opt2/mcp --models $OPEN --label full-groups
-npm run select -- --tasks v2 --mode flat --url http://localhost:8787/flat/mcp --models $OPEN --label full-flat
-HOSTED=claude-opus-5-5,claude-sonnet-5-5,claude-haiku-5-5,gpt-6-astra,gpt-6.1-sol,gpt-6.1-terra,gpt-6-luna,kimi-k3.1-pro
-npm run select -- --env path/to/.env --tasks v2 --models $HOSTED,decisions:gpt-6-luna --label subset-groups-hosted
-npm run select -- --env path/to/.env --tasks v2 --mode flat --url https://pd-groups-flat.olahungerford.workers.dev/mcp --models $HOSTED --label subset-flat-hosted
-npm run select -- --env path/to/.env --tasks v2 --mode flat-schemas --url https://pd-groups-flat.olahungerford.workers.dev/mcp --models claude-opus-5-5,claude-sonnet-5-5,claude-haiku-5-5,gpt-6.1-sol,gpt-6.1-terra,gpt-6-luna --label subset-flat-schemas-hosted
-npm run select -- --env path/to/.env --tasks v2 --url http://localhost:8788/opt2/mcp --models $HOSTED,decisions:gpt-6-luna --label full-groups-hosted
-npm run select -- --env path/to/.env --tasks v2 --mode flat --url http://localhost:8788/flat/mcp --models $HOSTED --label full-flat-hosted
-npm run select -- --env path/to/.env --tasks v2 --mode flat-schemas --url https://pd-groups-flat.olahungerford.workers.dev/mcp --models kimi-k3.1-pro --label subset-flat-schemas-kimi
-npm run select -- --env path/to/.env --tasks v2 --models jev-latest --label subset-groups-jev
-npm run select -- --env path/to/.env --tasks v2 --url http://localhost:8789/opt2/mcp --models jev-latest --label full-groups-jev
-GEMINI=gemini-4-argon,gemini-3.8-flash   # the same five runs as $HOSTED, labelled <catalog>-<mode>-gemini, local server on port 8790
-# 2026-11-08, with the skill index in every prompt: the groups and flat (names) runs above repeated for $OPEN, $HOSTED, $GEMINI,
-# decisions:gpt-6-luna and jev-latest, subset against the Workers and full catalog against localhost:8787, then the schema control for the same models as before.
-npm run select -- --replay results/2026-11-07-select2-full-groups.jsonl   # re-summarize a finished run without calling any model
-```
-
-Hosted model answers can change over time. The raw answers are committed, and `--replay` rebuilds every summary from them.
-
-## Deployed
-
-Each variant runs as its own Worker, served at `/mcp`. There is no auth, and tool calls are dry runs. Each Worker answers 429 to a client past 120 requests a minute (the Workers Rate Limiting binding, keyed on the client IP, counted per Cloudflare location, approximate under bursts). The account is on the Workers Free plan, so Cloudflare stops a Worker with Error 1027 after 100,000 requests a day and bills nothing; the limiter keeps one client from using that quota up. (On the Paid plan requests past the included 10 million a month would be billed, with no spend cap, and the limiter would be the only guard.)
-
-- https://pd-groups-flat.olahungerford.workers.dev/mcp
-- https://pd-groups-opt1.olahungerford.workers.dev/mcp
-- https://pd-groups-opt2.olahungerford.workers.dev/mcp
-- https://pd-groups-opt3.olahungerford.workers.dev/mcp
-
-## Results
-
-Token counts are tiktoken `o200k_base` over the compact JSON the model would see, not a provider's tool prompt. "Upfront" is what the model reads before it commits to a task: `tools/list`, plus `groups/list` and the skill index where the variant serves them. "Task-load" is what it reads after: instructions, scoped tools and resources, and the skill body. There is one task per cloudflare/skills workflow with API tools. In `flat` the tools are already upfront. Its "Task tools" column counts tools whose names start with the workflow's product prefixes, so email shows 41 there while the workflow group curates 24. A 2025-era client gets every tool in every variant.
-
-### Subset: 238 tools, 13 top-level groups
-
-Deployed Workers, 2026-11-07 (`results/2026-11-07-deployed-tasks.txt`).
-
-| Variant | Task | Upfront tokens | Task-load tokens | Task tools | Bytes on the wire |
-| :-- | :-- | --: | --: | --: | --: |
-| flat | set up Turnstile | 157763 | 6570 | 6 | 751106 |
-| flat | inspect Durable Objects | 157763 | 1369 | 3 | 728548 |
-| flat | configure email | 157763 | 1493 | 41 | 729051 |
-| opt1 | set up Turnstile | 556 | 2190 | 6 | 12253 |
-| opt1 | inspect Durable Objects | 556 | 897 | 3 | 6768 |
-| opt1 | configure email | 556 | 7822 | 24 | 38406 |
-| opt2 | set up Turnstile | 743 | 8768 | 6 | 50012 |
-| opt2 | inspect Durable Objects | 743 | 2305 | 3 | 20564 |
-| opt2 | configure email | 743 | 9319 | 24 | 53008 |
-| opt3 | set up Turnstile | 664 | 9037 | 6 | 43111 |
-| opt3 | inspect Durable Objects | 664 | 2313 | 3 | 13776 |
-| opt3 | configure email | 664 | 9291 | 24 | 45395 |
-
-### Full catalog: 3,036 tools, 1,030 toolsets, 139 top-level groups
-
-Local `wrangler dev` after `npm run vendor:full`, 2026-11-07 (`results/2026-11-07-full-local.txt`). The raw output says 3,037 tools because every variant adds `demo_info`.
-
-| Variant | Task | Upfront tokens | Task-load tokens | Task tools | Bytes on the wire |
-| :-- | :-- | --: | --: | --: | --: |
-| flat | set up Turnstile | 1378777 | 6570 | 6 | 6180816 |
-| flat | inspect Durable Objects | 1378777 | 1369 | 3 | 6158258 |
-| flat | configure email | 1378777 | 1493 | 41 | 6158761 |
-| opt1 | set up Turnstile | 5308 | 2190 | 6 | 35191 |
-| opt1 | inspect Durable Objects | 5308 | 897 | 3 | 29706 |
-| opt1 | configure email | 5308 | 7822 | 24 | 61344 |
-| opt2 | set up Turnstile | 5495 | 8768 | 6 | 72950 |
-| opt2 | inspect Durable Objects | 5495 | 2305 | 3 | 43502 |
-| opt2 | configure email | 5495 | 9319 | 24 | 75946 |
-| opt3 | set up Turnstile | 5416 | 9037 | 6 | 66049 |
-| opt3 | inspect Durable Objects | 5416 | 2313 | 3 | 36714 |
-| opt3 | configure email | 5416 | 9291 | 24 | 68333 |
-
-## Observed
-
-- `flat` loads the skill with its digests verified. The skill names no tools, so all 238 stay in front of the model.
-- `opt1` is the smallest because its instructions are a short paraphrase of the skill. The paraphrase is a second copy of the workflow that will drift from cloudflare/skills, and it drops the skill's seven Turnstile framework guides. A host that also connects the Skills server has no way to match a group to its skill.
-- `opt2` keeps the skill verified (`skills/get` and `read` check its digests) and adds 6 tool definitions. The SDK's `SkillCatalog` lists every SKILL.md in `resources/list`, which would break the SEP's placement rule once a group scopes the same URI. A `SkillSource` with no `listResources` serves the same entries through `skills/list` only, and the rule holds. #22's Interop rules should say that `skills/list` does not count as a listing for placement.
-- `opt3` serves the rename under the existing `io.modelcontextprotocol/skills` identifier, and the SDK's `SkillsClient` rejects its `skills/list` ("skills/list returned invalid entries"). #22 does not say which identifier the rename would use; under a new one, which the SEP's Backward Compatibility section calls for on a breaking change, a SEP-2640 client would see no skills rather than crash. Either way the SKILL.md body arrives as `instructions` with no skill entry and no digests, and its seven `references/*.md` links resolve to scoped resources only if the host uses `skill://turnstile-spin/` as their base, which the response does not say.
-- In every groups variant, `tools/call` on a scoped tool works on a connection that never issued `groups/get`, as the SEP requires, and the tool stays out of that connection's `tools/list`. The comparison checks this with a dry run of `turnstile_widgets_create`.
-- `workers-best-practices` and `wrangler` have no API tools to pair with. Under `opt2` they stay plain skills. Under `opt3` they become instruction-only skills with no digests.
-- With the full catalog, the flat `tools/list` is 1.38 million tokens and 6.2 MB, more than any current context window holds. The groups listing is 5,308 to 5,495 tokens for 139 top-level groups. Task load is the same as the subset, because `groups/get` returns the same group. The saving is all in what the model reads before it picks a group, so the question at this scale is whether it picks the right one out of 139. The selection trial below tests that.
-- Once a group holds more than a few tools, schemas dominate task load. The email group's 24 schemas put `opt1` at 7,822 tokens for email, close to the 8,768 that `opt2` spends on Turnstile, where the skill body is most of the cost and the six schemas are small.
-- `groups/get` here answers with `cacheScope: "public"`, since no variant varies a group's contents by caller. The SEP expects `private` in the general case.
-- The WG problem statement asks for four measures: initial context size, total tokens, end-to-end latency and task completion. The tables above and the selection trial cover the first two. The task-completion run further down covers the other two, through a real client.
-
-## Model selection trial
-
-`scripts/select.ts` shows a model what a client sees before `groups/get`: the top-level tools and `groups/list`, as names and first description lines. It then gives the model a task and asks for one JSON answer: a group to load, a top-level tool to call, or none. The flat control shows every tool's name and first line instead, and asks for a tool. There are 14 tasks: 11 tool tasks across the 10 products, 2 knowledge tasks (review a Durable Object class, explain a Worker's fetch handler) and 1 that nothing fits, where the expected answer is none. Each task gets 5 samples, or 2 on the 3,036-tool control. The models are Qwen 3.5 9B and Qwen3 14B through the Hugging Face router on deepinfra (thinking off, temperature 0.2, one seed per sample) and Claude Opus 5.5 through the Anthropic SDK at effort low. Claude reads the catalog from a cached block, so its input-token count excludes the cache read. "Right name" counts an answer whose value is correct under either JSON key. The 9B model often returns a group name as `{"tool": ...}`, which a real client would send to `tools/call`. Run on 2026-11-07; raw answers are in `results/2026-11-07-select-*.jsonl`.
-
-| What the model read | Tokens before the task | Qwen 3.5 9B | Qwen3 14B | Claude Opus 5.5 |
-| :-- | --: | --: | --: | --: |
-| 13 groups (238-tool subset) | 442 | 45/70, right name 65/70 | 70/70 | 70/70 |
-| 139 groups (3,036-tool catalog) | 3,682 | 33/70, right name 65/70 | 65/70 | 70/70 |
-| 238 tool names, flat control | 6,720 | 61/70 | 70/70 | 64/70 |
-| 3,036 tool names, flat control | 81,414 | 22/28 | not run (40k context) | 25/28 |
-
-- Going from 13 to 139 groups did not change which group the models picked. The 14B model's five misses at 139 groups are all on the no-fit task, where it chose the server's `demo_info` tool instead of none. The 9B model's five name-level misses are on that same task at both sizes. Every other sample picked the right group.
-- The flat control agrees with the data point the SEP cites: a model that can read the whole list already selects well, and the 14B model was perfect on 238 names. Groups did not improve selection. They cut what the model reads before the task from 6,720 tokens to 442 at 238 tools and from 81,414 to 3,682 at 3,036 tools. At 3,036 tools the full schemas, 1.38M tokens, cannot be read at all.
-- The flat-control misses are on the two knowledge tasks, where the models answered none or picked `demo_info`. This first set ran before the prompt carried the skill index (see the second set), so flat mode had no skill to answer with while groups mode had the `durable-objects` workflow group. Five of Claude's six flat misses are that one task. Read the flat control here as at least as good as groups.
-- The 9B model's weak point is the answer format. 20 of 70 answers at 13 groups and 32 of 70 at 139 named the right group under the `tool` key. A host that routes on the key would issue a `tools/call` for a group name. Group and tool names share vocabulary in this catalog (`kv-api`, `kv_bulk_get`), which may contribute.
-- Where a task accepted either the skill's workflow group or the product's API group, the Qwen models chose the workflow group on 24 to 29 of 35 answers and Claude chose the API group on 20 of 35. Claude's split followed the task: the setup task went to `turnstile-spin`, rotating a leaked secret went to `turnstile-api`.
-
-### Second task set: the job without the product name
-
-20 tasks behind `--tasks v2`, one sample each. Each describes the job and not the product ("Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed"), with pairs that one group answers: routing against sending, queues against Durable Objects, KV against D1 and R2, Workers against containers. Two are knowledge tasks and two have no fit in the subset. Six open models through the Hugging Face router with thinking off: Qwen 3.5 9B, Qwen3 14B, GLM-5.3 Flash, DeepSeek V4.1 Flash, Qwen3.6 35B-A3B and Gemma 4 26B-A4B. The `flat-schemas` mode puts the whole `tools/list` result with input schemas in the prompt, 157,642 tokens at 238 tools. The 14B model's 40k context skips that and the 81k-token full name list. Against the 3,036-tool catalog the scoring also accepts the products the subset lacks that fit a task: `dns-api` and `email-auth-api` for the mail DNS check, `workflows-api` for retried background jobs, `workers-builds-api` and `builds-api` for pushing a build, `flagship-api` for feature flags, and `accounts-api` or `user-api` for rotating an account token, which the subset cannot do.
-
-The set ran twice. The first run, on 2026-11-07, showed the model tools and, in groups mode, groups. Both servers also serve five skills over the Skills extension, and a Skills-extension client would show those too, but the prompt left them out. So a knowledge task had no answer in flat mode. The second run, on 2026-11-08, added the `skills/list` index to every prompt (five names and descriptions, about 190 tokens) and a `{"skill":"<name>"}` answer. A skill counts where the same-named workflow group counts, and `workers-best-practices` counts for the fetch-handler question and `wrangler` for the deploy and schedule tasks. The tables below are the second run. Raw answers are in `results/2026-11-07-select2-*.jsonl` and `results/2026-11-08-select2-*.jsonl`, and the `.txt` summaries show every model's pick per task. With one sample per task, two cells that differ by one or two are the same result. The notes below only call out differences of three or more.
-
-| What the model read | Tokens before the task | Qwen 3.5 9B | Qwen3 14B | GLM-5.3 Flash | DeepSeek V4.1 Flash | Qwen3.6 35B-A3B | Gemma 4 26B |
-| :-- | --: | --: | --: | --: | --: | --: | --: |
-| 13 groups and 5 skills (238-tool subset) | 633 | 16/20 | 18/20 | 19/20 | 19/20 | 19/20 | 19/20 |
-| 139 groups and 5 skills (3,036-tool catalog) | 3,873 | 10/20, right name 13 | 13/20, right name 14 | 18/20 | 17/20 | 15/20 | 19/20 |
-| 238 tool names and 5 skills, flat | 6,911 | 15/20 | 19/20 | 18/20 | 20/20 | 19/20 | 19/20 |
-| 238 tools with schemas and 5 skills, flat | 157,834 | 9/20 | not run (40k context) | 19/20 | 19/20 | 16/20 | 19/20 |
-| 3,036 tool names and 5 skills, flat | 81,605 | 5/20 | not run (40k context) | 19/20 | 19/20 | 18/20 | 18/20 |
-
-- On the subset, groups and the flat name list read the same: 18 to 20 of 20 for every model but the 9B, which is at 16 and 15.
-- At 139 templated groups the mid-size open models drop: Qwen3 14B to 13, Qwen3.6 35B-A3B to 15, the 9B to 10. GLM, DeepSeek and Gemma hold 17 to 19. The misses go to neighbouring products: `pipelines-api` for a dead-letter destination, `durable-objects` for relational tables, feature flags, a nightly schedule or retried jobs, `iam-api` for rotating a token, `pages-api` for serving uploads.
-- At 3,036 tool names with the skill index, the four models whose context holds the list score 18 or 19, level with or above their 139-group scores. The 9B model falls to 5 and answers none on 14 of 20.
-- Full schemas at 238 tools did not hurt the models whose context holds them: GLM, DeepSeek, Qwen3.6 and Gemma scored 19, 19, 16 and 19 against 18, 20, 19 and 19 on names alone. The 9B model dropped to 9 and answered none on 9 tasks. Qwen3.6's three schema misses are all `skill:workers-best-practices` for a queue or R2 task.
-- What the skill index changed, by three or more tasks: the 9B model at 13 groups went from 10 to 16, and Qwen3 14B at 238 names from 15 to 19. At 3,036 names, GLM went from 16 to 19, Qwen3.6 from 13 to 18 and Gemma from 13 to 18. No groups-mode cell for the five larger models moved by more than one. Eleven of the twenty tasks accept a skill as an answer, and the models take it: 3 to 11 skill answers per model on the 238 flat names, and both knowledge tasks went to a skill from every model in every mode.
-- Three flat tasks expect a specific tool (rotate the secret, a lifecycle rule, a schedule). A model that answers with the product's list tool first is scored as a miss, and so is `skill:workers-best-practices` for a Workers task, where `wrangler` is accepted.
-- Where a task accepts either the workflow (as a group or as a skill) or the product's API group, the open models took the workflow on 4 to 7 of 7 at 13 groups.
-
-The same set with hosted models through their vendors' SDKs, each at its lowest reasoning setting: Claude Opus, Sonnet and Haiku 5.5 at effort low, GPT-6 Astra and GPT-6.1 Sol at reasoning effort low, GPT-6.1 Terra and GPT-6 Luna at none, Kimi K3.1 Pro at low, Gemini 4 Argon and 3.8 Flash at thinking level low. The last two columns are classifiers, which take the group names with first description lines, the skills not already named by a group, and none as the choices, and return a pick with probabilities and no generated text, so they run in groups mode only: the OpenAI Decisions API on GPT-6 Luna, and TypeSafe's Jev through its System One endpoint (`jev-latest`, resolved to 1.14.0). Astra was kept off the schema control at about 32 USD. The OpenAI account ran out of credits partway through the schema control; Terra's and Luna's rows in that file are from a re-run after credits were added. Raw answers are in `results/2026-11-08-select2-*-hosted.jsonl`, `*-gemini.jsonl`, `*-kimi.jsonl` and `*-jev.jsonl`.
-
-| What the model read | Opus 5.5 | Sonnet 5.5 | Haiku 5.5 | GPT-6 Astra | GPT-6.1 Sol | GPT-6.1 Terra | GPT-6 Luna | Gemini 4 Argon | Gemini 3.8 Flash | Kimi K3.1 Pro | Decisions API (Luna) | Jev 1.14 |
-| :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: |
-| 13 groups and 5 skills | 20/20 | 20/20 | 19/20 | 20/20 | 20/20 | 20/20 | 20/20 | 19/20 | 20/20 | 19/20 | 19/20 | 20/20 |
-| 139 groups and 5 skills | 20/20 | 19/20 | 19/20 | 20/20 | 20/20 | 19/20 | 18/20 | 19/20 | 18/20 | 18/20 | 20/20 | 16/20 |
-| 238 tool names and 5 skills, flat | 20/20 | 20/20 | 18/20 | 20/20 | 20/20 | 18/20 | 20/20 | 20/20 | 20/20 | 20/20 | | |
-| 238 tools with schemas and 5 skills, flat | 19/20 | 20/20 | 17/20 | not run | 18/20 | 19/20 | 20/20 | 20/20 | 19/20 | 18/20 | | |
-| 3,036 tool names and 5 skills, flat | 20/20 | 20/20 | 17/20 | 19/20 | 18/20 | 17/20 | 20/20 | 20/20 | 20/20 | 20/20 | | |
-
-- Every hosted model scores 17 to 20 of 20 in every mode at both sizes, and no model moves by three or more between modes. Groups did not change what the hosted models picked. They changed how much the models read first: 633 or 3,873 tokens instead of 6,911 or 81,605.
-- The misses at 139 groups repeat across models: `iam-api` for rotating an account token (Sonnet, Haiku, Terra and Argon; IAM has no token tools), `durable-objects` for retried background jobs (Luna and Kimi), `workers-best-practices` for the nightly schedule (Kimi and Flash), `hyperdrive-api` for relational tables (Luna). The flat misses are list-first picks (`turnstile_widgets_list` before rotating the secret, `r2_buckets_list` before a lifecycle rule, from Terra) and `workers-best-practices` for a queue or deploy task (Astra, Sol, Terra, Haiku).
-- What the skill index changed for the hosted models, by three or more tasks: Haiku went from 7 to 18 at 238 names and from 1 to 17 at 3,036. At 3,036 names Opus and Sonnet went from 16 to 20, Luna from 15 to 20, Flash from 17 to 20. Jev went from 13 to 16 at 139 groups. No groups-mode cell moved by more than one. In the first run Haiku answered `demo_info`, the first tool listed, on most flat tasks. With the skill index it answered a skill on 7 and 10 of 20 and `demo_info` on two. The first run's collapse came from a prompt with no non-tool answer for the knowledge tasks, not from the model. On the repeated schema control Haiku scored 17, against 4 before.
-- The classifiers: the Decisions API scored 19 and 20 of 20 at about 600 and 4,000 input tokens per call and no output tokens; both runs together cost about a cent. Jev scored 20 at 13 groups and 16 at 139, where its misses follow surface words: `pipelines-api` for "the orders pipeline", `sql-api` for SQL joins, `workflows-api` for a nightly schedule. Enumerated choices rule out the key confusion the small chat models show.
-- The 158k-token schema list with the skill index: Opus 19, Sonnet 20, Haiku 17, Sol 18, Terra 19, Luna 20, Argon 20, Flash 19, Kimi 18, each within two of its names-only score. Every miss on it is a skill answer for a tool task (`workers-best-practices` or `wrangler` for a queue, deploy or containers task) or a list-first pick. Anthropic, Kimi and Argon reported cache reads throughout (2.9M to 5.2M tokens per model on this control); the OpenAI chat completions API reported none even with a `prompt_cache_key`, so the GPT-6 input counts are uncached.
-- Where a task accepts either the workflow or the API group, Opus, Sonnet, the four GPT-6 models and the Decisions classifier all split 3 workflow to 4 API group at 13 groups, Haiku 6 to 1, Kimi 4 to 3. At 139 groups the hosted models lean to the workflow, 3 to 3 up to 6 to 0.
-
-### Task completion through a real client
-
-The selection trial asks a model where it would look. This run has an agent do the task. `scripts/trace-run.ts` runs each of the 20 tasks (`scripts/trace-tasks.ts`, the second set reworded with concrete names: account `demo`, bucket `demo-uploads`, a Durable Object class to review) as a headless Claude Code session, `claude -p` with the built-in file and shell tools disallowed, under three conditions:
-
-| Condition | What the model has |
-| :-- | :-- |
-| `groups` | `mods/groups` against the opt2 Worker: `list_groups`, `open_group`, `read_skill`, a system-prompt section listing the 13 groups and 5 skills, scoped tools registered as deferred on open. No MCP server connected. |
-| `flat-toolsearch` | The flat Worker as an MCP server, its 238 tools behind Claude Code's own tool search (the host's default for MCP tools), plus the mod against the same Worker for the skill index and `read_skill`. |
-| `flat-all-schemas` | The same, with `ENABLE_TOOL_SEARCH=false` so all 238 schemas sit in the prompt, about 305k tokens as the provider renders them. |
-
-Three models, Claude Sonnet, Haiku and Opus 5.5 at default effort, one session per task, 180 sessions on 2026-11-08, no errors. `scripts/trace-score.ts` reads the session files: "done" is a per-task rubric over the calls made (the right tool with the right arguments, or the right skill loaded and the answer showing it), "first step" is whether the first group opened, skill read or tool called fits the task, as in the selection trial. Token counts are the provider's, summed over turns, cache reads included. Full table with every call: `results/traces/traces-public/summary.md`.
-
-| Condition | Model | Done | First step | Median turns | Median wall s | Cost USD | Input tokens | From cache |
-| :-- | :-- | --: | --: | --: | --: | --: | --: | --: |
-| groups | Sonnet 5.5 | 20/20 | 20/20 | 5 | 16 | 1.18 | 2.37M | 92% |
-| groups | Haiku 5.5 | 16/20 | 17/20 | 5 | 16 | 0.09 | 2.36M | 88% |
-| groups | Opus 5.5 | 20/20 | 20/20 | 5 | 19 | 2.66 | 2.32M | 90% |
-| flat-toolsearch | Sonnet 5.5 | 20/20 | 18/20 | 3 | 13 | 1.67 | 1.96M | 83% |
-| flat-toolsearch | Haiku 5.5 | 18/20 | 19/20 | 4 | 13 | 0.10 | 2.15M | 84% |
-| flat-toolsearch | Opus 5.5 | 20/20 | 20/20 | 4 | 16 | 3.56 | 2.22M | 84% |
-| flat-all-schemas | Sonnet 5.5 | 20/20 | 19/20 | 3 | 12 | 3.53 | 16.5M | 97% |
-| flat-all-schemas | Haiku 5.5 | 19/20 | 20/20 | 3 | 13 | 1.33 | 16.6M | 97% |
-| flat-all-schemas | Opus 5.5 | 20/20 | 20/20 | 3 | 15 | 7.72 | 18.4M | 97% |
-
-- Sonnet and Opus completed every task under every condition. Haiku missed 4, 2 and 1; its groups-mode misses are answers given without opening a group or reading a skill (the class review, the nightly schedule, the fetch-handler question), one attempt to use the disallowed Bash tool, and one session that wandered into the host's `Workflow` tool.
-- Groups cost a turn. Opening a group is a round trip, and the nested toolset groups often cost two (`turnstile-api`, then `turnstile-widgets`): median 5 turns against 3 or 4, and 3 to 4 seconds more wall time per task.
-- Loading every schema up front reads seven to eight times the input tokens of groups, but costs only three times as much. The provider's cache explains the gap: the 305k-token prefix is written once per model and read from cache on every turn of every session, 97% of all input. Groups and the host's tool search land in the same band, 2.0M to 2.4M tokens per model.
-- On this catalog, the host's tool search does for the flat server what groups do: same completion, same token band, one fewer turn. The deferred scoped tools in groups mode also load through ToolSearch, 17 to 21 calls per model against 16 to 19. What groups add is the bundle, instructions and a skill delivered with the tools, and a path for clients that have no tool search.
-- Three tasks depend on data a dry-run server never returns. `push-build` needs a file the session cannot read, `purge-sessions` needs the key names a list would return, `instances-with-data` needs namespace ids. Every model took the right first step and said why it stopped; Sonnet and one Opus session uploaded a placeholder bundle, two Opus sessions filled a bulk delete with made-up key names, the other Opus session refused to. The rubrics accept the first step for these three.
-- Prefix sizes, from the session usage: about 42k tokens for groups (Claude Code's system prompt, the mod's section and three helper tools), about 25k for tool search (the 238 tools as deferred names), about 305k with all schemas up front. In groups mode, opening a group and registering its deferred tools added 2.7k tokens on top of the cached prefix; with tool search off, a registration rewrites the prefix.
-- The headless sessions load the user-level Claude Code plugins and hooks of this machine, the same overhead in every arm. One model family on one host, 20 tasks, one sample each. The `flat-toolsearch` arm is Claude Code's tool search; another host's would differ.
-
-Raw session files are not committed: they embed the full system prompt and account ids. `scripts/trace-redact.ts` keeps the `user` and `assistant` rows, strips paths and ids, and refuses to write anything key-shaped; the result is `results/traces/traces-public/`, 180 files with the scrubbed index and its own README, which `npm run trace:score -- --label traces-public` re-scores. The same folder is attached as a zip to the release `traces-2026-11-08`.
-
-### Limits of the trial
-
-- The first set has five samples per task, identical on every task for the 14B model and Claude and on 9 of 14 for the 9B model. The second set has one. Read each cell as tasks, not answers, and two cells that differ by one or two as the same result. More tasks, not more samples, would add information.
-- The first set names the product (Turnstile, D1, KV, R2, queue, container), and the toolset group descriptions are templated around the product name ("Call the Cloudflare queues API directly. Use to read or change queues resources in an account."), so it measures keyword routing. The SEP says a group description SHOULD carry the task vocabulary a user would use; these do not, so the drop at 139 groups on the indirect tasks measures what templated descriptions cost, not what groups cost. Rewriting the descriptions for the confusable products and re-running is the obvious next step.
-- The first set and the 2026-11-07 run of the second set showed no skill index, so their flat modes had no answer for a knowledge task. The 2026-11-08 run fixed that in every mode.
-- Accepted answers are this demo's judgment. For the 3,036-tool catalog: `pipelines-api` for a dead-letter destination and `hyperdrive_create` for relational data were left as misses; `workflows-api` for retried jobs and `flagship-api` for feature flags were accepted, and `email-domains-api` was added after the first hosted run. For skills: `wrangler` is accepted for the deploy and schedule tasks and `workers-best-practices` for the fetch-handler question, and `workers-best-practices` is a miss for a queue or deploy task. A different reader might draw these lines elsewhere.
-- The flat control shows tool names and first description lines, 6,911 tokens at 238 tools with the skill index. The `flat-schemas` mode tested the full `tools/list`, 157,834 tokens with the skill index, for five open and nine hosted models. At 3,036 tools the schemas are 1.38M tokens and cannot be tested. Astra skipped the schema control.
-- Every server here has `demo_info` as its first tool, a tool about the server itself. In the 2026-11-07 flat runs Haiku 5.5 and the 9B model answered it on most tasks, and stopped once a skill answer was available. A real server's first tool is something else, so the collapse those runs showed is not a finding about either model.
-- The hosted models ran at their lowest reasoning setting. Haiku at default effort was not tested.
-- The answer format (`group`, `skill`, `tool` or `none` keys) is this script's design. A host would expose `groups/get` as a tool call, so the 9B model's key confusion may not carry over.
-- Toolset group names and descriptions are this demo's, not Cloudflare's. The `-api` suffix and the templated sentences are a naming choice, and so is the overlap between `durable-objects` and `durable-objects-api`.
-- Token counts are compact JSON. A provider's tool prompt renders schemas differently, and forge-generated schemas are verbose, which inflates the flat numbers relative to a hand-written server. The `opt1` task load depends on how long this demo's paraphrase is.
-- Selection only. Nothing here measures whether the model then completes the task, how many turns it takes or how long it waits.
-- One server, one vendor's catalog, three workflows, models pinned by name on one provider on one day.
-
-## Results files
-
-`results/` holds the raw `npm run compare` output and the `select-*` trial output.
-
-- `2026-11-07-deployed.txt`: the four current variants on the deployed Workers, characters / 4, Turnstile only.
-- `2026-11-07-deployed-tasks.txt` and `2026-11-07-full-local.txt`: the tables above, tiktoken, three tasks.
-- `2026-11-07-select-*.jsonl` and `.txt`: the first task set's raw answers and summaries.
-- `2026-11-07-select2-*.jsonl` and `.txt`: the second task set's first run, without the skill index, with the per-task matrix.
-- `2026-11-08-select2-*.jsonl` and `.txt`: the second task set with the skill index, every mode and model. The tables above come from these.
-
-Re-runs that reproduced an earlier file were not kept, and the 2026-11-02 file from the build against the earlier drafts was removed. This repository starts from a single commit; the private predecessor repository holds the earlier history.
-
-## Explainer and write-up pages
-
-`groups-positioning.html` is a one-page recap for readers who will not open this README: what was built, the three findings, and where groups sit against the host's tool search. It is a self-contained page in the style of the other research pages at olaservo.github.io and is meant to be copied there.
-
-`writeup.html` is the long write-up rendered from `drafts/wg-findings-writeup.md` by `npm run pages:build` (the `marked` package, with the same page style). The markdown is the source: edit it, rebuild, commit both. A Google Docs copy is made by importing the same markdown file into Docs, which accepts markdown directly; that copy is managed by hand and is not synced back.
+The four variants are also deployed, with no auth and dry-run tools, at `https://pd-groups-{flat,opt1,opt2,opt3}.olahungerford.workers.dev/mcp`. Everything else is in [`docs/running.md`](docs/running.md).
 
 ## Licence
 
-Apache-2.0, see `LICENSE`. `src/vendor` carries generated tool definitions from cloudflare/mcp and skill files from cloudflare/skills, both Apache-2.0; `NOTICE` names them. The trace sessions under `results/traces/traces-public` are CC-BY-4.0 and say so in their README.
-
-## Layout
-
-- `src/groups.ts`: the groups extension (negotiation, list and get, `-32002` for an unknown group), with the method names switchable for Option 3's rename.
-- `src/catalog.ts`: toolset tree from forge paths, workflow-to-tool mapping, Option 1's authored instructions.
-- `src/variants.ts`: builds the server for each variant.
-- `src/index.ts`: Worker entry; `/<variant>/mcp`, and `/mcp` for the deployment's own `VARIANT`.
-- `scripts/compare.ts`: runs each task against every variant with a 2026-07-28 client and a 2025-era client.
-- `scripts/select.ts`: the model selection trial. Shows a model what a client sees before `groups/get` and asks which group it would load. Two task sets, three catalog modes, one `ask*` function per vendor SDK.
-- `scripts/vendor.mjs`: copies the forge tools and skills into `src/vendor`, the subset by default or everything with `--full`.
-- `scripts/trace-tasks.ts`, `scripts/trace-run.ts`, `scripts/trace-score.ts`, `scripts/trace-redact.ts`: the task-completion run through headless Claude Code, its rubrics, scorer and redaction. `npm run trace:run -- --condition groups|flat-toolsearch|flat-all-schemas --models ...`, `npm run trace:score`, `npm run trace:redact`.
-- `mods/groups`: a Claude Code mod that speaks the Groups extension to one of the deployed Workers over HTTP. It registers `list_groups`, `open_group` and `read_skill`, adds a system-prompt section listing the groups and skills, and on `open_group` registers the group's scoped tools as deferred definitions and routes their calls to `tools/call`. `claude plugin validate mods/groups`, `claude plugin test mods/groups`; load with `claude --plugin-dir mods/groups`. Options: `url`, `deferScoped`, `listSkills`. This is the client for the task-completion follow-up in `drafts/traces-followup-plan-2026-11-08.md`.
+Apache-2.0, see `LICENSE`. `src/vendor` carries generated tool definitions from cloudflare/mcp and skill files from cloudflare/skills, both Apache-2.0; `NOTICE` names them. The trace sessions are CC-BY-4.0 and say so in their README.
