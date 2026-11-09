@@ -83,7 +83,7 @@
 
 <details>
 <summary>How the server was built <span>&middot; the four variants and the three positioning options</span></summary>
-<p>One Cloudflare Worker on the TypeScript SDK 2.4.0 served the catalog four ways. A 238-tool subset from 10 products is deployed; the full 3,036 tools run locally. Toolset groups mirror the generator's directory tree, with templated descriptions ("Call the Cloudflare workers API directly. Use to read or change workers resources in an account."). Each workflow skill that uses API tools is also a group that scopes those tools and lists the SKILL.md. Tool calls were dry runs that return the request they would send.</p>
+<p>One Cloudflare Worker on the TypeScript SDK 2.4.0 served the catalog four ways. A 238-tool subset from 10 products is deployed; the full 3,036 tools from 136 products run locally. Toolset groups mirror the generator's directory tree two levels deep, with templated descriptions ("Call the Cloudflare workers API directly. Use to read or change workers resources in an account."). Each workflow skill with API tools is also a group that scopes them and lists the SKILL.md. Tool calls were dry runs that return the request they would send.</p>
 <table>
 <tr><th>Variant</th><th>Positioning option</th><th>Tools</th><th>Discovery</th><th>Skills</th></tr>
 <tr><td><code>flat</code></td><td>Today, and Option 1's Skills server</td><td>All in <code>tools/list</code></td><td>None</td><td>SEP-2640</td></tr>
@@ -124,14 +124,14 @@
 
 <details>
 <summary>The token counts <span>&middot; upfront and task load for every variant</span></summary>
-<p>tiktoken <code>o200k_base</code> over compact JSON. "Upfront" is everything read before the model commits to a task: <code>tools/list</code>, <code>groups/list</code> and the skill index. "Task load" is <code>groups/get</code> plus the skill body, for the Turnstile, Durable Objects and email workflows.</p>
+<p>tiktoken <code>o200k_base</code> over compact JSON. "Upfront" is what the model reads before it commits to a task: <code>tools/list</code>, plus <code>groups/list</code> and the skill index where the variant serves them. "Task load" is <code>groups/get</code> plus the skill body, for the Turnstile, Durable Objects and email workflows.</p>
 <table>
 <tr><th>Variant</th><th class="n">Upfront, 238 tools</th><th class="n">Upfront, 3,036 tools</th><th>Task load: Turnstile / DO / email</th></tr>
 <tr><td>flat</td><td class="n">157,763</td><td class="n">1,378,777</td><td>6,570 / 1,369 / 1,493</td></tr>
 <tr><td>opt1</td><td class="n">556</td><td class="n">5,308</td><td>2,190 / 897 / 7,822</td></tr>
 <tr><td>opt2</td><td class="n">743</td><td class="n">5,495</td><td>8,768 / 2,305 / 9,319</td></tr>
 </table>
-<p>Option 3 is left out of the table: it measures within 100 tokens of Option 2 at every point, since it serves the same bundles under other method names. At 3,036 tools the flat list is 6.2 MB. Task load does not change with catalog size, so the saving is all in the read before the pick, and the question at scale becomes whether the model picks the right group out of 139. Once a group holds 20-odd tools, schemas are most of the load: the email group's 24 schemas cost <code>opt1</code> 7,822 tokens, close to the 8,768 that <code>opt2</code> spends on Turnstile, where the skill body is most of the cost. Option 1's paraphrase of the skill is the cheapest at 2,190 tokens and drops the skill's seven framework guides.</p>
+<p>Option 3 is left out of the table: it measures within 100 tokens of Option 2 at every point, since it serves the same bundles under other method names. At 3,036 tools the flat list is 6.2 MB. Task load does not change with catalog size, so the saving is all in the read before the pick, and the question at scale is whether the model picks the right group out of 139. Once a group holds 20-odd tools, schemas are most of the load: the email group's 24 schemas cost <code>opt1</code> 7,822 tokens, close to the 8,768 that <code>opt2</code> spends on Turnstile, where the skill body is most of the cost. Option 1's paraphrase of the skill is the cheapest at 2,190 tokens and drops the skill's seven framework guides.</p>
 </details>
 
 <p><strong>2. Groups did not measurably change what tool or skill the model picked.</strong> I gave sixteen models twenty tasks that describe a job without naming the product ("Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed") and asked where they would look first. Every hosted model scored similarly whether it saw 13 groups, 139 groups, 238 flat tool names or 3,036 of them. The draft already says this in its own evidence section: groups keep unread schemas out of context, but they do not beat using a flat list when it came to selection.</p>
@@ -143,11 +143,11 @@
 </table>
 <p class="footnote" style="margin-top:0.8rem">One run of 20 tasks per cell. A 95% interval on 19 of 20 spans 15 to 20, so a gap of one or two tasks is noise, and every hosted gap is one or two in a mixed direction. The 5-task gap is Qwen 3.5 9B, which scores 10 on 139 groups and 5 on 3,036 names. The full scores are in the section below.</p>
 
-<p>One tweak that did change the selection result between lines was adding the five-line skills index to the prompt, which lifted the 'flat list' variant scores by up to 17 of 20 for some models.</p>
+<p>Adding the five-line skills index to the prompt was a control fix, since without it a knowledge task had no non-tool answer in flat mode. It lifted flat scores by up to 17 of 20 and moved six groups-mode cells by two to six. The 81,605-token flat row is tool names with first lines; the full flat <code>tools/list</code> at 3,036 tools is 1.38M.</p>
 
 <details>
 <summary>The selection trial <span>&middot; every model, every mode, and what moved the scores</span></summary>
-<p>The script shows a model what a client sees before <code>groups/get</code> (top-level tools, <code>groups/list</code> and <code>skills/list</code> as names and first lines), gives it a task, and asks for one pick: a group, a skill, a top-level tool, or none. The flat control shows every tool's name and first line instead, with the same skill index. A third mode puts the whole <code>tools/list</code> result in the prompt, 158k tokens at 238 tools. Hosted models ran at their lowest reasoning setting. Correct picks out of 20; the accepted answers are in the script.</p>
+<p>The script shows a model what a client sees before <code>groups/get</code> (top-level tools, <code>groups/list</code> and <code>skills/list</code> as names and first lines), gives it a task, and asks for one pick: a group, a skill, a top-level tool, or none. The flat control shows every tool's name and first line instead, with the same skill index. A <code>flat-schemas</code> mode puts the whole <code>tools/list</code> result in the prompt, 158k tokens at 238 tools. Hosted models ran at their lowest reasoning setting. Correct picks out of 20; the accepted answers are in the script.</p>
 <table>
 <tr><th>Model</th><th class="n">13 groups</th><th class="n">139 groups</th><th class="n">238 names</th><th class="n">238 with schemas</th><th class="n">3,036 names</th></tr>
 <tr class="sub"><td colspan="6">tokens the model read</td></tr>
@@ -175,10 +175,11 @@
 <tr><td>Qwen 3.5 9B</td><td class="n">16</td><td class="n">10</td><td class="n">15</td><td class="n">9</td><td class="n">5</td></tr>
 </table>
 <ul>
-<li>A first run without <code>skills/list</code> in the prompt had flat scores up to 17 tasks lower (Haiku 7 and 1 of 20, against 18 and 17 with it) and groups scores within one. Eleven tasks accept a skill, and the models take it. A client with groups but no Skills extension would see a different picture from one with both.</li>
+<li>Eleven tasks accept a skill, and the models take it. A client with groups but no Skills extension would see a different picture from one with both.</li>
+<li>Option 2 lists each workflow in both <code>groups/list</code> and <code>skills/list</code>, and five models in groups mode picked the skill without its group on 2 to 4 of 20 tool tasks. The scorer counts it correct; a real client on that path loads a SKILL.md naming tools it was never given.</li>
 <li>The misses at 139 groups land on neighbours: <code>pipelines-api</code> for a dead-letter destination, <code>durable-objects</code> for relational tables, <code>iam-api</code> for rotating a token. The SEP says a description should carry task vocabulary; mine carry only the product name.</li>
 <li>Full schemas did not hurt the models that fit them. Every such model is within two of its names-only score on the 158k-token list.</li>
-<li>Where a task accepts either the workflow group or the product's API group, the hosted models split about evenly at 13 groups and lean to the workflow at 139.</li>
+<li>Where a task accepts either the workflow or the product's API group, the hosted models split about evenly at 13 groups and lean to the workflow at 139.</li>
 <li>The OpenAI Decisions API routed on the one-liners for about a cent in total. Jev's misses at 139 follow shared words.</li>
 </ul>
 </details>
@@ -236,7 +237,7 @@
 <figcaption>The same twenty tasks through Claude Code. Groups and the host's tool search land in the same band. Loading every schema costs seven to eight times the tokens and three times the money.</figcaption>
 </figure>
 
-<p>Groups cost one extra turn, because opening a bundle is a round trip.  Nested bundles sometimes cost two. The prompt cache held when opening bundles.  Registering a group's tools added about 2.7 thousand tokens on a 42 thousand-token cached prefix, which is the behavior the draft's caching section predicts. Claude Code's own tool search, with nothing from the extension, reached the same completion and the same token band using one less turn.</p>
+<p>Groups cost a turn and 3 to 4 seconds per task. Opening a bundle is a round trip, and 5 of the 10 product groups on the subset hold only child groups, so those tasks open two. The prompt cache held when opening bundles.  Registering a group's tools added about 2.7 thousand tokens on a 42 thousand-token cached prefix, which is the behavior the draft's caching section predicts. Claude Code's own tool search, with nothing from the extension, reached the same completion and the same token band using one less turn.</p>
 
 <details>
 <summary>The completion run <span>&middot; conditions, per-model results, cost</span></summary>
@@ -248,45 +249,47 @@
 <tr><td>all schemas up front</td><td>The same with tool search off, so all 238 schemas sit in the prompt, about 305k tokens.</td></tr>
 </table>
 <table>
-<tr><th>Condition</th><th>Model</th><th class="n">Done</th><th class="n">Median turns</th><th class="n">Cost USD</th><th class="n">Input tokens</th><th class="n">From cache</th></tr>
-<tr><td>groups</td><td>Sonnet 5.5</td><td class="n">20/20</td><td class="n">5</td><td class="n">1.18</td><td class="n">2.37M</td><td class="n">92%</td></tr>
-<tr><td>groups</td><td>Haiku 5.5</td><td class="n">16/20</td><td class="n">5</td><td class="n">0.09</td><td class="n">2.36M</td><td class="n">88%</td></tr>
-<tr><td>groups</td><td>Opus 5.5</td><td class="n">20/20</td><td class="n">5</td><td class="n">2.66</td><td class="n">2.32M</td><td class="n">90%</td></tr>
-<tr><td>host tool search</td><td>Sonnet 5.5</td><td class="n">20/20</td><td class="n">3</td><td class="n">1.67</td><td class="n">1.96M</td><td class="n">83%</td></tr>
-<tr><td>host tool search</td><td>Haiku 5.5</td><td class="n">18/20</td><td class="n">4</td><td class="n">0.10</td><td class="n">2.15M</td><td class="n">84%</td></tr>
-<tr><td>host tool search</td><td>Opus 5.5</td><td class="n">20/20</td><td class="n">4</td><td class="n">3.56</td><td class="n">2.22M</td><td class="n">84%</td></tr>
-<tr><td>all schemas up front</td><td>Sonnet 5.5</td><td class="n">20/20</td><td class="n">3</td><td class="n">3.53</td><td class="n">16.5M</td><td class="n">97%</td></tr>
-<tr><td>all schemas up front</td><td>Haiku 5.5</td><td class="n">19/20</td><td class="n">3</td><td class="n">1.33</td><td class="n">16.6M</td><td class="n">97%</td></tr>
-<tr><td>all schemas up front</td><td>Opus 5.5</td><td class="n">20/20</td><td class="n">3</td><td class="n">7.72</td><td class="n">18.4M</td><td class="n">97%</td></tr>
+<tr><th>Condition</th><th>Model</th><th class="n">Done</th><th class="n">Median turns</th><th class="n">Median wall s</th><th class="n">Cost USD</th><th class="n">Input tokens</th><th class="n">From cache</th></tr>
+<tr><td>groups</td><td>Sonnet 5.5</td><td class="n">20/20</td><td class="n">5</td><td class="n">16</td><td class="n">1.18</td><td class="n">2.37M</td><td class="n">92%</td></tr>
+<tr><td>groups</td><td>Haiku 5.5</td><td class="n">16/20</td><td class="n">5</td><td class="n">16</td><td class="n">0.09</td><td class="n">2.36M</td><td class="n">88%</td></tr>
+<tr><td>groups</td><td>Opus 5.5</td><td class="n">20/20</td><td class="n">5</td><td class="n">19</td><td class="n">2.66</td><td class="n">2.32M</td><td class="n">90%</td></tr>
+<tr><td>host tool search</td><td>Sonnet 5.5</td><td class="n">20/20</td><td class="n">3</td><td class="n">13</td><td class="n">1.67</td><td class="n">1.96M</td><td class="n">83%</td></tr>
+<tr><td>host tool search</td><td>Haiku 5.5</td><td class="n">18/20</td><td class="n">4</td><td class="n">13</td><td class="n">0.10</td><td class="n">2.15M</td><td class="n">84%</td></tr>
+<tr><td>host tool search</td><td>Opus 5.5</td><td class="n">20/20</td><td class="n">4</td><td class="n">16</td><td class="n">3.56</td><td class="n">2.22M</td><td class="n">84%</td></tr>
+<tr><td>all schemas up front</td><td>Sonnet 5.5</td><td class="n">20/20</td><td class="n">3</td><td class="n">12</td><td class="n">3.53</td><td class="n">16.5M</td><td class="n">97%</td></tr>
+<tr><td>all schemas up front</td><td>Haiku 5.5</td><td class="n">19/20</td><td class="n">3</td><td class="n">13</td><td class="n">1.33</td><td class="n">16.6M</td><td class="n">97%</td></tr>
+<tr><td>all schemas up front</td><td>Opus 5.5</td><td class="n">20/20</td><td class="n">3</td><td class="n">15</td><td class="n">7.72</td><td class="n">18.4M</td><td class="n">97%</td></tr>
 </table>
 <ul>
-<li>Haiku's misses under groups are answers given without opening a group or reading a skill.</li>
+<li>Haiku's groups misses are answers given without opening a group or reading a skill.</li>
 <li>Three tasks need data a dry-run server cannot return (a file, key names, namespace ids). Every model took the right first step and said why it stopped, which the rubric accepts.</li>
 <li>With tool search off, a mid-session tool registration rewrites the cached prefix; with it on, a group's deferred tools add about 2.7k tokens to a 42k prefix.</li>
+<li>The mod registers a group's tools as deferred, so Claude Code loaded them through ToolSearch after each <code>open_group</code>, 19 to 21 calls per model against 16 to 19 in the tool-search arm. The run shows groups composed with host tool search and does not test a client without it.</li>
+<li>The mod reads a group's SKILL.md with <code>resources/read</code> and inlines it on open. It never calls <code>skills/get</code> and checks no digests, so the run does not exercise the positioning document's interop rules 1 and 2.</li>
 <li>The sessions, reduced to their conversation rows, are in the repository under <code>results/traces/traces-public/</code> and re-score with the committed scripts.</li>
 </ul>
 </details>
 
 <h3>So what do groups solve?</h3>
 
-<p>Against the working group's own four criteria: groups deliver initial context size and total tokens, leave task completion unchanged for frontier models, and add a turn in exchange for each harness not needing to invent its own solution for reducing token bloat. On this catalog a host with tool search gets the token result. What groups add that tool search cannot is the <em>bundle</em>: a server-authored set of tools with the instructions and the skill that go with them, delivered together, scoped to the caller, and a path for clients that doesn't require tool search or other bespoke solutions.  It also provides the same solution for skills served over MCP, and any other MCP primitive besides just tools. Harnesses are still working out how to handle large numbers of file-based skills (<a href="https://www.olahungerford.com/skills-research/skills_catalog_regimes.html" target="_blank">how harnesses bound their agent skills catalog</a>), so a server-side bundle is one more reason to serve skills over MCP.</p>
+<p>Against the working group's own four criteria: groups deliver initial context size and total tokens, leave task completion unchanged for frontier models, and add a turn in exchange for each harness not needing to invent its own solution for reducing token bloat. On this catalog a host with tool search gets the token result. What groups add that tool search cannot is the <em>bundle</em>: a server-authored set of tools with the instructions and the skill that go with them, delivered together, scoped to the caller. The draft also argues groups give a client without tool search a path; this run did not test that. It also provides the same solution for skills served over MCP, and any other MCP primitive besides just tools. Harnesses are still working out how to handle large numbers of file-based skills (<a href="https://www.olahungerford.com/skills-research/skills_catalog_regimes.html" target="_blank">how harnesses bound their agent skills catalog</a>), so a server-side bundle is one more reason to serve skills over MCP.</p>
 
 <p>Two things the server author controls turned out to matter more than the mechanism itself. Group <em>descriptions</em> directly influenced the whole selection: my templated one-liners ("Call the Cloudflare queues API directly") cost the mid-size open models up to six of twenty tasks at 139 groups, which is what the draft's guidance warns about. And a server that offers both a workflow group and a plain toolset group for one product splits the models between them, so it should say in the descriptions which to open when.</p>
 
 <details>
 <summary>What the code showed about the positioning options <span>&middot; for the working group's two documents</span></summary>
 <ul>
-<li><strong>Option 2 works as the positioning document's Example 3 describes.</strong> The <code>turnstile-spin</code> group scopes the six Turnstile tools and lists <code>skill://turnstile-spin/SKILL.md</code>; a host confirms it with <code>skills/get</code> and reads it with digests verified.</li>
-<li><strong>Placement meets the SDK's default.</strong> The SDK's <code>SkillCatalog</code> lists every SKILL.md in <code>resources/list</code>, so a group that scopes one breaks the placement rule. A skill source without <code>listResources</code> fixes it. Neither document says whether <code>skills/list</code> counts as a listing. Proposed sentence for both: "For placement, <code>skills/list</code> is not a listing. A skill a group lists stays in <code>skills/list</code>."</li>
+<li><strong>Option 2 works as the positioning document's Example 3 describes.</strong> The <code>turnstile-spin</code> group scopes the six Turnstile tools and lists <code>skill://turnstile-spin/SKILL.md</code>; <code>scripts/compare.ts</code> confirms it with <code>skills/get</code> and reads it with digests verified.</li>
+<li><strong>Placement meets the SDK's default.</strong> The SDK's <code>SkillCatalog</code> lists every SKILL.md in <code>resources/list</code>, so a group that scopes one breaks the placement rule. A skill source without <code>listResources</code> fixes it. The draft's placement rule names only the three core listings, so <code>skills/list</code> is outside it by its text. What neither document says is whether a skill a group lists stays in <code>skills/list</code>. The skill-only picks above bear on it.</li>
 <li><strong>Scoped tools are callable without <code>groups/get</code></strong> and stay out of that connection's <code>tools/list</code>. A client that does not declare the extension gets every tool.</li>
-<li><strong>Option 3 flattens the skill.</strong> When a SKILL.md folder becomes <code>instructions</code> plus scoped resources, the skill loses its entry (name, description, frontmatter), its digests, and the root that its relative <code>references/*.md</code> links resolve against. That is the concrete form of the mapping contract the document lists as Option 3's cost.</li>
-<li><strong>Naming.</strong> The positioning document's prose and the accepted decision in <code>docs/decisions.md</code> say <code>group/list</code>; the examples and the SEP say <code>groups/list</code>.</li>
+<li><strong>Option 3 flattens the skill.</strong> When a SKILL.md folder becomes <code>instructions</code> plus scoped resources, the skill loses its entry (name, description, frontmatter), its digests, and the root that its relative <code>references/*.md</code> links resolve against. That is the concrete form of the mapping contract the document lists as Option 3's cost. Options 1 and 3 were compared on wire shape and tokens only.</li>
+<li><strong>Naming.</strong> The positioning document's prose and the accepted decision in <code>docs/decisions.md</code> say <code>group/list</code>; the examples and the SEP say <code>groups/list</code>. A commenter asked about the same drift <a href="https://github.com/modelcontextprotocol/progressive-disclosure-wg/pull/19#issuecomment-6735714636" target="_blank">on #19 on 2026-11-09</a>.</li>
 </ul>
 </details>
 
 <h3>Caveats</h3>
 
-<p>This experiment only included one sample per task. The group names and descriptions are mine, not Cloudflare's. The full completion run using Claude Code used one model family on one host.  It also tested against a dry-run server that returns the request a tool would send and never any data. The 'flat list' baseline is a mode Cloudflare itself ships only as an escape hatch; the server's default is Code Mode, which I did not compare. The <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals/blob/main/drafts/wg-findings-writeup.md" target="_blank">write-up</a> has every table, every accepted answer and every limit, and the <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals/releases/tag/traces-2026-11-08" target="_blank">180 sessions</a> are also there to review.</p>
+<p>This experiment only included one sample per task. The group names and descriptions are mine, not Cloudflare's. The full completion run using Claude Code used one model family on one host.  It also tested against a dry-run server that returns the request a tool would send and never any data. The 'flat list' baseline is a mode Cloudflare itself ships only as an escape hatch; the server's default is Code Mode, which I did not compare, and I did not test per-caller scoping. The <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals/blob/main/drafts/wg-findings-writeup.md" target="_blank">write-up</a> has every table, every accepted answer and every limit, and the <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals/releases/tag/traces-2026-11-08" target="_blank">180 sessions</a> are also there to review.</p>
 
 <p class="footnote">Measured 2026-11-07 and 2026-11-08 against progressive-disclosure-wg#19 at <code>15b2a5c</code> and #22 at <code>5e9ff2f</code>, on the TypeScript SDK 2.4.0 and Claude Code 2.1.319. Tool counts and schemas are from cloudflare/mcp at <code>4938f2f3</code>; skills from cloudflare/skills at <code>1a33048</code>. Token counts in the first finding are tiktoken over compact JSON; in the third they are the provider's own.</p>
 </main>

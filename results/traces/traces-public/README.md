@@ -30,7 +30,7 @@ The server is a dry run of the Cloudflare API: every tool returns the HTTP reque
 | flat-toolsearch | 20/20 | 18/20 | 20/20 | 2.0M to 2.2M | 3 to 4 |
 | flat-all-schemas | 20/20 | 19/20 | 20/20 | 16.5M to 18.4M | 3 |
 
-Sonnet and Opus completed every task under every condition. Groups cut input tokens seven to eight times against loading all schemas up front and matched the host's tool search, at one more turn. Opening a group and registering its tools as deferred definitions added about 2.7k tokens on a 42k-token cached prefix.
+Sonnet and Opus completed every task under every condition. Groups read 2.32M to 2.37M input tokens per model, the host's tool search 1.96M to 2.22M and all schemas up front 16.5M to 18.4M, at one more turn and 3 to 4 seconds more per task. In the groups condition the scoped tools were registered as deferred and loaded through Claude Code's tool search, 19 to 21 calls per model. Opening a group and registering its tools as deferred definitions added about 2.7k tokens on a 42k-token cached prefix.
 
 ## What this set is not
 

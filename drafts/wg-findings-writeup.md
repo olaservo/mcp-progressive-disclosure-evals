@@ -5,12 +5,13 @@ Draft for a progressive-disclosure-wg Discussion or a PR to `docs/experimental-f
 ## Summary
 
 - Option 2 of #22 works as Example 3 describes it on the shipped TypeScript SDK 2.4.0. One gap is that the SDK lists every SKILL.md in `resources/list`, which the placement rule forbids once a group scopes the same URI. One sentence saying `skills/list` is not a listing for placement would close it.
-- At 3,036 tools the flat `tools/list` is 1.38M tokens. `groups/list` for 139 top-level groups is 5.5k. Task load does not grow with the catalog, and schemas are most of it once a group holds more than a handful of tools.
-- Groups did not measurably change what sixteen models picked for 20 indirect tasks. Each hosted model scored similarly across groups and flat modes at both catalog sizes.  What groups changed the most is the read before the task: 3,873 tokens instead of 81,605.
+- At 3,036 tools the flat `tools/list` is 1.38M tokens. `groups/list` for 139 top-level groups is 5.5k. What the model reads after picking a group, its tool schemas and the skill body, is the same at either catalog size, and schemas are most of it once a group holds more than a handful of tools.
+- Groups did not measurably change what sixteen models picked for 20 indirect tasks. Each hosted model scored similarly across groups and flat modes at both catalog sizes. What groups changed is the read before the task: 3,873 tokens for 139 groups against 81,605 for 3,036 tool names with first lines, or 1.38M for the full flat `tools/list`.
 - Templated group descriptions cost the mid-size open models up to 6 of 20 tasks at 139 groups. That measures the SEP's guidance on `description`, not groups.
-- The `skills/list` index mattered more than groups against flat. Adding it moved flat scores by up to 17 tasks and no groups score by more than one.
-- Through Claude Code, 180 sessions: Sonnet and Opus completed 20 of 20 under groups, under the host's tool search, and with all 238 schemas in the prompt up front. Groups read 2.3M input tokens per model against 16.5M to 18.4M with all schemas up front, cost one more turn, and matched the host's tool search on completion and tokens. The prompt cache held across group opens.
-- Against the problem statement's four criteria: groups deliver initial context size and total tokens, leave completion unchanged for frontier models, and add a turn. On this catalog a host with tool search gets the token result. What groups add is the server-authored bundle, instructions and a skill with the tools, and a path for clients that doesn't require tool search or other bespoke solutions.
+- The `skills/list` index is a control, not a finding. Adding it moved flat scores by up to 17 of 20 and six groups-mode cells by two to six.
+- Option 2 lists each workflow twice, in `groups/list` and in `skills/list`. In groups mode, five models picked the skill without its group on 2 to 4 of 20 tool tasks, and the scorer counts that correct. On a real client that path loads a SKILL.md naming tools the client was not given.
+- Through Claude Code, 180 sessions: Sonnet and Opus completed 20 of 20 under groups, under the host's tool search, and with all 238 schemas in the prompt up front. Groups read 2.32M to 2.37M input tokens per model, the host's tool search 1.96M to 2.22M, and all schemas up front 16.5M to 18.4M. Groups cost one more turn and 3 to 4 seconds more per task. The prompt cache held across group opens.
+- Against the problem statement's four criteria: groups deliver initial context size and total tokens, leave completion unchanged for frontier models, and add a turn. On this catalog a host with tool search gets the token result. What groups add is the server-authored bundle: instructions and a skill delivered with the tools. The run did not test a client without tool search, since the mod's scoped tools loaded through Claude Code's own tool search. It shows groups composed with host tool search.
 
 ## Setup
 
@@ -27,16 +28,16 @@ One Cloudflare Worker on `@modelcontextprotocol/server` 2.4.0 served Cloudflare'
 
 Deterministic, reproduced locally, against the deployed Workers, and from a fresh clone.
 
-- **Option 2 works as Example 3 describes.** The `turnstile-spin` group scopes the six Turnstile tools and lists `skill://turnstile-spin/SKILL.md`; a host confirms it with `skills/get` and reads it with digests verified.
-- **Placement meets the SDK's default.** `SkillCatalog` lists every SKILL.md in `resources/list`, so a group that scopes one breaks the placement rule. A `SkillSource` without `listResources` fixes it. Neither document says whether `skills/list` counts as a listing. Proposed sentence for both: "For placement, `skills/list` is not a listing. A skill a group lists stays in `skills/list`."
+- **Option 2 works as Example 3 describes.** The `turnstile-spin` group scopes the six Turnstile tools and lists `skill://turnstile-spin/SKILL.md`; `scripts/compare.ts` confirms it with `skills/get` and reads it with digests verified.
+- **Placement meets the SDK's default.** The SDK's `SkillCatalog` lists every SKILL.md in `resources/list`, so a group that scopes one breaks the placement rule. A `SkillSource` without `listResources` fixes it. The SEP's placement rule names only `tools/list`, `prompts/list` and `resources/list`, so by its text `skills/list` is not a listing. What neither document says is whether a skill a group lists stays in `skills/list`. Proposed sentence for both: "A skill a group lists stays in `skills/list`." The skill-only picks below bear on it.
 - **Scoped tools are callable without `groups/get`** and stay out of that connection's `tools/list`. A client that does not declare the extension gets every tool.
 - **Option 3 flattens the skill.** When a SKILL.md folder becomes `instructions` plus scoped resources, the skill loses its entry (name, description, frontmatter), its digests, and the root that its relative `references/*.md` links resolve against. That is the concrete form of the mapping contract #22 lists as Option 3's cost.
-- **Option 1's paraphrase is cheapest and drifts.** 2,190 task-load tokens against 8,768 for Option 2, and it drops the skill's seven framework guides.
-- **Naming.** #22's prose and the accepted decision in `docs/decisions.md` say `group/list`; the examples and the SEP say `groups/list`.
+- **Option 1's paraphrase is cheapest and is a second copy.** 2,190 task-load tokens against 8,768 for Option 2. The paraphrase is mine; it drops the skill's seven framework guides and would have to track cloudflare/skills by hand. Options 1 and 3 were compared on wire shape and tokens only. The selection and completion runs put Option 2 against flat.
+- **Naming.** #22's prose and the accepted decision in `docs/decisions.md` say `group/list`; the examples and the SEP say `groups/list`. A commenter asked about the same drift on #19 on 2026-11-09 ([comment](https://github.com/modelcontextprotocol/progressive-disclosure-wg/pull/19#issuecomment-6735714636)).
 
 ## Tokens
 
-tiktoken `o200k_base` over compact JSON. "Upfront" is everything read before the model commits to a task: `tools/list`, `groups/list` and the skill index. "Task load" is `groups/get` plus the skill body, for the Turnstile, Durable Objects and email workflows.
+tiktoken `o200k_base` over compact JSON. "Upfront" is what the model reads before it commits to a task: `tools/list`, plus `groups/list` and the skill index where the variant serves them. "Task load" is `groups/get` plus the skill body, for the Turnstile, Durable Objects and email workflows.
 
 | Variant | Upfront, 238 tools | Upfront, 3,036 tools | Task load: Turnstile / DO / email |
 | :-- | --: | --: | :-- |
@@ -71,8 +72,9 @@ Twenty tasks describe the job without naming the product ("Serve 50 GB of user u
 Correct picks out of 20. Every number is a count of tasks.
 
 - **Groups did not measurably change which product the hosted models picked.** Each is within two tasks of itself across the four modes, and the direction is mixed: at the full catalog four hosted models score higher with groups, five higher flat, one ties. With one run of 20 tasks per cell, a 95% interval on 19 of 20 spans 15 to 20, so these gaps are noise. What changed is the read before the task. This agrees with the finding the SEP already cites.
-- **Templated descriptions hurt the mid-size open models at 139 groups.** Qwen3 14B 18 to 13, Qwen3.6 19 to 15, the 9B 16 to 10. No single row is outside the noise on its own; the evidence is that the four mid-size open models all move the same way while the hosted models do not. The misses land on neighbours: `pipelines-api` for a dead-letter destination, `durable-objects` for relational tables, `iam-api` for rotating a token. The SEP says a description should carry task vocabulary; these carry only the product name.
-- **The skill index mattered more than groups against a flat list.** A first run without `skills/list` in the prompt had flat scores up to 17 tasks lower (Haiku 7 and 1 of 20, against 18 and 17 with it) and groups scores within one. Eleven tasks accept a skill, and the models take it. A client with groups but no SEP-2640 would see a different picture from one with both.
+- **Templated descriptions hurt the mid-size open models at 139 groups.** Qwen3 14B 18 to 13, Qwen3.6 19 to 15, the 9B 16 to 10. No single row is outside the noise on its own; the evidence is that the four mid-size open models all move the same way while the hosted models do not. The misses at 139 groups land on neighbours: `pipelines-api` for a dead-letter destination, `durable-objects` for relational tables, `iam-api` for rotating a token. The SEP says a description should carry task vocabulary; mine carry only the product name.
+- **The skill index is a control.** The first run had no `skills/list` in the prompt, so a knowledge task had no non-tool answer in flat mode and two small models answered the first tool listed. Adding the index raised flat scores by up to 17 tasks (Haiku 7 and 1 of 20, against 18 and 17) and moved six groups-mode cells by two to six (Qwen 3.5 9B 10 to 16 at 13 groups; Gemini 3.8 Flash 20 to 18 at 139). Eleven tasks accept a skill, and the models take it, so a client with groups but no SEP-2640 would see a different picture from one with both.
+- **Models pick the skill without the group.** Option 2 lists `turnstile-spin`, `durable-objects` and `cloudflare-email-service` in both `groups/list` and `skills/list`, and the script accepts a skill wherever its group is accepted. On tasks that need the workflow's tools, Gemini 3.8 Flash answered the skill alone on 4 of 20 at 139 groups, DeepSeek V4.1 Flash and Qwen 3.5 9B on 3, Kimi K3.1 Pro and Opus 5.5 on 2. A real Option 2 client on that path loads a SKILL.md naming tools absent from its `tools/list`, the "batteries not included" failure the SEP describes. Two ways out: the server omits grouped skills from `skills/list` for clients that negotiated groups, which the SEP allows since a view may vary by negotiated extensions, or the host opens the listing group when it loads a grouped skill.
 - **Full schemas did not hurt the models that fit them.** Every such model is within two of its names-only score on the 158k-token list. The 9B drops to 9 there and to 5 on 3,036 names, where it stops answering.
 - **Overlapping groups split the models.** Where a task accepts either the workflow or the product's API group, the hosted models split about evenly at 13 groups and lean to the workflow at 139. A server that offers both should say in the descriptions which to open when.
 - **Classifiers route on the one-liners.** The OpenAI Decisions API over the group and skill names scored 19 and 20 for about a cent in total. Jev scored 20 and 16; its misses follow shared words.
@@ -89,26 +91,27 @@ The twenty tasks, reworded with concrete identifiers, ran as headless Claude Cod
 
 "Done" is a per-task rubric over the calls made: the right tool with the right arguments, or the right skill loaded and the answer showing it. Tokens are the provider's, summed over turns, cache reads included.
 
-| Condition | Model | Done | Median turns | Cost USD | Input tokens | From cache |
-| :-- | :-- | --: | --: | --: | --: | --: |
-| groups | Sonnet 5.5 | 20/20 | 5 | 1.18 | 2.37M | 92% |
-| groups | Haiku 5.5 | 16/20 | 5 | 0.09 | 2.36M | 88% |
-| groups | Opus 5.5 | 20/20 | 5 | 2.66 | 2.32M | 90% |
-| flat, host tool search | Sonnet 5.5 | 20/20 | 3 | 1.67 | 1.96M | 83% |
-| flat, host tool search | Haiku 5.5 | 18/20 | 4 | 0.10 | 2.15M | 84% |
-| flat, host tool search | Opus 5.5 | 20/20 | 4 | 3.56 | 2.22M | 84% |
-| flat, all schemas up front | Sonnet 5.5 | 20/20 | 3 | 3.53 | 16.5M | 97% |
-| flat, all schemas up front | Haiku 5.5 | 19/20 | 3 | 1.33 | 16.6M | 97% |
-| flat, all schemas up front | Opus 5.5 | 20/20 | 3 | 7.72 | 18.4M | 97% |
+| Condition | Model | Done | Median turns | Median wall s | Cost USD | Input tokens | From cache |
+| :-- | :-- | --: | --: | --: | --: | --: | --: |
+| groups | Sonnet 5.5 | 20/20 | 5 | 16 | 1.18 | 2.37M | 92% |
+| groups | Haiku 5.5 | 16/20 | 5 | 16 | 0.09 | 2.36M | 88% |
+| groups | Opus 5.5 | 20/20 | 5 | 19 | 2.66 | 2.32M | 90% |
+| flat, host tool search | Sonnet 5.5 | 20/20 | 3 | 13 | 1.67 | 1.96M | 83% |
+| flat, host tool search | Haiku 5.5 | 18/20 | 4 | 13 | 0.10 | 2.15M | 84% |
+| flat, host tool search | Opus 5.5 | 20/20 | 4 | 16 | 3.56 | 2.22M | 84% |
+| flat, all schemas up front | Sonnet 5.5 | 20/20 | 3 | 12 | 3.53 | 16.5M | 97% |
+| flat, all schemas up front | Haiku 5.5 | 19/20 | 3 | 13 | 1.33 | 16.6M | 97% |
+| flat, all schemas up front | Opus 5.5 | 20/20 | 3 | 15 | 7.72 | 18.4M | 97% |
 
 - Sonnet and Opus completed every task every way. Haiku's groups misses are answers given without opening a group or reading a skill.
-- Groups cost a turn: opening a bundle is a round trip, and nested bundles sometimes cost two.
-- All schemas up front reads seven to eight times the tokens of groups at three times the cost; the provider cache served 97% of that prefix. Groups and the host's tool search sit in the same 2.0M to 2.4M band.
-- The host's tool search does for the flat server what groups do here, one turn faster. What groups add is the bundle, instructions and a skill delivered with the tools, and a path for clients that doesn't require tool search or other bespoke solutions.
+- Groups cost a turn and 3 to 4 seconds per task. Opening a bundle is a round trip, and 5 of the 10 product groups on the subset hold only child groups, so those tasks open two. The SEP says servers SHOULD keep hierarchies shallow and that groups pay disclosure once; a one-level tree was not run.
+- All schemas up front reads seven to eight times the tokens of groups at three times the cost; the provider cache served 97% of that prefix. Groups read 2.32M to 2.37M input tokens per model and the host's tool search 1.96M to 2.22M; groups cost less in dollars because more of their input came from cache, 88% to 92% against 83% to 84%.
+- The host's tool search does for the flat server what groups do here, one turn faster. What groups add is the bundle: instructions and a skill delivered with the tools. The mod registers a group's tools as deferred, so Claude Code loaded them through ToolSearch after each `open_group`, 19 to 21 calls per model against 16 to 19 in the tool-search arm. The run shows groups composed with host tool search and does not test a client without it.
+- The mod reads a group's SKILL.md with `resources/read` and inlines it on open. It never calls `skills/get` and checks no digests, so the run does not exercise #22's interop rules 1 and 2, and it loads the skill on group open, which the SEP says a group fetch does not do.
 - The prompt cache held across group opens: registering a group's tools as deferred added about 2.7k tokens on a 42k-token cached prefix. With tool search off, a mid-session registration rewrites the prefix.
 - Three tasks need data a dry-run server cannot return (a file, key names, namespace ids). Every model took the right first step and said why it stopped, which the rubric accepts.
 
-The sessions, reduced to their conversation rows, are in the repo under `results/traces/traces-public/` and re-score with the committed scripts.
+The sessions, reduced to their conversation rows, are in the repository under `results/traces/traces-public/` and re-score with the committed scripts.
 
 ## Limits
 
@@ -118,7 +121,8 @@ The sessions, reduced to their conversation rows, are in the repo under `results
 - Every server lists a `demo_info` tool first, and two small models answered it on most flat tasks until a skill answer existed in an index of skills it could read.
 - The completion run is one model family on one host, with the host's user-level plugins loaded in every arm alike, and the tool-search arm is Claude Code's implementation.
 - The flat baseline is a mode Cloudflare documents as an escape hatch and not the recommended way to use the server.
-- Groups against Code Mode was not measured.
+- Groups against Code Mode was not measured, and neither was per-caller scoping: every group answers the same to every caller.
+- Selection measures the first top-level pick only. Navigation into nested groups shows only in the completion traces.
 - Trial token counts are compact JSON, and generated schemas are verbose. OpenAI reported no cache hits on its calls, so the GPT-6 input counts are uncached.
 
 ## What is next
@@ -126,6 +130,7 @@ The sessions, reduced to their conversation rows, are in the repo under `results
 1. Task-vocabulary descriptions for the confusable groups and a re-run at 139, to see whether the SEP's description guidance closes the gap.
 2. The completion run on a second harness (such as Pi) and non-Claude models.
 3. Groups against Cloudflare's own Code Mode, and tasks against a server that answers with data.
+4. A one-level hierarchy on the subset, and the groups client with scoped tools registered resident and host tool search off.
 
 ## Reproduce
 
