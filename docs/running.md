@@ -108,7 +108,7 @@ Headless runs launched from inside a Claude Code session need `--allowedTools "m
 
 ## The Claude Code mod
 
-`mods/groups` speaks the Groups extension to one of the deployed Workers over HTTP. It registers `list_groups`, `open_group` and `read_skill`, adds a system-prompt section listing the groups and skills, and on `open_group` registers the group's scoped tools as deferred definitions and routes their calls to `tools/call`. Options: `url`, `deferScoped`, `listSkills`.
+`mods/groups` implements the Groups extension against one of the deployed Workers over HTTP. It registers `list_groups`, `open_group` and `read_skill`, adds a system-prompt section listing the groups and skills, and on `open_group` registers the group's scoped tools as deferred definitions and routes their calls to `tools/call`. Options: `url`, `deferScoped`, `listSkills`.
 
 ```bash
 claude plugin validate mods/groups

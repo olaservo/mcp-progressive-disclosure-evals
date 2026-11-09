@@ -1,7 +1,7 @@
 import type { EngineInterface, Register } from 'claude-code'
 
 /**
- * A Claude Code mod that speaks the Groups extension (progressive-disclosure-wg#19 at 15b2a5c) to a
+ * A Claude Code mod that implements the Groups extension (progressive-disclosure-wg#19 at 15b2a5c) to a
  * server over streamable HTTP, the way the SEP's "Client behavior after groups/get" section sketches:
  * client-side helper tools the model calls, and scoped tools registered mid-session once a group is open.
  *

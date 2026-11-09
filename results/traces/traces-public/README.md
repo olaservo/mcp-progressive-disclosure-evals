@@ -8,7 +8,7 @@ The sessions are evidence for a write-up on the Model Context Protocol working g
 
 | Folder | What the agent had |
 | :-- | :-- |
-| `groups/` | A Claude Code mod that speaks the Groups extension over HTTP to a server with 13 groups and 5 skills. `open_group` fetches a group and registers its tools; no MCP server is connected directly. |
+| `groups/` | A Claude Code mod that implements the Groups extension over HTTP to a server with 13 groups and 5 skills. `open_group` fetches a group and registers its tools; no MCP server is connected directly. |
 | `flat-toolsearch/` | The same 238 tools served flat as an ordinary MCP server, left behind Claude Code's own tool search (the host's default for MCP tools), plus the skill index. |
 | `flat-all-schemas/` | The same flat server with tool search off, so all 238 schemas sit in the prompt, about 305k tokens. |
 
@@ -40,7 +40,7 @@ It is evidence for one comparison, not a general dataset. One model family (Clau
 
 The raw Claude Code session files carry the host's full system prompt (including the author's personal instructions file), hook output, account identifiers and local paths. This set keeps only the conversation rows, drops the fields that name the machine or the request, replaces the home directory, project path and temp paths with placeholders, and was scanned for known key and token formats before publication. Every email address in the sessions is one the model invented for a placeholder task.
 
-## Licences
+## Licenses
 
 The sessions and index are CC-BY-4.0. Some tool results reproduce text from cloudflare/skills (SKILL.md bodies) and cloudflare/mcp (tool schemas), both Apache-2.0; that text keeps its licence and attribution.
 
