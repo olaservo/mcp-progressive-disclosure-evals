@@ -154,9 +154,9 @@ Three models, Claude Sonnet, Haiku and Opus 5.5 at default effort, one session p
 | flat-all-schemas | Opus 5.5 | 20/20 | 20/20 | 3 | 15 | 7.72 | 18.4M | 97% |
 
 - Sonnet and Opus completed every task under every condition. Haiku missed 4, 2 and 1; its groups-mode misses are answers given without opening a group or reading a skill (the class review, the nightly schedule, the fetch-handler question), one attempt to use the disallowed Bash tool, and one session that wandered into the host's `Workflow` tool.
-- Groups cost a turn. Opening a group is a round trip, and the nested toolset groups often cost two (`turnstile-api`, then `turnstile-widgets`): median 5 turns against 3 or 4, and 3 to 4 seconds more wall time per task. The second open comes from this demo's tree. `productToolsets()` in `src/catalog.ts` gives a product group only the tools at the product's root path, and 5 of the 10 subset products (Turnstile, Durable Objects, KV, R2, containers) have none there, so the parent holds only child groups. The SEP says servers SHOULD keep hierarchies shallow and that groups pay disclosure once; a one-level tree was not run.
+- Groups cost a turn. Opening a group is a round trip, and the nested toolset groups often cost two (`turnstile-api`, then `turnstile-widgets`): median 5 turns against 3 or 4, and 3 to 4 seconds more wall time per task. The second open comes from this demo's tree. `productToolsets()` in `src/catalog.ts` gives a product group only the tools at the product's root path, and 5 of the 10 subset products (Turnstile, Durable Objects, KV, R2, containers) have none there, so the parent holds only child groups. The SEP says servers SHOULD keep hierarchies shallow and that groups pay disclosure once; the second round runs a one-level tree.
 - Loading every schema up front reads seven to eight times the input tokens of groups, but costs only three times as much. The provider's cache explains the gap: the 305k-token prefix is written once per model and read from cache on every turn of every session, 97% of all input. Groups read 2.32M to 2.37M input tokens per model and the host's tool search 1.96M to 2.22M; groups cost less in dollars because more of their input came from cache, 88% to 92% against 83% to 84%.
-- On this catalog, the host's tool search does for the flat server what groups do: same completion, a nearby token band, one fewer turn. `register.ts` registers scoped tools with `isDeferred` true by default, so they load through ToolSearch after each `open_group`, 19 to 21 calls per model against 16 to 19. The run shows groups composed with host tool search and does not test a client without it. What groups add is the bundle: instructions and a skill delivered with the tools.
+- On this catalog, the host's tool search does for the flat server what groups do: same completion, a nearby token band, one fewer turn. `register.ts` registers scoped tools with `isDeferred` true by default, so they load through ToolSearch after each `open_group`, 19 to 21 calls per model against 16 to 19. The run shows groups composed with host tool search; the second round tests a client without it. What groups add is the bundle: instructions and a skill delivered with the tools.
 - The mod does not use the Skills extension. `open_group` reads the listed SKILL.md with `resources/read` and inlines it in the tool result; it never calls `skills/get` and checks no digests. The run does not exercise #22's interop rules 1 and 2 or Example 3's steps 3 and 4, and it loads the skill on group open, which the SEP says a group fetch does not do. The `skills/get` and digest checks in this repository are in `scripts/compare.ts`.
 - Three tasks depend on data a dry-run server never returns. `push-build` needs a file the session cannot read, `purge-sessions` needs the key names a list would return, `instances-with-data` needs namespace ids. Every model took the right first step and said why it stopped; Sonnet and one Opus session uploaded a placeholder bundle, two Opus sessions filled a bulk delete with made-up key names, the other Opus session refused to. The rubrics accept the first step for these three.
 - Prefix sizes, from the session usage: about 42k tokens for groups (Claude Code's system prompt, the mod's section and three helper tools), about 25k for tool search (the 238 tools as deferred names), about 305k with all schemas up front. In groups mode, opening a group and registering its deferred tools added 2.7k tokens on top of the cached prefix; with tool search off, a registration rewrites the prefix.
@@ -164,10 +164,123 @@ Three models, Claude Sonnet, Haiku and Opus 5.5 at default effort, one session p
 
 Raw session files are not committed: they embed the full system prompt and account ids. `scripts/trace-redact.ts` keeps the `user` and `assistant` rows, strips paths and ids, and refuses to write anything key-shaped; the result is `results/traces/traces-public/`, 180 files with the scrubbed index and its own README, which `npm run trace:score -- --label traces-public` re-scores. The same folder is attached as a zip to the release `traces-2026-11-08`.
 
+## Second round, 2026-11-09: the recommended build, a client without tool search, and the duplicate listing
+
+The second round tested three questions from `drafts/rerun-plan.md`. A: does a groups server built the way #19 recommends behave differently from the as-generated one, and how do both compare with flat behind host tool search? B: what do groups cost in a client without tool search? C: does listing a grouped workflow in both `groups/list` and `skills/list` cost anything?
+
+### What changed
+
+- `opt2-rec`, a new variant, deployed at `https://pd-groups-opt2-rec.olahungerford.workers.dev/mcp`. Every group is top level. A product stays one group unless it has more than 25 tools or about 15k tokens of schemas; a larger one is split by its second-level directories, and areas under 4 tools join a `-core` group. On the subset that splits `workers` into 8 groups and `r2` into 3, for 22 groups; on the full catalog it gives 271. Product descriptions carry task vocabulary. The subset's 19 were written by hand; the full catalog's 249 others were written by Sonnet 5.5 from each group's tool descriptions (`scripts/describe-groups.ts`) and the ones round one's misses landed on were reviewed by hand. Each workflow group's description says when to open it against the product group ("open `turnstile-api` to list or edit existing widgets"). A client that negotiated groups gets only `workers-best-practices` and `wrangler` in `skills/list`; that listing is served with `cacheScope: "private"`.
+- `opt2` is kept as the as-generated baseline. `demo_info` is gone from every variant; its text is in the server `instructions`. Every selection prompt's "Top-level tools" line changed with it, so the flat-names and as-generated arms were re-run. The flat-schemas control was not; its 2026-11-08 file still shows `demo_info`.
+- The mod (0.2.0) no longer inlines the SKILL.md when a group opens. `open_group` returns the instructions, the tools and the skill's URI. `read_skill` fetches the entry with `skills/get`, reads the file and refuses it unless its SHA-256 matches the published digest. With `dedupGroupedSkills` (default on), a skill that is also a group is listed once, as the group, and `read_skill` on it opens the group first. Group opens are logged to the file `GROUPS_LOG` names.
+- The knowledge rubrics (`state-holder`, `review-alarms`, `fetch-handler`) now require a `read_skill` call. Round-one rows, which have no mod version in the index, keep the old rule, so the committed round-one traces re-score unchanged.
+
+### Tokens
+
+`results/2026-11-09-deployed.txt`. Upfront is 1,221 tokens for `opt2-rec` against 674 for `opt2` (both now without `demo_info`), since the listing has 22 groups with longer descriptions. Task load for the three workflows: Turnstile 8,781, Durable Objects 2,322, email 11,661 with 33 tools (the bundle now includes the sending subdomains' DNS tools and the routing settings). Per group, from `groups/get`:
+
+| Group | Tools | Task-load tokens |
+| :-- | --: | --: |
+| turnstile-spin | 6 | 2,211 |
+| durable-objects | 3 | 953 |
+| cloudflare-email-service | 33 | 10,168 |
+| turnstile-api | 6 | 2,062 |
+| durable-objects-api | 3 | 830 |
+| email-sending-api | 21 | 6,127 |
+| email-routing-api | 20 | 6,082 |
+| workers-core | 20 | 11,351 |
+| workers-deployments | 4 | 1,282 |
+| workers-domains | 4 | 1,010 |
+| workers-legacy | 18 | 36,196 |
+| workers-previews | 10 | 24,278 |
+| workers-routes | 5 | 868 |
+| workers-secrets | 5 | 2,230 |
+| workers-versions | 6 | 23,759 |
+| d1-api | 11 | 3,240 |
+| kv-api | 13 | 4,406 |
+| r2-buckets | 35 | 13,360 |
+| r2-objects | 5 | 2,462 |
+| r2-super-slurper | 12 | 3,334 |
+| queues-api | 25 | 6,548 |
+| containers-api | 14 | 8,137 |
+
+`workers-legacy`, `workers-previews` and `workers-versions` stay large after the split because their individual schemas are large: six `workers-versions` tools are 24k tokens. A one-level split by directory cannot make those smaller. On the full catalog the recommended `groups/list` is 16,538 tokens in the selection prompt, against 3,856 for the as-generated 139 groups and 81,586 for 3,036 tool names.
+
+### Selection
+
+The 20 v2 tasks, one sample, the skill index in every prompt, as in the 2026-11-08 run. Four arms: as-generated (`opt2`), recommended (`opt2-rec`), recommended with every skill listed (`--list-all-skills`, which reads `skills/list` as a client that declares only the Skills extension), and flat names. The recommended server's split groups are accepted where they hold the task's tools: `r2-buckets` for CORS and lifecycle, `workers-versions`, `workers-deployments` or `workers-legacy` for pushing a build, `workers-core` for the schedule, and on the full catalog `dns-records`, the four `builds-*` groups and `accounts-tokens` or `user-tokens`. Runs that record the served group names (every 2026-11-09 run) accept only names that exist. Raw answers are in `results/2026-11-09-select2-*.jsonl`.
+
+Baseten's DeepSeek V4.1 Flash answered 503 or 429 to most calls all afternoon; its cells give correct picks out of the tasks that got an answer. The OpenAI account ran out of credits partway through, and the trials it failed were asked again with `--retry` the same day.
+
+| What the model read | Tokens before the task | Qwen 3.5 9B | Qwen3 14B | GLM-5.3 Flash | DeepSeek V4.1 Flash | Qwen3.6 35B-A3B | Gemma 4 26B |
+| :-- | --: | --: | --: | --: | --: | --: | --: |
+| As-generated, 13 groups and 5 skills (subset) | 616 | 17/20 | 16/20 | 19/20 | 18 of 19 | 19/20 | 19/20 |
+| Recommended, 22 groups and 2 skills (subset) | 1,112 | 19/20 | 20/20 | 20/20 | 13 of 13 | 18/20 | 20/20 |
+| Recommended, 22 groups and all 5 skills (subset) | 1,190 | 18/20 | 20/20 | 20/20 | 6 of 6 | 19/20 | 20/20 |
+| 237 tool names and 5 skills, flat | 6,892 | 15/20 | 19/20 | 19/20 | 18 of 19 | 19/20 | 20/20 |
+| As-generated, 139 groups and 5 skills (full catalog) | 3,856 | 10/20 | 16/20 | 19/20 | 1 of 1 | 15/20 | 18/20 |
+| Recommended, 271 groups and 2 skills (full catalog) | 16,538 | 17/20 | 18/20 | 19/20 | 17 of 18 | 20/20 | 20/20 |
+| 3,036 tool names and 5 skills, flat | 81,586 | 6/20 | not run (40k context) | 19/20 | 2 of 2 | 17/20 | 18/20 |
+
+| What the model read | Opus 5.5 | Sonnet 5.5 | Haiku 5.5 | GPT-6 Astra | GPT-6.1 Sol | GPT-6.1 Terra | GPT-6 Luna | Gemini 4 Argon | Gemini 3.8 Flash | Kimi K3.1 Pro | Decisions API (Luna) | Jev |
+| :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: |
+| As-generated, 13 groups (subset) | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 19/20 | 19/20 | 20/20 | 20/20 | 19/20 | 20/20 |
+| Recommended, 22 groups (subset) | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 19/20 |
+| Recommended, all 5 skills (subset) | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 19/20 |
+| 237 tool names, flat | 20/20 | 20/20 | 18/20 | 20/20 | 18/20 | 17/20 | 19/20 | 20/20 | 20/20 | 20/20 | | |
+| As-generated, 139 groups (full catalog) | 20/20 | 19/20 | 19/20 | 20/20 | 20/20 | 20/20 | 19/20 | 19/20 | 17/20 | 19/20 | 20/20 | 16/20 |
+| Recommended, 271 groups (full catalog) | 20/20 | 20/20 | 19/20 | 20/20 | 20/20 | 20/20 | 19/20 | 20/20 | 20/20 | 20/20 | over 255 choices | too long |
+| 3,036 tool names, flat | 20/20 | 19/20 | 18/20 | 20/20 | 20/20 | 18/20 | 19/20 | 20/20 | 18/20 | 20/20 | | |
+
+- A: at the full catalog, the recommended build raised every open model that the as-generated one had cost: Qwen 3.5 9B from 10 to 17, Qwen3.6 35B-A3B from 15 to 20, Qwen3 14B from 16 to 18, Gemma from 18 to 20. Every hosted model scored 19 or 20 of 20 on it. The price is the listing: 16,538 tokens against 3,856, about a fifth of the 81,586-token name list.
+- A: the misses at 271 groups are mostly one confusion, `pipelines-api` for the dead-letter destination on "the orders pipeline" (3 models); every other miss is a single model. At 139 as-generated groups the misses spread across `iam-api`, `sql-api`, `durable-objects`, `workers-best-practices` and others, as in round one.
+- A: on the subset every model scored 18 to 20 of 20 on the recommended build, against 16 to 20 as-generated. Most of those gaps are inside one or two tasks, so the subset result is that the recommended build does no harm.
+- C: on the subset, listing every skill as well cost no correct picks: each model is within one task of itself between the two recommended arms. Skill answers on tasks that need a group fell to 0 across all models with the grouped skills left out, against 2 open-model and 5 hosted-model answers with them listed (Gemini 3.8 Flash 2, Opus, Haiku, Kimi, GLM, Qwen3.6 one each). Neither arm sent a task to `wrangler` or `workers-best-practices`. On the as-generated server the same count was 19 and 18. The arm that still lists every skill has 7, so most of the drop came with the rest of the recommended build, before the listing changed.
+- The classifiers cannot take the full recommended listing. The Decisions API caps a choice list at 255 and the listing has 271 groups plus skills and none; Jev rejects the same list as too long.
+
+### Task completion
+
+Five conditions, three models, 20 tasks, 300 sessions on 2026-11-09, no errors, 35.27 USD. Every arm was re-run the same day; jobs for different conditions and models ran side by side. Full table with every call: `results/traces/traces2-public/summary.md`.
+
+| Condition | What the model has |
+| :-- | :-- |
+| `groups-rec` | The mod against `opt2-rec`, scoped tools deferred behind the host's tool search, grouped skills listed once. |
+| `groups-rec-resident` | The same with `ENABLE_TOOL_SEARCH=false` and scoped tools registered resident, as a client without tool search would. |
+| `groups` | The mod against `opt2`, scoped tools deferred, every skill listed. |
+| `flat-toolsearch` | As in round one. |
+| `flat-all-schemas` | As in round one. |
+
+| Condition | Model | Done | Median turns, other 12 tasks | p50 wall s | Cost USD | Input tokens | From cache | Cache writes | ToolSearch calls | Group opens per session |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |
+| groups-rec | Haiku 5.5 | 17/20 | 5 | 19.1 | 0.08 | 1.75M | 85% | 270k | 18 | 0.95 |
+| groups-rec | Sonnet 5.5 | 20/20 | 5 | 16.6 | 1.26 | 1.59M | 85% | 244k | 18 | 0.95 |
+| groups-rec | Opus 5.5 | 20/20 | 5 | 23.7 | 2.59 | 1.54M | 84% | 243k | 16 | 0.95 |
+| groups-rec-resident | Haiku 5.5 | 16/20 | 4 | 18.4 | 0.18 | 2.51M | 71% | 729k | 0 | 0.90 |
+| groups-rec-resident | Sonnet 5.5 | 20/20 | 4 | 15.2 | 2.91 | 2.68M | 76% | 643k | 0 | 1.05 |
+| groups-rec-resident | Opus 5.5 | 20/20 | 4 | 20.9 | 6.32 | 2.81M | 75% | 695k | 0 | 0.95 |
+| groups | Haiku 5.5 | 18/20 | 6 | 20.6 | 0.09 | 1.93M | 85% | 290k | 28 | 1.90 |
+| groups | Sonnet 5.5 | 20/20 | 5 | 20.7 | 1.26 | 1.53M | 84% | 241k | 18 | 1.90 |
+| groups | Opus 5.5 | 20/20 | 6 | 24.2 | 2.64 | 1.68M | 86% | 241k | 19 | 1.85 |
+| flat-toolsearch | Haiku 5.5 | 20/20 | 3 | 19.0 | 0.11 | 1.60M | 76% | 392k | 18 | |
+| flat-toolsearch | Sonnet 5.5 | 20/20 | 4 | 15.3 | 1.72 | 1.51M | 76% | 362k | 16 | |
+| flat-toolsearch | Opus 5.5 | 19/20 | 4 | 21.5 | 3.53 | 1.54M | 76% | 367k | 18 | |
+| flat-all-schemas | Haiku 5.5 | 20/20 | 3 | 17.5 | 1.31 | 15.9M | 97% | 474k | 0 | |
+| flat-all-schemas | Sonnet 5.5 | 20/20 | 3 | 15.9 | 3.62 | 16.5M | 97% | 471k | 0 | |
+| flat-all-schemas | Opus 5.5 | 20/20 | 3 | 21.1 | 7.63 | 17.4M | 97% | 489k | 0 | |
+
+- A: the recommended build halved the group opens, 0.95 per session against 1.85 to 1.90, and every other measure moved by less than the noise: the same completion, the same median turns on the 12 product tasks except Haiku and Opus at 5 against 6, and p50 wall 0.5 to 4 seconds lower. The second open in round one came from the two-level tree, and the one-level tree removes it.
+- A: the host's tool search still finishes in fewer turns, a median of 3 or 4 on the product tasks against 5. The deferred recommended arm cost less, 1.26 against 1.72 USD on Sonnet and 2.59 against 3.53 on Opus, with input tokens within 15% of each other.
+- B: without tool search, the prediction on turns held and the one on tokens did not. Every model took one fewer median turn on the product tasks (4 against 5) and made no ToolSearch calls. But each resident open rewrites the cached prefix: cache writes were 2.6 to 2.9 times the deferred arm's, input tokens 1.4 to 1.8 times, and cost 2.2 to 2.4 times. In the smoke run one `r2-buckets` open took the prefix from 25.7k to 48.7k tokens as the provider renders it, 23k for a group that measures 13.4k in o200k. Wall time was 0.7 to 2.8 seconds lower at p50.
+- Opening a group no longer loads its skill, and Sonnet and Opus read the skill anyway: 8 of 8 workflow tasks in both recommended arms, with 8 to 10 `read_skill` calls per model. Haiku answered the two Durable Objects knowledge tasks and the fetch-handler question from its own knowledge in one turn in several groups arms, which the rubric now scores as a miss. In round one the same answers counted, because the group open had already put the SKILL.md in context.
+- Every `read_skill` in round two went through `skills/get` with the digest checked; no digest failed.
+- Haiku's `nightly` miss in the resident arm reached for `CronCreate`, a host built-in that `trace-run.ts` does not disallow, and stopped to ask for a timezone.
+
+Raw sessions are under `results/traces/traces2/` (gitignored); `results/traces/traces2-public/` is the redacted copy, 300 sessions with each session's group-open log, and re-scores identically.
+
 ## Limits
 
 - The first set has five samples per task, identical on every task for the 14B model and Claude and on 9 of 14 for the 9B model. The second set has one. Read each cell as tasks, not answers, and two cells that differ by one or two as the same result. More tasks, not more samples, would add information.
-- The first set names the product (Turnstile, D1, KV, R2, queue, container), and the toolset group descriptions are templated around the product name ("Call the Cloudflare queues API directly. Use to read or change queues resources in an account."), so it measures keyword routing. The SEP says a group description SHOULD carry the task vocabulary a user would use; these do not, so the drop at 139 groups on the indirect tasks measures what templated descriptions cost, not what groups cost. Rewriting the descriptions for the confusable products and re-running is the obvious next step.
+- The first set names the product (Turnstile, D1, KV, R2, queue, container), and the toolset group descriptions are templated around the product name ("Call the Cloudflare queues API directly. Use to read or change queues resources in an account."), so it measures keyword routing. The SEP says a group description SHOULD carry the task vocabulary a user would use; these do not, so the drop at 139 groups on the indirect tasks measures what templated descriptions cost, not what groups cost. The second round rewrote them with task vocabulary and re-ran.
 - The first set and the 2026-11-07 run of the second set showed no skill index, so their flat modes had no answer for a knowledge task. The 2026-11-08 run fixed that in every mode.
 - Accepted answers are this demo's judgment. For the 3,036-tool catalog: `pipelines-api` for a dead-letter destination and `hyperdrive_create` for relational data were left as misses; `workflows-api` for retried jobs and `flagship-api` for feature flags were accepted, and `email-domains-api` was added after the first hosted run. For skills: `wrangler` is accepted for the deploy and schedule tasks and `workers-best-practices` for the fetch-handler question, and `workers-best-practices` is a miss for a queue or deploy task. A different reader might draw these lines elsewhere.
 - The flat control shows tool names and first description lines, 6,911 tokens at 238 tools with the skill index. The `flat-schemas` mode tested the full `tools/list`, 157,834 tokens with the skill index, for five open and nine hosted models. At 3,036 tools the schemas are 1.38M tokens and cannot be tested. Astra skipped the schema control.
@@ -180,6 +293,10 @@ Raw session files are not committed: they embed the full system prompt and accou
 - Per-caller scoping, the problem statement's dynamic-correctness criterion, was not tested. Every group answers the same to every caller.
 - Selection measures the first top-level pick only. Navigation into nested groups shows only in the completion traces.
 - The selection and completion runs compare Option 2 against flat. Options 1 and 3 appear only in the token and wire comparison.
+- Second round: the recommended server's split rule, size cap and hand-written descriptions are mine. The 249 full-catalog descriptions were written by a model and spot-checked, as a server author with 136 products would do it. Accepted answers for the split groups are this demo's judgment like the rest.
+- Second round: the headless sessions still load this machine's user-level plugins, about 25.7k tokens of base prefix in every arm alike; config isolation was not set up. `CronCreate` is a host built-in the runner does not disallow, and one Haiku session used it.
+- Second round: completion jobs for all conditions and models ran side by side, so their wall times share the same API load. Gaps of one or two tasks in any cell are noise, as before.
+- Second round: DeepSeek V4.1 Flash on Baseten failed on most calls; its cells are marked. The OpenAI trials that failed on credits were asked again later the same day. The classifiers could not run on the 271-group listing.
 
 ## Results files
 
@@ -191,5 +308,8 @@ Raw session files are not committed: they embed the full system prompt and accou
 - `2026-11-07-select2-*.jsonl` and `.txt`: the second task set's first run, without the skill index, with the per-task matrix.
 - `2026-11-08-select2-*.jsonl` and `.txt`: the second task set with the skill index, every mode and model. The tables above come from these.
 - `traces/traces-public/`: the 180 redacted sessions, their index and scored summary.
+- `2026-11-09-deployed.txt`: the token table and per-group task load for the second round, `flat`, `opt2` and `opt2-rec` on the deployed Workers and `opt1` and `opt3` locally.
+- `2026-11-09-select2-*.jsonl` and `.txt`: the second round's selection runs. Labels with `-rec` are `opt2-rec`, `-rec-dup` the same with every skill listed.
+- `traces/traces2-public/`: the second round's 300 redacted sessions, their group-open logs, index and scored summary.
 
 Re-runs that reproduced an earlier file were not kept, and the 2026-11-02 file from the build against the earlier drafts was removed. This repository starts from a single commit; the private predecessor repository holds the earlier history.
