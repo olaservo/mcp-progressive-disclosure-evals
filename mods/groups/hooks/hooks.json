@@ -1,0 +1,4 @@
+{
+  "description": "Registers list_groups, open_group and read_skill; on open_group registers the group's scoped tools and routes their calls to the server.",
+  "modules": ["./register.ts"]
+}

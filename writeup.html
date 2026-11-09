@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+<title>Groups and Skills over MCP on the Cloudflare API catalog: measurements from one implementation</title>
+<style>
+  :root { --ink: #1a1a18; --bg: #faf9f5; --border: #e2e0d8; --label: #52514E; color-scheme: light; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --ink: #e6e4dc; --bg: #17171a; --border: #3a3a3e; --label: #A6A49C; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --ink: #e6e4dc; --bg: #17171a; --border: #3a3a3e; --label: #A6A49C; color-scheme: dark; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 2rem 1rem; color: var(--ink); background: var(--bg); }
+  main { max-width: 820px; margin: 0 auto; }
+  h1, h2, h3 { font-family: "Comic Sans MS", "Comic Sans", "Comic Neue", cursive; font-weight: 500; }
+  h1 { font-size: 1.5rem; margin: 0; }
+  h2 { font-size: 1.3rem; margin-top: 2.5rem; }
+  h3 { font-size: 1.15rem; margin-top: 2rem; }
+  .masthead { border-bottom: 1px solid var(--border); padding-bottom: 0.8rem; margin-bottom: 2rem; }
+  .masthead nav { font-size: 0.85rem; margin-top: 0.6rem; }
+  p, ul, ol { line-height: 1.7; }
+  li { margin: 0.3rem 0; }
+  .tablewrap { overflow-x: auto; margin: 1.2rem 0; }
+  table { border-collapse: collapse; font-size: 0.85rem; width: 100%; }
+  th, td { text-align: left; padding: 0.35rem 0.6rem 0.35rem 0; border-bottom: 1px solid var(--border); vertical-align: top; white-space: nowrap; }
+  td:first-child, th:first-child { white-space: normal; }
+  th { font-weight: 500; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.85em; }
+  pre { overflow-x: auto; padding: 0.8rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; }
+  a { color: inherit; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.85rem; }
+  footer p { margin: 0.3rem 0; }
+  #theme-toggle { position: fixed; top: 1rem; right: 1rem; font: inherit; font-size: 0.85rem; padding: 0.3rem 0.7rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--ink); cursor: pointer; }
+</style>
+</head>
+<body>
+<button id="theme-toggle" type="button" aria-label="Toggle light and dark theme">theme</button>
+<main>
+<header class="masthead">
+<h1>Groups and Skills over MCP on the Cloudflare API catalog: measurements from one implementation</h1>
+<p>The long form behind <a href="groups-positioning.html">the one-page explainer</a>: every table, every accepted answer, every limit.</p>
+<nav aria-label="Related pages">
+  <a href="groups-positioning.html">the explainer</a> &middot;
+  <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals" target="_blank">the demo repository</a> &middot;
+  <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals/releases/tag/traces-2026-11-08" target="_blank">the session traces</a> &middot;
+  <a href="https://modelcontextprotocol.io/community/working-groups/progressive-disclosure" target="_blank">the working group's charter</a>
+</nav>
+</header>
+<h2>Summary</h2>
+<ul>
+<li>Option 2 of #22 works as Example 3 describes it, on the shipped TypeScript SDK 2.4.0. A group named after the skill scopes its tools and lists the SKILL.md, and the host still verifies the skill through <code>skills/get</code> and <code>resources/read</code>. One gap: the SDK&#39;s skill catalog lists every SKILL.md in <code>resources/list</code>, which the SEP&#39;s placement rule forbids once a group scopes the same URI. One sentence saying <code>skills/list</code> is not a listing for placement would close it.</li>
+<li>At the full 3,036-tool catalog, the flat <code>tools/list</code> is 1.38M tokens. <code>groups/list</code> for 139 top-level groups is 5.5k. Task load does not grow with the catalog, and tool schemas are most of it once a group holds more than a handful of tools.</li>
+<li>In a selection trial over 20 indirect tasks, groups did not change which product ten hosted models picked. Each model is within two tasks of itself across groups and flat modes at both catalog sizes. What groups changed is the read before the task: 3,873 tokens instead of 81,605 at 3,036 tools.</li>
+<li>Templated descriptions for 139 groups cost the mid-size open models up to 6 of 20 tasks. The descriptions ignore the SEP&#39;s guidance that <code>description</code> carry task vocabulary, so this measures that guidance rather than groups.</li>
+<li>The <code>skills/list</code> index mattered more than groups against flat. Adding it to the prompt moved flat scores by up to 17 tasks and moved no groups-mode score by more than one.</li>
+<li>Through a real client (Claude Code with a groups mod, 180 headless sessions), Sonnet and Opus completed 20 of 20 tasks under groups, under the flat server with the host&#39;s tool search, and under the flat server with all 238 schemas in the prompt up front. Groups read 2.3M input tokens per model against 16.5M to 18.4M with all schemas up front, cost one more turn, and matched the host&#39;s tool search on completion and tokens. The prompt cache held across group opens.</li>
+<li>Against the problem statement&#39;s four criteria: groups deliver initial context size and total tokens, leave task completion unchanged for frontier models, and add a turn. On this catalog the host&#39;s tool search reaches the same token result with no protocol change. What groups add is the server-authored bundle and a path for clients without tool search.</li>
+<li>Under Option 3&#39;s rename, a SKILL.md body delivered as <code>instructions</code> loses its entry, its digests and the root for relative links. Under the existing Skills identifier it also crashes the SDK&#39;s SEP-2640 client.</li>
+</ul>
+<h2>What was built</h2>
+<p>One Cloudflare Worker on <code>@modelcontextprotocol/server</code> 2.4.0, with one wrangler environment per positioning option, so the options can be compared side by side on the same catalog.</p>
+<ul>
+<li>Tools: generated tools from cloudflare/mcp at <code>4938f2f3</code>. A 238-tool subset from 10 products (turnstile, durableObjects, emailSending, emailRouting, workers, d1, kv, r2, queues, containers) is deployed. The full 3,036 tools in 1,030 toolsets from 136 products run locally. Cloudflare ships this server behind Code Mode by default (<code>docs</code>, <code>search</code> and <code>execute</code>, about 1,100 tokens) and exposes direct tools only with <code>?codemode=false</code>, which its README calls an escape hatch for composing with another code-mode system. The flat baseline here is that direct-tool mode. Cloudflare&#39;s README puts the full-schema direct list at 1,170,523 tokens for 2,594 tools, which agrees with the 1,378,777 measured here for 3,036. Groups against Code Mode itself was not measured.</li>
+<li>Skills: <code>turnstile-spin</code>, <code>durable-objects</code>, <code>cloudflare-email-service</code>, <code>workers-best-practices</code> and <code>wrangler</code> from cloudflare/skills at <code>1a33048</code>, served through the SDK&#39;s native SEP-2640 extension.</li>
+<li>Groups: <code>io.modelcontextprotocol/groups</code>, <code>groups/list</code> and <code>groups/get</code> as the SEP at <code>15b2a5c</code> defines them. Scoped primitives sit directly on the result, an unknown group gets <code>-32002</code>, per-request client capabilities decide the view, and a client that did not negotiate gets the flat <code>tools/list</code>. Toolset groups follow the generator&#39;s directory tree two levels deep (<code>workers-api</code> nests <code>workers-scripts</code>, <code>workers-routes</code> and so on). Their descriptions are templated: &quot;Call the Cloudflare workers API directly. Use to read or change workers resources in an account.&quot; Product groups end in <code>-api</code> because a workflow group is already called <code>durable-objects</code>.</li>
+<li>Tool calls are dry runs. They return the Cloudflare API request the tool would send.</li>
+</ul>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th align="left">Variant</th>
+<th align="left">#22 option</th>
+<th align="left">Tools</th>
+<th align="left">Discovery</th>
+<th align="left">Skills</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>flat</code></td>
+<td align="left">Today, and Option 1&#39;s Skills server</td>
+<td align="left">All in <code>tools/list</code></td>
+<td align="left">None</td>
+<td align="left">SEP-2640</td>
+</tr>
+<tr>
+<td align="left"><code>opt1</code></td>
+<td align="left">Option 1&#39;s Groups server</td>
+<td align="left">Scoped</td>
+<td align="left">Toolset groups, and workflow groups with authored instructions</td>
+<td align="left">None</td>
+</tr>
+<tr>
+<td align="left"><code>opt2</code></td>
+<td align="left">Option 2, complementary</td>
+<td align="left">Scoped</td>
+<td align="left">Toolset groups, and a workflow group per skill that scopes its tools and lists the SKILL.md in <code>resources</code></td>
+<td align="left">SEP-2640, with nothing in <code>resources/list</code></td>
+</tr>
+<tr>
+<td align="left"><code>opt3</code></td>
+<td align="left">Option 3, Groups renamed to Skills</td>
+<td align="left">Scoped</td>
+<td align="left"><code>skills/list</code> and <code>skills/get</code> under <code>io.modelcontextprotocol/skills</code>; each SKILL.md folder maps to its body as <code>instructions</code> and its other files as scoped <code>skill://</code> resources</td>
+<td align="left">Replaced</td>
+</tr>
+</tbody></table></div>
+<h2>Code-level findings</h2>
+<p>These are deterministic. They reproduced locally, against the deployed Workers, and from a fresh clone.</p>
+<ul>
+<li><strong>Option 2 works as Example 3 describes.</strong> The <code>turnstile-spin</code> group scopes the six Turnstile tools and lists <code>skill://turnstile-spin/SKILL.md</code>. A host that confirms the reference with <code>skills/get</code> reads the skill with its digests verified.</li>
+<li><strong>The placement rule meets the SDK&#39;s default.</strong> The SDK&#39;s <code>SkillCatalog</code> lists every SKILL.md in <code>resources/list</code>. Once a group scopes the same URI, the placement rule breaks. A <code>SkillSource</code> with no <code>listResources</code> serves the same entries through <code>skills/list</code> only, and the rule holds. Neither #19 nor #22 says whether <code>skills/list</code> counts as a listing for placement. Proposed sentence for both: &quot;For placement, <code>skills/list</code> is not a listing. A skill a group lists stays in <code>skills/list</code>.&quot; The rule&#39;s view qualifier matters: a client that negotiated neither extension finds skills through <code>resources/list</code>, and the SDK cannot yet list a SKILL.md in one view and not the other.</li>
+<li><strong>Scoped tools are callable without <code>groups/get</code></strong>, and they stay out of that connection&#39;s <code>tools/list</code>. Checked with a dry run of <code>turnstile_widgets_create</code> on a fresh connection.</li>
+<li><strong>Graceful degradation works through per-request capabilities.</strong> A client that does not put the extension in <code>io.modelcontextprotocol/clientCapabilities</code> gets every tool on every variant.</li>
+<li><strong>Option 3.</strong> This demo serves the rename under the existing <code>io.modelcontextprotocol/skills</code> identifier, and the SDK 2.4.0 <code>SkillsClient</code> rejects the listing (&quot;skills/list returned invalid entries&quot;, each entry missing <code>uri</code>, <code>frontmatter</code> and <code>resources</code>). #22 does not say which identifier the rename would use. Under a new one, which the SEP&#39;s Backward Compatibility section asks of a breaking change, a SEP-2640 client would see a server with no skills rather than crash. Either way the SKILL.md body arrives as <code>instructions</code> with no skill entry and no digests, and its seven <code>references/*.md</code> links resolve to scoped resources only if the host assumes <code>skill://turnstile-spin/</code> as their base, which the response does not say. &quot;Group instructions without a skill&quot; in #22 already says this; the demo shows it is what a client sees.</li>
+<li><strong>Option 1&#39;s paraphrase is cheapest and drifts.</strong> Its instructions are a short restatement of the skill, 2,190 task-load tokens against 8,768 for Option 2. The paraphrase drops the skill&#39;s seven framework guides, and a host that also connects the Skills server has no way to match the group to its skill.</li>
+<li><strong>Naming.</strong> #22&#39;s background and capability table say <code>group/list</code> and <code>group/get</code>. The examples and the SEP&#39;s Naming section say <code>groups/*</code>. The accepted decision in <code>docs/decisions.md</code> (2026-10-27) has the singular. The SEP and the decision log disagree.</li>
+</ul>
+<h2>Token measurements</h2>
+<p>tiktoken <code>o200k_base</code> over the compact JSON the model would see, not a provider&#39;s tool prompt. &quot;Upfront&quot; is everything read before the model commits to a task: <code>tools/list</code>, <code>groups/list</code> and the skill index. &quot;Task load&quot; is <code>groups/get</code> plus the skill body. One task per workflow skill with API tools. In <code>flat</code>, task tools are counted by product prefix, so email shows 41 where the workflow group curates 24.</p>
+<p>Subset, 238 tools, 13 top-level groups, deployed Workers:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th align="left">Variant</th>
+<th align="left">Task</th>
+<th align="right">Upfront</th>
+<th align="right">Task load</th>
+<th align="right">Task tools</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">flat</td>
+<td align="left">set up Turnstile</td>
+<td align="right">157,763</td>
+<td align="right">6,570</td>
+<td align="right">6</td>
+</tr>
+<tr>
+<td align="left">flat</td>
+<td align="left">inspect Durable Objects</td>
+<td align="right">157,763</td>
+<td align="right">1,369</td>
+<td align="right">3</td>
+</tr>
+<tr>
+<td align="left">flat</td>
+<td align="left">configure email</td>
+<td align="right">157,763</td>
+<td align="right">1,493</td>
+<td align="right">41</td>
+</tr>
+<tr>
+<td align="left">opt1</td>
+<td align="left">set up Turnstile</td>
+<td align="right">556</td>
+<td align="right">2,190</td>
+<td align="right">6</td>
+</tr>
+<tr>
+<td align="left">opt1</td>
+<td align="left">inspect Durable Objects</td>
+<td align="right">556</td>
+<td align="right">897</td>
+<td align="right">3</td>
+</tr>
+<tr>
+<td align="left">opt1</td>
+<td align="left">configure email</td>
+<td align="right">556</td>
+<td align="right">7,822</td>
+<td align="right">24</td>
+</tr>
+<tr>
+<td align="left">opt2</td>
+<td align="left">set up Turnstile</td>
+<td align="right">743</td>
+<td align="right">8,768</td>
+<td align="right">6</td>
+</tr>
+<tr>
+<td align="left">opt2</td>
+<td align="left">inspect Durable Objects</td>
+<td align="right">743</td>
+<td align="right">2,305</td>
+<td align="right">3</td>
+</tr>
+<tr>
+<td align="left">opt2</td>
+<td align="left">configure email</td>
+<td align="right">743</td>
+<td align="right">9,319</td>
+<td align="right">24</td>
+</tr>
+<tr>
+<td align="left">opt3</td>
+<td align="left">set up Turnstile</td>
+<td align="right">664</td>
+<td align="right">9,037</td>
+<td align="right">6</td>
+</tr>
+<tr>
+<td align="left">opt3</td>
+<td align="left">inspect Durable Objects</td>
+<td align="right">664</td>
+<td align="right">2,313</td>
+<td align="right">3</td>
+</tr>
+<tr>
+<td align="left">opt3</td>
+<td align="left">configure email</td>
+<td align="right">664</td>
+<td align="right">9,291</td>
+<td align="right">24</td>
+</tr>
+</tbody></table></div>
+<p>Full catalog, 3,036 tools, 1,030 toolsets, 139 top-level groups, local:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th align="left">Variant</th>
+<th align="right">Upfront</th>
+<th align="left">Task load (Turnstile, DO, email)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">flat</td>
+<td align="right">1,378,777</td>
+<td align="left">6,570 / 1,369 / 1,493</td>
+</tr>
+<tr>
+<td align="left">opt1</td>
+<td align="right">5,308</td>
+<td align="left">2,190 / 897 / 7,822</td>
+</tr>
+<tr>
+<td align="left">opt2</td>
+<td align="right">5,495</td>
+<td align="left">8,768 / 2,305 / 9,319</td>
+</tr>
+<tr>
+<td align="left">opt3</td>
+<td align="right">5,416</td>
+<td align="left">9,037 / 2,313 / 9,291</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>At 3,036 tools the flat list is 6.2 MB, more than any current context window holds. The groups listing is 5.3k to 5.5k tokens.</li>
+<li>Task load does not change with catalog size. The saving is all in the read before the model picks a group, so the question at scale is whether it picks the right one out of 139.</li>
+<li>Schemas are most of the task load once a group holds 20-odd tools. The email group&#39;s 24 schemas put <code>opt1</code> at 7,822 tokens, close to the 8,768 that <code>opt2</code> spends on Turnstile, where the skill body is most of the cost. That argues for small groups and nesting, and it is a data point for the SEP&#39;s inline-delivery decision.</li>
+</ul>
+<h2>Selection trial</h2>
+<p><code>scripts/select.ts</code> shows a model what a client sees before <code>groups/get</code>: the top-level tools, <code>groups/list</code> and <code>skills/list</code>, as names and first description lines. It gives the model a task and asks for one answer: <code>{&quot;group&quot;: name}</code>, <code>{&quot;skill&quot;: name}</code>, <code>{&quot;tool&quot;: name}</code> or <code>{&quot;none&quot;: true}</code>. The flat control shows every tool&#39;s name and first line instead, with the same skill index, and asks for a tool, a skill or none. A <code>flat-schemas</code> mode puts the whole <code>tools/list</code> result in the prompt, 158k tokens at 238 tools.</p>
+<p>Twenty tasks describe the job without naming the product. Some are confusable pairs (routing against sending, queues against Durable Objects, KV against D1 and R2, Workers against containers), two are knowledge questions, and two have no fit in the subset. One sample per task. Accepted answers are in the script. Against the full catalog they also accept the products the subset lacks (<code>dns-api</code>, <code>email-auth-api</code> and <code>email-domains-api</code> for the mail DNS check, <code>workflows-api</code> for retried jobs, <code>workers-builds-api</code> and <code>builds-api</code> for pushing a build, <code>flagship-api</code> for feature flags, <code>accounts-api</code> or <code>user-api</code> for rotating a token). A skill is accepted where the same-named workflow group is, plus <code>workers-best-practices</code> for the fetch-handler question and <code>wrangler</code> for the deploy and schedule tasks.</p>
+<p>Models: six open models through the Hugging Face router with thinking off, temperature 0.2, seeded (Qwen 3.5 9B, Qwen3 14B, GLM-5.3 Flash, DeepSeek V4.1 Flash, Qwen3.6 35B-A3B, Gemma 4 26B-A4B); ten hosted models at their lowest reasoning setting (Claude Opus, Sonnet and Haiku 5.5 at effort low; GPT-6 Astra and 6.1 Sol at reasoning effort low, 6.1 Terra and 6 Luna at none; Gemini 4 Argon and 3.8 Flash at thinking level low; Kimi K3.1 Pro at low); and two classifier APIs that take the group and skill names as choices (the OpenAI Decisions API on GPT-6 Luna, TypeSafe&#39;s Jev 1.14), in groups mode only.</p>
+<p>The set ran twice. The 2026-11-07 run left <code>skills/list</code> out of the prompt; the 2026-11-08 run added it. The tables are the 2026-11-08 run. With one sample per task, two cells within two of each other are the same result, and the notes below report differences of three or more.</p>
+<h3>Open models</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th align="left">What the model read</th>
+<th align="right">Tokens before the task</th>
+<th align="right">Qwen 3.5 9B</th>
+<th align="right">Qwen3 14B</th>
+<th align="right">GLM-5.3 Flash</th>
+<th align="right">DeepSeek V4.1 Flash</th>
+<th align="right">Qwen3.6 35B-A3B</th>
+<th align="right">Gemma 4 26B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">13 groups and 5 skills (238-tool subset)</td>
+<td align="right">633</td>
+<td align="right">16/20</td>
+<td align="right">18/20</td>
+<td align="right">19/20</td>
+<td align="right">19/20</td>
+<td align="right">19/20</td>
+<td align="right">19/20</td>
+</tr>
+<tr>
+<td align="left">139 groups and 5 skills (3,036-tool catalog)</td>
+<td align="right">3,873</td>
+<td align="right">10/20</td>
+<td align="right">13/20</td>
+<td align="right">18/20</td>
+<td align="right">17/20</td>
+<td align="right">15/20</td>
+<td align="right">19/20</td>
+</tr>
+<tr>
+<td align="left">238 tool names and 5 skills, flat</td>
+<td align="right">6,911</td>
+<td align="right">15/20</td>
+<td align="right">19/20</td>
+<td align="right">18/20</td>
+<td align="right">20/20</td>
+<td align="right">19/20</td>
+<td align="right">19/20</td>
+</tr>
+<tr>
+<td align="left">238 tools with schemas and 5 skills, flat</td>
+<td align="right">157,834</td>
+<td align="right">9/20</td>
+<td align="right">not run (40k context)</td>
+<td align="right">19/20</td>
+<td align="right">19/20</td>
+<td align="right">16/20</td>
+<td align="right">19/20</td>
+</tr>
+<tr>
+<td align="left">3,036 tool names and 5 skills, flat</td>
+<td align="right">81,605</td>
+<td align="right">5/20</td>
+<td align="right">not run (40k context)</td>
+<td align="right">19/20</td>
+<td align="right">19/20</td>
+<td align="right">18/20</td>
+<td align="right">18/20</td>
+</tr>
+</tbody></table></div>
+<h3>Hosted models and classifiers</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th align="left">What the model read</th>
+<th align="right">Opus 5.5</th>
+<th align="right">Sonnet 5.5</th>
+<th align="right">Haiku 5.5</th>
+<th align="right">GPT-6 Astra</th>
+<th align="right">GPT-6.1 Sol</th>
+<th align="right">GPT-6.1 Terra</th>
+<th align="right">GPT-6 Luna</th>
+<th align="right">Gemini 4 Argon</th>
+<th align="right">Gemini 3.8 Flash</th>
+<th align="right">Kimi K3.1 Pro</th>
+<th align="right">Decisions API (Luna)</th>
+<th align="right">Jev 1.14</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">13 groups and 5 skills</td>
+<td align="right">20/20</td>
+<td align="right">20/20</td>
+<td align="right">19/20</td>
+<td align="right">20/20</td>
+<td align="right">20/20</td>
+<td align="right">20/20</td>
+<td align="right">20/20</td>
+<td align="right">19/20</td>
+<td align="right">20/20</td>
+<td align="right">19/20</td>
+<td align="right">19/20</td>
+<td align="right">20/20</td>
+</tr>
+<tr>
+<td align="left">139 groups and 5 skills</td>
+<td align="right">20/20</td>
+<td align="right">19/20</td>
+<td align="right">19/20</td>
+<td align="right">20/20</td>
+<td align="right">20/20</td>
+<td align="right">19/20</td>
+<td align="right">18/20</td>
+<td align="right">19/20</td>
+<td align="right">18/20</td>
+<td align="right">18/20</td>
+<td align="right">20/20</td>
+<td align="right">16/20</td>
+</tr>
+<tr>
+<td align="left">238 tool names and 5 skills, flat</td>
+<td align="right">20/20</td>
+<td align="right">20/20</td>
+<td align="right">18/20</td>
+<td align="right">20/20</td>
+<td align="right">20/20</td>
+<td align="right">18/20</td>
+<td align="right">20/20</td>
+<td align="right">20/20</td>
+<td align="right">20/20</td>
+<td align="right">20/20</td>
+<td align="right"></td>
+<td align="right"></td>
+</tr>
+<tr>
+<td align="left">238 tools with schemas and 5 skills, flat</td>
+<td align="right">19/20</td>
+<td align="right">20/20</td>
+<td align="right">17/20</td>
+<td align="right">not run</td>
+<td align="right">18/20</td>
+<td align="right">19/20</td>
+<td align="right">20/20</td>
+<td align="right">20/20</td>
+<td align="right">19/20</td>
+<td align="right">18/20</td>
+<td align="right"></td>
+<td align="right"></td>
+</tr>
+<tr>
+<td align="left">3,036 tool names and 5 skills, flat</td>
+<td align="right">20/20</td>
+<td align="right">20/20</td>
+<td align="right">17/20</td>
+<td align="right">19/20</td>
+<td align="right">18/20</td>
+<td align="right">17/20</td>
+<td align="right">20/20</td>
+<td align="right">20/20</td>
+<td align="right">20/20</td>
+<td align="right">20/20</td>
+<td align="right"></td>
+<td align="right"></td>
+</tr>
+</tbody></table></div>
+<h3>What the results say</h3>
+<ul>
+<li><strong>Groups did not change which product the hosted models picked.</strong> Every hosted model is within two tasks of itself across the four modes at both sizes. Groups changed the read before the task: 633 or 3,873 tokens against 6,911 or 81,605. At 3,036 tools the full schemas (1.38M tokens) cannot be read at all. This agrees with the finding the SEP already cites.</li>
+<li><strong>Templated descriptions cost the mid-size open models at 139 groups.</strong> Qwen3 14B went from 18 to 13, Qwen3.6 35B-A3B from 19 to 15, the 9B from 16 to 10. GLM, DeepSeek and Gemma held 17 to 19, and the hosted models 18 to 20. The misses land on neighbouring products: <code>pipelines-api</code> for a dead-letter destination, <code>durable-objects</code> for relational tables or feature flags, <code>iam-api</code> for rotating a token, <code>hyperdrive-api</code> for relational tables. The SEP says a description should carry the task vocabulary a user would use, and these carry only the product name. This row measures the cost of ignoring that guidance.</li>
+<li><strong>The skill index mattered more than groups against flat.</strong> Adding the five-line <code>skills/list</code> index moved flat scores by up to 17 tasks: Haiku 5.5 from 7 and 1 of 20 to 18 and 17; Opus and Sonnet from 16 to 20 at 3,036 names; GLM, Qwen3.6 and Gemma from 16, 13 and 13 to 19, 18 and 18. No groups-mode cell for a hosted model moved by more than one. Eleven of the twenty tasks have a skill as a right answer, and the models take it. A client that implements groups but not SEP-2640 would see a different picture from one that implements both.</li>
+<li><strong>Full schemas did not hurt the models that fit them.</strong> On the 158k-token schema list, every model that fits it scored within two of its names-only score. The 9B dropped to 9. The misses are skill answers for tool tasks, or a list tool called before the one the task needs. Anthropic, Kimi and Gemini 4 Argon served 2.9M to 5.2M tokens per model from cache on this control; OpenAI reported none.</li>
+<li><strong>The 9B model stops answering at 85k tokens.</strong> 5 of 20 at 3,036 names, with none on 14 tasks.</li>
+<li><strong>Overlapping groups split the models.</strong> Where a task accepts either the workflow (as a group or a skill) or the product&#39;s API group, Opus, Sonnet, the four GPT-6 models and the Decisions classifier split 3 to 4 at 13 groups, Haiku 6 to 1, and the open models took the workflow on 4 to 7 of 7. At 139 groups every model leans to the workflow. A server that offers both for one product should say in the descriptions which to load when.</li>
+<li><strong>Classifiers route on one-line descriptions.</strong> The Decisions API over the group and skill names scored 19 and 20 of 20, at about 600 and 4,000 input tokens per call and no output tokens; both runs together cost about a cent. Jev scored 20 and 16. Its misses at 139 follow shared words, such as <code>pipelines-api</code> for &quot;the orders pipeline&quot; and <code>sql-api</code> for SQL joins. Enumerated choices rule out the key confusion the small chat models show.</li>
+</ul>
+<h2>Task completion through a real client</h2>
+<p>The selection trial asks where a model would look. This run has an agent do the task, which is the problem statement&#39;s fourth criterion. Each of the twenty tasks, reworded with concrete identifiers (account <code>demo</code>, bucket <code>demo-uploads</code>, a Durable Object class pasted in for the review), ran as a headless Claude Code session with the file and shell tools disallowed, under three conditions:</p>
+<ul>
+<li><strong>groups</strong>: a Claude Code mod that speaks the Groups extension to the opt2 Worker over HTTP, in the pattern the SEP&#39;s &quot;Client behavior after <code>groups/get</code>&quot; section sketches. <code>list_groups</code>, <code>open_group</code> and <code>read_skill</code> are client-side tools, a system-prompt section lists the 13 groups and 5 skills, and a group&#39;s scoped tools are registered as deferred definitions when it opens. No MCP server is connected.</li>
+<li><strong>flat with the host&#39;s tool search</strong>: the flat Worker connected as an ordinary MCP server, its 238 tools behind Claude Code&#39;s own tool search, which is the host&#39;s default for MCP tools. The mod runs against the same Worker for the skill index and <code>read_skill</code>.</li>
+<li><strong>flat with all schemas up front</strong>: the same, with tool search off, so all 238 schemas sit in the prompt, about 305k tokens as the provider renders them.</li>
+</ul>
+<p>Claude Sonnet, Haiku and Opus 5.5 at default effort, one session per task, 180 sessions, no errors. &quot;Done&quot; is a per-task rubric over the calls the session made: the right tool with the right arguments, or the right skill loaded and the answer showing it. Tokens are the provider&#39;s, summed over turns, cache reads included.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th align="left">Condition</th>
+<th align="left">Model</th>
+<th align="right">Done</th>
+<th align="right">First step right</th>
+<th align="right">Median turns</th>
+<th align="right">Median wall s</th>
+<th align="right">Cost USD</th>
+<th align="right">Input tokens</th>
+<th align="right">From cache</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">groups</td>
+<td align="left">Sonnet 5.5</td>
+<td align="right">20/20</td>
+<td align="right">20/20</td>
+<td align="right">5</td>
+<td align="right">16</td>
+<td align="right">1.18</td>
+<td align="right">2.37M</td>
+<td align="right">92%</td>
+</tr>
+<tr>
+<td align="left">groups</td>
+<td align="left">Haiku 5.5</td>
+<td align="right">16/20</td>
+<td align="right">17/20</td>
+<td align="right">5</td>
+<td align="right">16</td>
+<td align="right">0.09</td>
+<td align="right">2.36M</td>
+<td align="right">88%</td>
+</tr>
+<tr>
+<td align="left">groups</td>
+<td align="left">Opus 5.5</td>
+<td align="right">20/20</td>
+<td align="right">20/20</td>
+<td align="right">5</td>
+<td align="right">19</td>
+<td align="right">2.66</td>
+<td align="right">2.32M</td>
+<td align="right">90%</td>
+</tr>
+<tr>
+<td align="left">flat, host tool search</td>
+<td align="left">Sonnet 5.5</td>
+<td align="right">20/20</td>
+<td align="right">18/20</td>
+<td align="right">3</td>
+<td align="right">13</td>
+<td align="right">1.67</td>
+<td align="right">1.96M</td>
+<td align="right">83%</td>
+</tr>
+<tr>
+<td align="left">flat, host tool search</td>
+<td align="left">Haiku 5.5</td>
+<td align="right">18/20</td>
+<td align="right">19/20</td>
+<td align="right">4</td>
+<td align="right">13</td>
+<td align="right">0.10</td>
+<td align="right">2.15M</td>
+<td align="right">84%</td>
+</tr>
+<tr>
+<td align="left">flat, host tool search</td>
+<td align="left">Opus 5.5</td>
+<td align="right">20/20</td>
+<td align="right">20/20</td>
+<td align="right">4</td>
+<td align="right">16</td>
+<td align="right">3.56</td>
+<td align="right">2.22M</td>
+<td align="right">84%</td>
+</tr>
+<tr>
+<td align="left">flat, all schemas up front</td>
+<td align="left">Sonnet 5.5</td>
+<td align="right">20/20</td>
+<td align="right">19/20</td>
+<td align="right">3</td>
+<td align="right">12</td>
+<td align="right">3.53</td>
+<td align="right">16.5M</td>
+<td align="right">97%</td>
+</tr>
+<tr>
+<td align="left">flat, all schemas up front</td>
+<td align="left">Haiku 5.5</td>
+<td align="right">19/20</td>
+<td align="right">20/20</td>
+<td align="right">3</td>
+<td align="right">13</td>
+<td align="right">1.33</td>
+<td align="right">16.6M</td>
+<td align="right">97%</td>
+</tr>
+<tr>
+<td align="left">flat, all schemas up front</td>
+<td align="left">Opus 5.5</td>
+<td align="right">20/20</td>
+<td align="right">20/20</td>
+<td align="right">3</td>
+<td align="right">15</td>
+<td align="right">7.72</td>
+<td align="right">18.4M</td>
+<td align="right">97%</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>Sonnet and Opus completed every task under every condition. Haiku missed 4, 2 and 1. Its groups-mode misses are answers given without opening a group or reading a skill, one attempt at the disallowed shell tool, and one session that wandered into an unrelated host tool.</li>
+<li>Groups cost a turn. Opening a group is a round trip, and nested toolset groups often cost two. Median 5 turns against 3 or 4, and 3 to 4 seconds more per task.</li>
+<li>Loading every schema up front reads seven to eight times the input tokens of groups, at three times the cost. The gap between those two ratios is the provider cache, which served 97% of that 305k-token prefix. Groups and the host&#39;s tool search land in the same band, 2.0M to 2.4M tokens per model.</li>
+<li>On this catalog the host&#39;s tool search does for the flat server what groups do: same completion, same token band, one fewer turn. The deferred scoped tools in groups mode also load through tool search. What groups add is the bundle, instructions and a skill delivered with the tools, and a path for clients without tool search.</li>
+<li>The prompt cache held across group opens. Registering a group&#39;s tools as deferred added about 2.7k tokens on a 42k-token cached prefix. With tool search off, a mid-session registration rewrites the prefix. This is the SEP&#39;s prompt-caching claim observed on a shipped host.</li>
+<li>Three tasks depend on data a dry-run server never returns: a file to upload, key names from a list, namespace ids. Every model took the right first step and said why it stopped. Two Opus sessions filled a bulk delete with made-up key names and one refused to. The rubrics accept the first step for those three.</li>
+</ul>
+<p>The sessions are published with only their conversation rows, since the raw files embed the host&#39;s full system prompt and account ids: <code>results/traces/traces-public/</code> in the repo, 180 files, re-scorable with the committed scripts.</p>
+<h2>Limits</h2>
+<ul>
+<li>One sample per task. Two cells within two of each other are the same result.</li>
+<li>The group names and descriptions are this demo&#39;s, not Cloudflare&#39;s, and they are templated. The <code>-api</code> suffix and the <code>durable-objects</code> / <code>durable-objects-api</code> overlap are naming choices.</li>
+<li>Accepted answers are this demo&#39;s judgment; the list above says where the line was drawn. A different reader might draw it elsewhere.</li>
+<li>The 3,036-tool schemas (1.38M tokens) cannot be tested. Astra skipped the schema control.</li>
+<li>Every server lists a <code>demo_info</code> tool first. Two small models answered it on most flat tasks until a skill answer was available. A real server&#39;s first tool is something else.</li>
+<li>The hosted models in the selection trial ran at their lowest reasoning setting. In the completion run they ran at default effort.</li>
+<li>The answer format is this script&#39;s. A host would expose <code>groups/get</code> as a tool call.</li>
+<li>Token counts in the tables are compact JSON. A provider&#39;s tool prompt renders schemas differently, and generated schemas are verbose. <code>opt1</code>&#39;s task load depends on how long its paraphrase is.</li>
+<li>The completion run is one model family on one host, 20 tasks, one sample each, with the host&#39;s user-level plugins loaded in every arm alike. The tool-search arm is Claude Code&#39;s implementation. The flat baseline is a mode Cloudflare documents as an escape hatch, and groups against Code Mode was not measured.</li>
+<li>The OpenAI chat completions API reported no cached tokens even with a <code>prompt_cache_key</code>, so the GPT-6 input counts are uncached. Anthropic, Kimi and Gemini 4 Argon reported cache reads throughout.</li>
+<li>One server, one vendor&#39;s catalog, three workflows, models pinned by name on one provider on two days.</li>
+</ul>
+<h2>What is next</h2>
+<ol>
+<li>Task-vocabulary descriptions for the confusable toolset groups (queues against pipelines, D1 against Hyperdrive and SQL, Workers against containers and builds, KV against Flagship) and a re-run of groups mode at 139 with the open models, to see whether the SEP&#39;s description guidance closes the gap.</li>
+<li>The real-client run on other hosts and models. Pi&#39;s extension system is the next harness, and it brings non-Claude models. The same sessions as a Hugging Face agent-traces dataset.</li>
+<li>Groups against Cloudflare&#39;s own Code Mode on the same tasks.</li>
+<li>Tasks against a server that answers with data, so the read-then-act tasks can complete.</li>
+</ol>
+<h2>Reproduce</h2>
+<p><a href="https://github.com/olaservo/mcp-progressive-disclosure-evals">https://github.com/olaservo/mcp-progressive-disclosure-evals</a>: <code>npm ci</code>, <code>npm run dev</code>, <code>npm run compare</code> for the token tables against localhost, or <code>npm run compare -- --urls ...</code> against the deployed Workers. <code>npm run select -- --replay results/&lt;file&gt;.jsonl</code> rebuilds any trial summary from the committed raw answers without calling a model. <code>npm run trace:score -- --label traces-public</code> re-scores the committed sessions. <code>npm run vendor:full</code> builds the 3,036-tool catalog from a cloudflare/mcp checkout at <code>4938f2f3</code>. The README has every command behind every table.</p>
+
+</main>
+<footer>
+<p>Rendered from <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals/blob/main/drafts/wg-findings-writeup.md" target="_blank"><code>drafts/wg-findings-writeup.md</code></a> by <code>npm run pages:build</code>. The markdown is the source; edit it, not this file.</p>
+<p>Written by Ola Hungerford. The views are mine, not the working group's.</p>
+</footer>
+<script>
+  (function () {
+    var root = document.documentElement, btn = document.getElementById('theme-toggle');
+    try { var saved = localStorage.getItem('theme'); if (saved) root.setAttribute('data-theme', saved); } catch (e) {}
+    btn.addEventListener('click', function () {
+      var dark = root.getAttribute('data-theme') === 'dark' || (!root.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+      var next = dark ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('theme', next); } catch (e) {}
+    });
+  })();
+</script>
+</body>
+</html>

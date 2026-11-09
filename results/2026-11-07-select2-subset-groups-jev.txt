@@ -1,0 +1,41 @@
+
+groups mode, task set v2, https://pd-groups-opt2.olahungerford.workers.dev/mcp. 1 top-level tools, 13 groups, 442 prompt tokens (o200k_base) before the task. 20 tasks x 1 samples.
+
+| Model | Reasoning | Correct | Right name, either key | Picked a group | None | Unparsed or error | Avg input tokens | Cache read |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: |
+| jev-latest | system one api, choice question | 18/20 | 18/20 | 18 | 2 | 0 | 826 | 0 |
+
+Picks by task:
+
+| Task | Expected | jev-latest |
+| :-- | :-- | :-- |
+| Add a bot check to our signup form and verify the challenge result on the server before accepting the submission. | turnstile-spin / turnstile-api | turnstile-spin |
+| The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it. | turnstile-spin / turnstile-api | turnstile-spin |
+| Forward everything sent to billing@ at our domain to a Gmail inbox. | cloudflare-email-service / email-routing-api | email-routing-api |
+| Set up a sender address so our edge function can email order receipts after checkout. | cloudflare-email-service / email-sending-api | cloudflare-email-service |
+| Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not. | cloudflare-email-service / email-sending-api | MISS none |
+| Build a per-chat-room state holder that serializes writes and wakes itself once an hour. | durable-objects / durable-objects-api | durable-objects |
+| Which of our stateful object classes have instances that currently hold stored data? | durable-objects / durable-objects-api | durable-objects-api |
+| Review our stateful coordination class for alarm-handling bugs. | durable-objects | durable-objects |
+| Process image-resize jobs in the background, retrying any job that fails. | queues-api | queues-api |
+| Add a dead-letter destination for messages that fail repeatedly on the orders pipeline. | queues-api | queues-api |
+| Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed. | r2-api | r2-api |
+| Expire files under tmp/ in our object store after 7 days. | r2-api | r2-api |
+| Store small read-heavy feature flags at the edge. Eventual consistency is fine. | kv-api | kv-api |
+| Remove every entry whose key begins with "session:" from the edge key-value store. | kv-api | kv-api |
+| We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage. | d1-api | d1-api |
+| Push a new build of our edge function and make it live. | workers-api | workers-api |
+| Run our edge function every night at 02:00. | workers-api | workers-api |
+| Run our Docker image at the edge and show the running instances. | containers-api | containers-api |
+| What is the recommended structure for an edge function's fetch handler? | none | MISS group:workers-api |
+| Rotate the account API token our deployment pipeline uses. | none | none |
+
+Tasks that accept either the skill group or the API group, correct answers only:
+- jev-latest: skill group 4, API group 2
+
+Misses (right name under the wrong key is marked *):
+- jev-latest:
+  - "Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not." -> none (expected cloudflare-email-service | email-sending-api)
+  - "What is the recommended structure for an edge function's fetch handler?" -> group:workers-api (expected none)
+
+Raw trials: results/2026-11-07-select2-subset-groups-jev.jsonl

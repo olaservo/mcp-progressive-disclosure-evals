@@ -1,0 +1,9 @@
+node_modules/
+.upstream/
+.wrangler/
+dist/
+
+mods/.groups-flat/
+# raw headless sessions embed the system prompt and account ids; the redacted copy is committed
+results/traces/traces/
+results/traces/smoke*/

@@ -1,0 +1,76 @@
+
+flat mode, task set v2, https://pd-groups-flat.olahungerford.workers.dev/mcp. 238 top-level tools, 0 groups, 6720 prompt tokens (o200k_base) before the task. 20 tasks x 1 samples.
+
+| Model | Reasoning | Correct | Right name, either key | Picked a group | None | Unparsed or error | Avg input tokens | Cache read |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: |
+| claude-opus-5-5 | effort low | 17/20 | 17/20 | 0 | 0 | 0 | 73 | 216600 |
+| claude-sonnet-5-5 | effort low | 17/20 | 17/20 | 0 | 1 | 0 | 73 | 216600 |
+| claude-haiku-5-5 | effort low | 7/20 | 7/20 | 0 | 0 | 0 | 73 | 216600 |
+| gpt-6-astra | reasoning_effort low | 19/20 | 19/20 | 0 | 2 | 0 | 6748 | 0 |
+| gpt-6.1-sol | reasoning_effort low | 19/20 | 19/20 | 0 | 2 | 0 | 6748 | 0 |
+| gpt-6.1-terra | reasoning_effort none | 17/20 | 17/20 | 0 | 2 | 0 | 6748 | 0 |
+| gpt-6-luna | reasoning_effort none | 17/20 | 17/20 | 0 | 1 | 0 | 6748 | 0 |
+| kimi-k3.1-pro | reasoning_effort low | 20/20 | 20/20 | 0 | 2 | 0 | 6796 | 126464 |
+
+Picks by task:
+
+| Task | Expected | claude-opus-5-5 | claude-sonnet-5-5 | claude-haiku-5-5 | gpt-6-astra | gpt-6.1-sol | gpt-6.1-terra | gpt-6-luna | kimi-k3.1-pro |
+| :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
+| Add a bot check to our signup form and verify the challenge result on the server before accepting the submission. | turnstile_ | tool:turnstile_widgets_create | tool:turnstile_widgets_create | tool:turnstile_widgets_create | tool:turnstile_widgets_create | tool:turnstile_widgets_create | tool:turnstile_widgets_create | tool:turnstile_widgets_create | tool:turnstile_widgets_create |
+| The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it. | turnstile_widgets_rotateSecret | tool:turnstile_widgets_rotateSecret | tool:turnstile_widgets_rotateSecret | MISS tool:turnstile_widgets_list | tool:turnstile_widgets_rotateSecret | tool:turnstile_widgets_rotateSecret | MISS tool:turnstile_widgets_list | MISS tool:turnstile_widgets_list | tool:turnstile_widgets_rotateSecret |
+| Forward everything sent to billing@ at our domain to a Gmail inbox. | emailRouting_ | tool:emailRouting_addresses_create | tool:emailRouting_addresses_list | MISS tool:demo_info | tool:emailRouting_rules_create | tool:emailRouting_addresses_list | tool:emailRouting_addresses_list | tool:emailRouting_rules_create | tool:emailRouting_addresses_create |
+| Set up a sender address so our edge function can email order receipts after checkout. | emailSending_ | tool:emailSending_subdomains_create | tool:emailSending_subdomains_create | MISS tool:demo_info | tool:emailSending_subdomains_create | tool:emailSending_subdomains_create | tool:emailSending_subdomains_preview | tool:emailSending_subdomains_create | tool:emailSending_subdomains_create |
+| Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not. | emailSending_subdomains_dns | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status |
+| Build a per-chat-room state holder that serializes writes and wakes itself once an hour. | durableObjects_ | MISS tool:demo_info | MISS tool:workers_legacy_scripts_update | MISS tool:demo_info | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list | MISS tool:workers_legacy_scripts_update | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list |
+| Which of our stateful object classes have instances that currently hold stored data? | durableObjects_ | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list |
+| Review our stateful coordination class for alarm-handling bugs. | durableObjects_ | tool:durableObjects_namespaces_list | MISS tool:workers_legacy_scripts_content_get | MISS tool:demo_info | MISS tool:workers_legacy_scripts_content_get | MISS tool:workers_legacy_scripts_content_get | MISS tool:workers_scripts_search | MISS tool:demo_info | tool:durableObjects_namespaces_list |
+| Process image-resize jobs in the background, retrying any job that fails. | queues_ | tool:queues_create | tool:queues_create | MISS tool:demo_info | tool:queues_create | tool:queues_create | tool:queues_consumers_create | tool:queues_consumers_create | tool:queues_consumers_create |
+| Add a dead-letter destination for messages that fail repeatedly on the orders pipeline. | queues_ | tool:queues_list | tool:queues_list | MISS tool:demo_info | tool:queues_list | tool:queues_list | tool:queues_list | tool:queues_edit | tool:queues_edit |
+| Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed. | r2_ | tool:r2_buckets_cors_update | tool:r2_buckets_cors_update | MISS tool:demo_info | tool:r2_buckets_cors_update | tool:r2_buckets_cors_update | tool:r2_buckets_create | tool:r2_buckets_cors_get | tool:r2_buckets_cors_update |
+| Expire files under tmp/ in our object store after 7 days. | r2_buckets_lifecycle | tool:r2_buckets_lifecycle_get | tool:r2_buckets_lifecycle_update | MISS tool:demo_info | tool:r2_buckets_lifecycle_get | tool:r2_buckets_lifecycle_get | tool:r2_buckets_lifecycle_get | tool:r2_buckets_lifecycle_update | tool:r2_buckets_lifecycle_update |
+| Store small read-heavy feature flags at the edge. Eventual consistency is fine. | kv_ | tool:kv_namespaces_create | tool:kv_namespaces_create | tool:kv_namespaces_create | tool:kv_namespaces_create | tool:kv_namespaces_create | tool:kv_namespaces_create | tool:kv_namespaces_list | tool:kv_namespaces_create |
+| Remove every entry whose key begins with "session:" from the edge key-value store. | kv_ | tool:kv_keys_list | tool:kv_keys_list | tool:kv_keys_list | tool:kv_namespaces_list | tool:kv_namespaces_list | tool:kv_namespaces_list | tool:kv_keys_list | tool:kv_keys_list |
+| We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage. | d1_ | tool:d1_create | tool:d1_create | tool:d1_create | tool:d1_create | tool:d1_create | tool:d1_create | tool:d1_list | tool:d1_create |
+| Push a new build of our edge function and make it live. | workers_ | tool:workers_versions_create | tool:workers_legacy_scripts_update | MISS tool:demo_info | tool:workers_legacy_scripts_update | tool:workers_versions_create | tool:workers_versions_create | tool:workers_legacy_scripts_update | tool:workers_versions_create |
+| Run our edge function every night at 02:00. | workers_scripts_schedules | tool:workers_scripts_schedules_update | tool:workers_scripts_schedules_update | MISS tool:demo_info | tool:workers_scripts_schedules_update | tool:workers_scripts_schedules_update | tool:workers_scripts_schedules_update | tool:workers_scripts_schedules_update | tool:workers_scripts_schedules_update |
+| Run our Docker image at the edge and show the running instances. | containers_ | tool:containers_applications_create | tool:containers_applications_create | tool:containers_applications_list | tool:containers_applications_create | tool:containers_applications_create | tool:containers_applications_create | tool:containers_images_prepare | tool:containers_applications_create |
+| What is the recommended structure for an edge function's fetch handler? | none | MISS tool:demo_info | MISS tool:demo_info | MISS tool:demo_info | none | none | none | MISS tool:demo_info | none |
+| Rotate the account API token our deployment pipeline uses. | none | MISS tool:demo_info | none | MISS tool:demo_info | none | none | none | none | none |
+
+Misses (right name under the wrong key is marked *):
+- claude-opus-5-5:
+  - "Build a per-chat-room state holder that serializes writes and wakes itself once an hour." -> tool:demo_info (expected durableObjects_)
+  - "What is the recommended structure for an edge function's fetch handler?" -> tool:demo_info (expected none)
+  - "Rotate the account API token our deployment pipeline uses." -> tool:demo_info (expected none)
+- claude-sonnet-5-5:
+  - "Build a per-chat-room state holder that serializes writes and wakes itself once an hour." -> tool:workers_legacy_scripts_update (expected durableObjects_)
+  - "Review our stateful coordination class for alarm-handling bugs." -> tool:workers_legacy_scripts_content_get (expected durableObjects_)
+  - "What is the recommended structure for an edge function's fetch handler?" -> tool:demo_info (expected none)
+- claude-haiku-5-5:
+  - "The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it." -> tool:turnstile_widgets_list (expected turnstile_widgets_rotateSecret)
+  - "Forward everything sent to billing@ at our domain to a Gmail inbox." -> tool:demo_info (expected emailRouting_)
+  - "Set up a sender address so our edge function can email order receipts after checkout." -> tool:demo_info (expected emailSending_)
+  - "Build a per-chat-room state holder that serializes writes and wakes itself once an hour." -> tool:demo_info (expected durableObjects_)
+  - "Review our stateful coordination class for alarm-handling bugs." -> tool:demo_info (expected durableObjects_)
+  - "Process image-resize jobs in the background, retrying any job that fails." -> tool:demo_info (expected queues_)
+  - "Add a dead-letter destination for messages that fail repeatedly on the orders pipeline." -> tool:demo_info (expected queues_)
+  - "Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed." -> tool:demo_info (expected r2_)
+  - "Expire files under tmp/ in our object store after 7 days." -> tool:demo_info (expected r2_buckets_lifecycle)
+  - "Push a new build of our edge function and make it live." -> tool:demo_info (expected workers_)
+  - "Run our edge function every night at 02:00." -> tool:demo_info (expected workers_scripts_schedules)
+  - "What is the recommended structure for an edge function's fetch handler?" -> tool:demo_info (expected none)
+  - "Rotate the account API token our deployment pipeline uses." -> tool:demo_info (expected none)
+- gpt-6-astra:
+  - "Review our stateful coordination class for alarm-handling bugs." -> tool:workers_legacy_scripts_content_get (expected durableObjects_)
+- gpt-6.1-sol:
+  - "Review our stateful coordination class for alarm-handling bugs." -> tool:workers_legacy_scripts_content_get (expected durableObjects_)
+- gpt-6.1-terra:
+  - "The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it." -> tool:turnstile_widgets_list (expected turnstile_widgets_rotateSecret)
+  - "Build a per-chat-room state holder that serializes writes and wakes itself once an hour." -> tool:workers_legacy_scripts_update (expected durableObjects_)
+  - "Review our stateful coordination class for alarm-handling bugs." -> tool:workers_scripts_search (expected durableObjects_)
+- gpt-6-luna:
+  - "The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it." -> tool:turnstile_widgets_list (expected turnstile_widgets_rotateSecret)
+  - "Review our stateful coordination class for alarm-handling bugs." -> tool:demo_info (expected durableObjects_)
+  - "What is the recommended structure for an edge function's fetch handler?" -> tool:demo_info (expected none)
+
+Raw trials: results/2026-11-07-select2-subset-flat-hosted.jsonl

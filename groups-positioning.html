@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+<title>what groups over MCP buy you, measured</title>
+<style>
+  :root { --ink: #1a1a18; --bg: #faf9f5; --border: #e2e0d8; --label: #52514E; --groups: #3b6ea5; --search: #8a6d1f; --allschemas: #a3433b; color-scheme: light; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --ink: #e6e4dc; --bg: #17171a; --border: #3a3a3e; --label: #A6A49C; --groups: #8fb4e0; --search: #d9b85a; --allschemas: #e08a82; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --ink: #e6e4dc; --bg: #17171a; --border: #3a3a3e; --label: #A6A49C; --groups: #8fb4e0; --search: #d9b85a; --allschemas: #e08a82; color-scheme: dark; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 2rem 1rem; color: var(--ink); background: var(--bg); }
+  main { max-width: 720px; margin: 0 auto; }
+  h1, h2, h3 { font-family: "Comic Sans MS", "Comic Sans", "Comic Neue", cursive; }
+  h1 { font-size: 1.5rem; font-weight: 500; margin: 0; }
+  h2 { font-size: 1.3rem; font-weight: 500; }
+  h3 { font-size: 1.15rem; font-weight: 500; margin-top: 2.5rem; }
+  .masthead { border-bottom: 1px solid var(--border); padding-bottom: 0.8rem; margin-bottom: 2rem; }
+  .masthead nav { font-size: 0.85rem; margin-top: 0.6rem; }
+  p, ul, ol { line-height: 1.7; }
+  table { border-collapse: collapse; font-size: 0.9rem; width: 100%; }
+  th, td { text-align: left; padding: 0.4rem 0.75rem 0.4rem 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-weight: 500; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.85em; }
+  a { color: inherit; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.85rem; }
+  footer p { margin: 0.3rem 0; }
+  .footnote { font-size: 0.85rem; margin-top: 2.5rem; color: var(--label); }
+  #theme-toggle { position: fixed; top: 1rem; right: 1rem; font: inherit; font-size: 0.85rem; padding: 0.3rem 0.7rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--ink); cursor: pointer; }
+  figure.arms { margin: 2.2rem 0 2.6rem; }
+  figure.arms svg { display: block; width: 100%; height: auto; }
+  figure.arms figcaption { font-size: 0.95rem; color: var(--label); margin-top: 0.6rem; }
+  .arms text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13px; fill: var(--ink); }
+  .arms text.small { font-size: 11.5px; fill: var(--label); }
+  .arms text.head { font-family: "Comic Sans MS", "Comic Sans", "Comic Neue", cursive; font-size: 15px; }
+  .arms .box { fill: none; stroke: var(--border); stroke-width: 1.2; }
+  .arms .bar-groups { fill: var(--groups); } .arms .bar-search { fill: var(--search); } .arms .bar-allschemas { fill: var(--allschemas); }
+  .arms .line { stroke: var(--border); stroke-width: 1.2; fill: none; }
+</style>
+</head>
+<body>
+<button id="theme-toggle" type="button" aria-label="Toggle light and dark theme">theme</button>
+<main>
+<header class="masthead">
+<h1>Ola&#8217;s MCP groups research</h1>
+<p>The <a href="https://github.com/modelcontextprotocol/progressive-disclosure-wg/pull/19" target="_blank">Groups extension</a> says an MCP server should disclose its tools on demand. What does that help solve, and how much?</p>
+<nav aria-label="Related pages">
+  <a href="writeup.html">the long write-up</a> &middot;
+  <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals" target="_blank">the demo repository</a> &middot;
+  <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals/releases/tag/traces-2026-11-08" target="_blank">the session traces</a> &middot;
+  <a href="https://modelcontextprotocol.io/community/working-groups/progressive-disclosure" target="_blank">the working group's charter</a>
+</nav>
+</header>
+
+<h2>What groups over MCP buy you, measured on one giant tools + skills catalog</h2>
+
+<p>An MCP server with a lot of tools and/or skills has a problem: by default, every tool's schema goes into the model's context on every turn, whether the task needs it or not. The MCP <a href="https://modelcontextprotocol.io/community/working-groups/progressive-disclosure" target="_blank">Progressive Disclosure working group</a> (its <a href="https://github.com/modelcontextprotocol/progressive-disclosure-wg" target="_blank">repository</a>, its <a href="https://discord.com/channels/1358869848138059966/1425903819186770064" target="_blank">Discord channel</a>) has a draft <strong>Groups</strong> extension that answers this with two methods. <code>groups/list</code> returns a short list of named bundles, and <code>groups/get</code> returns one bundle's tools, prompts, resources and instructions when the agent decides it needs them. A companion document asks how Groups should sit next to <a href="https://github.com/modelcontextprotocol/ext-skills" target="_blank">Skills over MCP</a>, which discloses instructions the same way.</p>
+
+<p>I built both on a real catalog to see what the numbers look like. The server I used for this experiment is Cloudflare's own API MCP server, which includes 3,036 generated tools from 136 products, along with five of Cloudflare's published skills. One Worker serves it four ways: flat, and under each of the three positioning options the working group is weighing. Everything below was measured on the 2026-11-07 drafts of both documents.</p>
+
+<h3>Three things the numbers say</h3>
+
+<p><strong>1. Groups solve a context-size problem, and it is definitely a problem at this scale.</strong> The flat tool list for 3,036 tools is 1.38 million tokens, more than any model can read. The groups list for the same catalog, using 139 top-level groups, is 5.5 thousand tokens. The bundle the agent then fetches for a task is the same size whether the catalog has 238 tools or 3,036. On a 238-tool subset the saving is still 157 thousand tokens down to about 700.</p>
+
+<p><strong>2. Groups did not change what tool or skill the model picked.</strong> I gave sixteen models twenty tasks that describe a job without naming the product ("Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed") and asked where they would look first. Every hosted model landed within two tasks of itself whether it saw 13 groups, 139 groups, 238 flat tool names or 3,036 of them. The draft already says this in its own evidence section: groups keep unread schemas out of context, but they do not beat using a flat list when it came to selection.</p>
+
+<p>One tweak that did change the selection result between lines was adding the five-line skills index to the prompt, which lifted the 'flat list' variant scores by up to 17 of 20 for some models.</p>
+
+<p><strong>3. When testing through a real harness, the host's own tool search gets the same result.</strong> I wrote a Claude Code mod that implements the groups extension and ran the twenty tasks as 180 headless sessions, three models, three ways. Sonnet and Opus finished every task in every variant. Haiku finished 16, 18 and 19.</p>
+
+<figure class="arms">
+<svg viewBox="0 0 680 230" role="img" aria-labelledby="arms-title">
+  <title id="arms-title">Input tokens per model across the three conditions</title>
+  <text class="head" x="0" y="18">input tokens per model, 20 tasks</text>
+  <text x="0" y="52">groups</text>
+  <rect class="bar-groups" x="150" y="40" width="63" height="16" rx="2"/>
+  <text class="small" x="220" y="52">2.3M &middot; 20/20 &middot; 5 turns</text>
+  <text x="0" y="88">host tool search</text>
+  <rect class="bar-search" x="150" y="76" width="58" height="16" rx="2"/>
+  <text class="small" x="215" y="88">2.0M to 2.2M &middot; 20/20 &middot; 3 to 4 turns</text>
+  <text x="0" y="124">all 238 schemas up front</text>
+  <rect class="bar-allschemas" x="150" y="112" width="470" height="16" rx="2"/>
+  <text class="small" x="150" y="146">16.5M to 18.4M &middot; 20/20 &middot; 3 turns &middot; 97% served from the provider cache</text>
+  <line class="line" x1="150" y1="30" x2="150" y2="156"/>
+  <text class="small" x="0" y="190">completion and turns are Sonnet 5.5; Opus matches; Haiku finished 16, 18 and 19 of 20</text>
+  <text class="small" x="0" y="210">tokens include cache reads; the all-schemas arm's 305k-token prefix is written once and read on every turn</text>
+</svg>
+<figcaption>The same twenty tasks through Claude Code. Groups and the host's tool search land in the same band. Loading every schema costs seven to eight times the tokens and three times the money.</figcaption>
+</figure>
+
+<p>Groups cost one extra turn, because opening a bundle is a round trip.  Nested bundles sometimes cost two. The prompt cache held when opening bundles.  Registering a group's tools added about 2.7 thousand tokens on a 42 thousand-token cached prefix, which is the behavior the draft's caching section predicts. Claude Code's own tool search, with nothing from the extension, reached the same completion and the same token band using one less turn.</p>
+
+<h3>So what do groups solve?</h3>
+
+<p>Against the working group's own four criteria: groups deliver initial context size and total tokens, leave task completion unchanged for frontier models, and add a turn in exchange for each harness not needing to invent its own solution for reducing token bloat. On this catalog a host with tool search gets the token result without a protocol change. What groups add that tool search cannot is the <em>bundle</em>: a server-authored set of tools with the instructions and the skill that go with them, delivered together, scoped to the caller, and a path for clients that have no tool search of their own.  It also provides the same solution for skills served over MCP, and any other MCP primitive besides just tools. Harnesses are still working out how to handle large numbers of file-based skills (<a href="https://www.olahungerford.com/skills-research/skills_catalog_regimes.html" target="_blank">how harnesses bound their agent skills catalog</a>), so a server-side bundle is one more reason to serve skills over MCP.</p>
+
+<p>Two things the server author controls turned out to matter more than the mechanism itself. Group <em>descriptions</em> directly influenced the whole selection: my templated one-liners ("Call the Cloudflare queues API directly") cost the mid-size open models up to six of twenty tasks at 139 groups, which is what the draft's guidance warns about. And a server that offers both a workflow group and a plain toolset group for one product splits the models between them, so it should say in the descriptions which to open when.</p>
+
+<h3>Caveats</h3>
+
+<p>This experiment only included one sample per task. The group names and descriptions are mine, not Cloudflare's. The full completion run using Claude Code used one model family on one host.  It also tested against a dry-run server that returns the request a tool would send and never any data. The 'flat list' baseline is a mode Cloudflare itself ships only as an escape hatch; the server's default is Code Mode, which I did not compare. The <a href="writeup.html">write-up</a> has every table, every accepted answer and every limit, and the <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals/releases/tag/traces-2026-11-08" target="_blank">180 sessions</a> are also there to review.</p>
+
+<p class="footnote">Measured 2026-11-07 and 2026-11-08 against progressive-disclosure-wg#19 at <code>15b2a5c</code> and #22 at <code>5e9ff2f</code>, on the TypeScript SDK 2.4.0 and Claude Code 2.1.319. Tool counts and schemas are from cloudflare/mcp at <code>4938f2f3</code>; skills from cloudflare/skills at <code>1a33048</code>. Token counts in the first finding are tiktoken over compact JSON; in the third they are the provider's own.</p>
+</main>
+<footer>
+<p>Code, raw answers and sessions: <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals" target="_blank">olaservo/mcp-progressive-disclosure-evals</a> (Apache-2.0).</p>
+<p>Written by Ola Hungerford. The views are mine, not the working group's.</p>
+</footer>
+<script>
+  (function () {
+    var root = document.documentElement, btn = document.getElementById('theme-toggle');
+    try { var saved = localStorage.getItem('theme'); if (saved) root.setAttribute('data-theme', saved); } catch (e) {}
+    btn.addEventListener('click', function () {
+      var dark = root.getAttribute('data-theme') === 'dark' || (!root.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+      var next = dark ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('theme', next); } catch (e) {}
+    });
+  })();
+</script>
+</body>
+</html>

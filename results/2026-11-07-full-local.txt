@@ -1,0 +1,66 @@
+3037 tools. One task per cloudflare/skills workflow: set up Turnstile (turnstile-spin), inspect Durable Objects (durable-objects), configure email (cloudflare-email-service).
+Token counts are tiktoken o200k_base over the compact JSON the model would see.
+
+| Variant | Task | Upfront tokens | Task-load tokens | Task tools | Tools for a 2025 client | Bytes on the wire |
+| :-- | :-- | --: | --: | --: | --: | --: |
+| flat | set up Turnstile | 1378777 | 6570 | 6 | 3037 | 6180816 |
+| flat | inspect Durable Objects | 1378777 | 1369 | 3 | 3037 | 6158258 |
+| flat | configure email | 1378777 | 1493 | 41 | 3037 | 6158761 |
+| opt1 | set up Turnstile | 5308 | 2190 | 6 | 3037 | 35191 |
+| opt1 | inspect Durable Objects | 5308 | 897 | 3 | 3037 | 29706 |
+| opt1 | configure email | 5308 | 7822 | 24 | 3037 | 61344 |
+| opt2 | set up Turnstile | 5495 | 8768 | 6 | 3037 | 72950 |
+| opt2 | inspect Durable Objects | 5495 | 2305 | 3 | 3037 | 43502 |
+| opt2 | configure email | 5495 | 9319 | 24 | 3037 | 75946 |
+| opt3 | set up Turnstile | 5416 | 9037 | 6 | 3037 | 66049 |
+| opt3 | inspect Durable Objects | 5416 | 2313 | 3 | 3037 | 36714 |
+| opt3 | configure email | 5416 | 9291 | 24 | 3037 | 68333 |
+
+flat / turnstile-spin:
+  - skill verified=true; the skill names no tools, so all 3037 tools stay in front of the model
+flat / durable-objects:
+  - skill verified=true; the skill names no tools, so all 3037 tools stay in front of the model
+flat / cloudflare-email-service:
+  - skill verified=true; the skill names no tools, so all 3037 tools stay in front of the model
+opt1 / turnstile-spin:
+  - placement: no scoped resource is also in resources/list
+  - no skill: the workflow prose is authored in the group and drops the skill's reference files
+  - turnstile_widgets_create ran on a connection with no groups/get; in that connection's tools/list: false
+opt1 / durable-objects:
+  - placement: no scoped resource is also in resources/list
+  - no skill: the workflow prose is authored in the group and drops the skill's reference files
+  - durableObjects_namespaces_list ran on a connection with no groups/get; in that connection's tools/list: false
+opt1 / cloudflare-email-service:
+  - placement: no scoped resource is also in resources/list
+  - no skill: the workflow prose is authored in the group and drops the skill's reference files
+  - emailSending_get ran on a connection with no groups/get; in that connection's tools/list: false
+opt2 / turnstile-spin:
+  - placement: no scoped resource is also in resources/list
+  - group lists skill://turnstile-spin/SKILL.md; skills/get + read verified=true; listed in skills/list: true
+  - turnstile_widgets_create ran on a connection with no groups/get; in that connection's tools/list: false
+opt2 / durable-objects:
+  - placement: no scoped resource is also in resources/list
+  - group lists skill://durable-objects/SKILL.md; skills/get + read verified=true; listed in skills/list: true
+  - durableObjects_namespaces_list ran on a connection with no groups/get; in that connection's tools/list: false
+opt2 / cloudflare-email-service:
+  - placement: no scoped resource is also in resources/list
+  - group lists skill://cloudflare-email-service/SKILL.md; skills/get + read verified=true; listed in skills/list: true
+  - emailSending_get ran on a connection with no groups/get; in that connection's tools/list: false
+opt3 / turnstile-spin:
+  - a SEP-2640 skills client fails: skills/list returned invalid entries: #0 : uri: missing; frontmatter: missing; resources: Invalid input
+  - placement: no scoped resource is also in resources/list
+  - 7 relative links in instructions (e.g. references/vanilla-html.md); 7 match a scoped resource only if the host takes skill://turnstile-spin/ as their base, which the response does not state
+  - SKILL.md body delivered as instructions: no skill entry, no digests
+  - turnstile_widgets_create ran on a connection with no skills/get; in that connection's tools/list: false
+opt3 / durable-objects:
+  - a SEP-2640 skills client fails: skills/list returned invalid entries: #0 : uri: missing; frontmatter: missing; resources: Invalid input
+  - placement: no scoped resource is also in resources/list
+  - 1 relative links in instructions (e.g. references/skill-feedback.md); 1 match a scoped resource only if the host takes skill://durable-objects/ as their base, which the response does not state
+  - SKILL.md body delivered as instructions: no skill entry, no digests
+  - durableObjects_namespaces_list ran on a connection with no skills/get; in that connection's tools/list: false
+opt3 / cloudflare-email-service:
+  - a SEP-2640 skills client fails: skills/list returned invalid entries: #0 : uri: missing; frontmatter: missing; resources: Invalid input
+  - placement: no scoped resource is also in resources/list
+  - 16 relative links in instructions (e.g. references/cli-and-mcp.md); 16 match a scoped resource only if the host takes skill://cloudflare-email-service/ as their base, which the response does not state
+  - SKILL.md body delivered as instructions: no skill entry, no digests
+  - emailSending_get ran on a connection with no skills/get; in that connection's tools/list: false

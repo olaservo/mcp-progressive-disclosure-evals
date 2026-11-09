@@ -1,0 +1,22 @@
+
+groups mode, https://pd-groups-opt2.olahungerford.workers.dev/mcp. 1 top-level tools, 13 groups, 442 prompt tokens (o200k_base) before the task. 14 tasks x 5 samples.
+
+| Model | Correct | Right name, either key | Picked a group | None | Unparsed or error | Avg input tokens |
+| :-- | --: | --: | --: | --: | --: | --: |
+| Qwen/Qwen3.5-9B:deepinfra | 45/70 | 65/70 | 50 | 0 | 0 | 489 |
+| Qwen/Qwen3-14B:deepinfra | 70/70 | 70/70 | 65 | 5 | 0 | 472 |
+| claude-opus-5-5 | 70/70 | 70/70 | 65 | 5 | 0 | 83 |
+
+Misses (right name under the wrong key is marked *):
+- Qwen/Qwen3.5-9B:deepinfra:
+  - "Our Turnstile secret key leaked in a public repo. Rotate it." -> tool:turnstile-api* (expected turnstile-spin | turnstile-api)
+  - "Which Durable Object namespaces exist in this account, and which objects in them hold storage?" -> tool:durable-objects-api* (expected durable-objects | durable-objects-api)
+  - "Create a new D1 database for the staging environment." -> tool:d1-api* (expected d1-api)
+  - "Delete every key under the prefix "session:" in a KV namespace." -> tool:kv-api*, tool:kv-api*, tool:kv-api*, tool:kv-api*, tool:kv-api* (expected kv-api)
+  - "Set CORS rules on the uploads R2 bucket." -> tool:r2-api*, tool:r2-api*, tool:r2-api*, tool:r2-api*, tool:r2-api* (expected r2-api)
+  - "Add a consumer to the orders queue." -> tool:queues-api* (expected queues-api)
+  - "Upload a new version of the api Worker script and deploy it." -> tool:workers-api*, tool:workers-api*, tool:workers-api*, tool:workers-api*, tool:workers-api* (expected workers-api)
+  - "List the running instances of our container application." -> tool:containers-api* (expected containers-api)
+  - "What's the recommended structure for a Worker's fetch handler?" -> group:workers-api, group:workers-api, group:workers-api, group:workers-api, group:workers-api (expected none)
+
+Raw trials: results/2026-11-07-select-subset-opt2-groups.jsonl

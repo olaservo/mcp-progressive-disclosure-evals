@@ -1,0 +1,61 @@
+
+flat-schemas mode, task set v2, https://pd-groups-flat.olahungerford.workers.dev/mcp. 238 top-level tools, 0 groups, 157642 prompt tokens (o200k_base) before the task. 20 tasks x 1 samples.
+
+| Model | Reasoning | Correct | Right name, either key | Picked a group | None | Unparsed or error | Avg input tokens | Cache read |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: |
+| Qwen/Qwen3.5-9B:deepinfra | enable_thinking false, temperature 0.2, seeded | 8/20 | 8/20 | 0 | 12 | 0 | 152562 | 0 |
+| zai-org/GLM-5.3-Flash:baseten | enable_thinking false, temperature 0.2, seeded | 18/20 | 18/20 | 0 | 2 | 0 | 152053 | 2884352 |
+| deepseek-ai/DeepSeek-V4.1-Flash:baseten | enable_thinking false, temperature 0.2, seeded | 19/20 | 19/20 | 0 | 1 | 1 | 172917 | 3110400 |
+| Qwen/Qwen3.6-35B-A3B:deepinfra | enable_thinking false, temperature 0.2, seeded | 20/20 | 20/20 | 0 | 2 | 0 | 152562 | 2112768 |
+| google/gemma-4-26B-A4B-it:deepinfra | enable_thinking false, temperature 0.2, seeded | 17/20 | 17/20 | 0 | 3 | 0 | 169735 | 0 |
+
+Picks by task:
+
+| Task | Expected | Qwen3.5-9B | GLM-5.3-Flash | DeepSeek-V4.1-Flash | Qwen3.6-35B-A3B | gemma-4-26B-A4B-it |
+| :-- | :-- | :-- | :-- | :-- | :-- | :-- |
+| Add a bot check to our signup form and verify the challenge result on the server before accepting the submission. | turnstile_ | tool:turnstile_widgets_create | tool:turnstile_widgets_create | tool:turnstile_widgets_create | tool:turnstile_widgets_create | tool:turnstile_widgets_create |
+| The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it. | turnstile_widgets_rotateSecret | MISS tool:turnstile_widgets_list | MISS tool:turnstile_widgets_list | tool:turnstile_widgets_rotateSecret | tool:turnstile_widgets_rotateSecret | MISS tool:turnstile_widgets_list |
+| Forward everything sent to billing@ at our domain to a Gmail inbox. | emailRouting_ | MISS none | tool:emailRouting_addresses_create | tool:emailRouting_rules_create | tool:emailRouting_rules_create | tool:emailRouting_rules_create |
+| Set up a sender address so our edge function can email order receipts after checkout. | emailSending_ | MISS tool:emailRouting_addresses_create | tool:emailSending_subdomains_list | tool:emailSending_subdomains_create | tool:emailSending_subdomains_create | tool:emailSending_subdomains_create |
+| Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not. | emailSending_subdomains_dns | tool:emailSending_subdomains_dns_status | MISS tool:emailSending_subdomains_list | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status |
+| Build a per-chat-room state holder that serializes writes and wakes itself once an hour. | durableObjects_ | MISS none | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list | MISS tool:workers_create |
+| Which of our stateful object classes have instances that currently hold stored data? | durableObjects_ | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_objects_list | tool:durableObjects_namespaces_list |
+| Review our stateful coordination class for alarm-handling bugs. | durableObjects_ | MISS none | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_query |
+| Process image-resize jobs in the background, retrying any job that fails. | queues_ | MISS none | tool:queues_create | tool:queues_list | tool:queues_create | MISS none |
+| Add a dead-letter destination for messages that fail repeatedly on the orders pipeline. | queues_ | MISS none | tool:queues_create | tool:queues_consumers_list | tool:queues_consumers_create | tool:queues_consumers_update |
+| Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed. | r2_ | MISS none | tool:r2_buckets_domains_custom_create | tool:r2_buckets_cors_update | tool:r2_buckets_cors_update | tool:r2_buckets_cors_update |
+| Expire files under tmp/ in our object store after 7 days. | r2_buckets_lifecycle | MISS none | tool:r2_buckets_lifecycle_update | tool:r2_buckets_lifecycle_get | tool:r2_buckets_lifecycle_get | tool:r2_buckets_lifecycle_update |
+| Store small read-heavy feature flags at the edge. Eventual consistency is fine. | kv_ | MISS none | tool:kv_namespaces_list | tool:kv_namespaces_list | tool:kv_namespaces_create | tool:kv_namespaces_create |
+| Remove every entry whose key begins with "session:" from the edge key-value store. | kv_ | MISS none | tool:kv_keys_list | tool:kv_keys_list | tool:kv_bulk_delete | tool:kv_keys_list |
+| We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage. | d1_ | MISS none | tool:d1_create | tool:d1_create | tool:d1_create | tool:d1_create |
+| Push a new build of our edge function and make it live. | workers_ | tool:workers_versions_create | tool:workers_versions_create | tool:workers_legacy_scripts_update | tool:workers_versions_create | tool:workers_legacy_scripts_update |
+| Run our edge function every night at 02:00. | workers_scripts_schedules | tool:workers_scripts_schedules_update | tool:workers_scripts_schedules_get | tool:workers_scripts_schedules_update | tool:workers_scripts_schedules_get | tool:workers_scripts_schedules_update |
+| Run our Docker image at the edge and show the running instances. | containers_ | tool:containers_applications_create | tool:containers_applications_create | tool:containers_applications_create | tool:containers_applications_list | tool:containers_images_prepare |
+| What is the recommended structure for an edge function's fetch handler? | none | none | none | none | none | none |
+| Rotate the account API token our deployment pipeline uses. | none | none | none | MISS unparsed | none | none |
+
+Misses (right name under the wrong key is marked *):
+- Qwen/Qwen3.5-9B:deepinfra:
+  - "The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it." -> tool:turnstile_widgets_list (expected turnstile_widgets_rotateSecret)
+  - "Forward everything sent to billing@ at our domain to a Gmail inbox." -> none (expected emailRouting_)
+  - "Set up a sender address so our edge function can email order receipts after checkout." -> tool:emailRouting_addresses_create (expected emailSending_)
+  - "Build a per-chat-room state holder that serializes writes and wakes itself once an hour." -> none (expected durableObjects_)
+  - "Review our stateful coordination class for alarm-handling bugs." -> none (expected durableObjects_)
+  - "Process image-resize jobs in the background, retrying any job that fails." -> none (expected queues_)
+  - "Add a dead-letter destination for messages that fail repeatedly on the orders pipeline." -> none (expected queues_)
+  - "Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed." -> none (expected r2_)
+  - "Expire files under tmp/ in our object store after 7 days." -> none (expected r2_buckets_lifecycle)
+  - "Store small read-heavy feature flags at the edge. Eventual consistency is fine." -> none (expected kv_)
+  - "Remove every entry whose key begins with "session:" from the edge key-value store." -> none (expected kv_)
+  - "We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage." -> none (expected d1_)
+- zai-org/GLM-5.3-Flash:baseten:
+  - "The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it." -> tool:turnstile_widgets_list (expected turnstile_widgets_rotateSecret)
+  - "Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not." -> tool:emailSending_subdomains_list (expected emailSending_subdomains_dns)
+- deepseek-ai/DeepSeek-V4.1-Flash:baseten:
+  - "Rotate the account API token our deployment pipeline uses." -> unparsed (expected none)
+- google/gemma-4-26B-A4B-it:deepinfra:
+  - "The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it." -> tool:turnstile_widgets_list (expected turnstile_widgets_rotateSecret)
+  - "Build a per-chat-room state holder that serializes writes and wakes itself once an hour." -> tool:workers_create (expected durableObjects_)
+  - "Process image-resize jobs in the background, retrying any job that fails." -> none (expected queues_)
+
+Raw trials: results/2026-11-07-select2-subset-flat-schemas.jsonl

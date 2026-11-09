@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // Local dev serves every variant at /<variant>/mcp on one port.
+  "name": "pd-groups-demo",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-28",
+  "compatibility_flags": ["nodejs_compat"],
+  "dev": { "port": 8787 },
+  "observability": { "logs": { "enabled": true } },
+  // Per-client rate limit, checked in src/index.ts: 120 requests per 60 s per IP, per Cloudflare location.
+  // The deployed Workers take no auth, so this bounds what one client can draw from the account's daily quota.
+  "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 120, "period": 60 } }],
+  // One Worker per option, so they can be deployed and compared side by side.
+  // Each also serves its own variant at /mcp. Bindings are not inherited by environments, so each repeats the limiter.
+  "env": {
+    "flat": { "name": "pd-groups-flat", "vars": { "VARIANT": "flat" }, "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 120, "period": 60 } }] },
+    "opt1": { "name": "pd-groups-opt1", "vars": { "VARIANT": "opt1" }, "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1002", "simple": { "limit": 120, "period": 60 } }] },
+    "opt2": { "name": "pd-groups-opt2", "vars": { "VARIANT": "opt2" }, "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1003", "simple": { "limit": 120, "period": 60 } }] },
+    "opt3": { "name": "pd-groups-opt3", "vars": { "VARIANT": "opt3" }, "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1004", "simple": { "limit": 120, "period": 60 } }] }
+  }
+}

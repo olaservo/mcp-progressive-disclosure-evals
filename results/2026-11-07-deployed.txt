@@ -1,0 +1,22 @@
+Task: set up Turnstile (skill turnstile-spin). Token counts are chars/4 of the JSON the model would see, not a tokenizer.
+
+| Variant | Upfront tokens | Task-load tokens | Task tools | Tools for a 2025 client | Bytes on the wire |
+| :-- | --: | --: | --: | --: | --: |
+| flat | 179213 | 7169 | 6 | 238 | 751106 |
+| opt1 | 653 | 2369 | 6 | 238 | 12253 |
+| opt2 | 897 | 9541 | 6 | 238 | 50012 |
+| opt3 | 789 | 9944 | 6 | 238 | 43111 |
+
+flat:
+  - skill verified=true; the skill names no tools, so all 238 tools stay in front of the model
+opt1:
+  - placement: no scoped resource is also in resources/list
+  - no skill: the workflow prose is authored in the group and drops the skill's reference files
+opt2:
+  - placement: no scoped resource is also in resources/list
+  - group lists skill://turnstile-spin/SKILL.md; skills/get + read verified=true; listed in skills/list: true
+opt3:
+  - a SEP-2640 skills client fails on skills/list: skills/list returned invalid entries:
+  - placement: no scoped resource is also in resources/list
+  - 7 relative links in instructions (e.g. references/vanilla-html.md); 7 match a scoped resource only if the host takes skill://turnstile-spin/ as their base, which the response does not state
+  - SKILL.md body delivered as instructions: no skill entry, no digests

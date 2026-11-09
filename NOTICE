@@ -1,0 +1,11 @@
+mcp-progressive-disclosure-evals
+Copyright 2026 Ola Hungerford
+
+This repository is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+It vendors material from two Cloudflare projects, both licensed under the Apache License, Version 2.0:
+
+- src/vendor/forge: generated tool definitions from cloudflare/mcp (https://github.com/cloudflare/mcp), at commit 4938f2f3.
+- src/vendor/skills.ts: skill files from cloudflare/skills (https://github.com/cloudflare/skills), at commit 1a33048.
+
+Some session files under results/traces/traces-public reproduce text from those two projects in tool results.

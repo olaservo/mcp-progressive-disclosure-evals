@@ -1,0 +1,26 @@
+{
+  "name": "groups",
+  "version": "0.1.0",
+  "description": "Progressive disclosure through the MCP Groups extension (progressive-disclosure-wg#19) inside Claude Code: list_groups, open_group and read_skill against a groups server over HTTP, with a group's scoped tools registered on open as deferred definitions.",
+  "author": { "name": "olaservo" },
+  "userConfig": {
+    "url": {
+      "type": "string",
+      "title": "Groups server URL",
+      "description": "Streamable HTTP endpoint of a server that implements io.modelcontextprotocol/groups (and, optionally, the Skills extension)",
+      "default": "https://pd-groups-opt2.olahungerford.workers.dev/mcp"
+    },
+    "deferScoped": {
+      "type": "boolean",
+      "title": "Register scoped tools as deferred",
+      "description": "Keep a group's tools behind ToolSearch after open_group, so disclosing them does not rewrite the cached prompt prefix. Off puts them in the resident tool list.",
+      "default": true
+    },
+    "listSkills": {
+      "type": "boolean",
+      "title": "List skills in the prompt",
+      "description": "Show the server's skills/list index next to its groups in the system prompt section",
+      "default": true
+    }
+  }
+}

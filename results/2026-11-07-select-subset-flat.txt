@@ -1,0 +1,18 @@
+
+flat mode, https://pd-groups-flat.olahungerford.workers.dev/mcp. 238 top-level tools, 0 groups, 6720 prompt tokens (o200k_base) before the task. 14 tasks x 5 samples.
+
+| Model | Correct | Right name, either key | Picked a group | None | Unparsed or error | Avg input tokens |
+| :-- | --: | --: | --: | --: | --: | --: |
+| Qwen/Qwen3.5-9B:deepinfra | 61/70 | 61/70 | 0 | 14 | 0 | 6937 |
+| Qwen/Qwen3-14B:deepinfra | 70/70 | 70/70 | 0 | 5 | 0 | 6709 |
+| claude-opus-5-5 | 64/70 | 64/70 | 0 | 4 | 0 | 68 |
+
+Misses (right name under the wrong key is marked *):
+- Qwen/Qwen3.5-9B:deepinfra:
+  - "Add Turnstile bot protection to our signup form and verify the tokens on the server." -> none, none, none, none (expected turnstile_)
+  - "Review our Durable Object class for alarm handling bugs." -> none, none, none, none, none (expected durableObjects_)
+- claude-opus-5-5:
+  - "Review our Durable Object class for alarm handling bugs." -> tool:demo_info, tool:demo_info, tool:demo_info, tool:demo_info, tool:demo_info (expected durableObjects_)
+  - "What's the recommended structure for a Worker's fetch handler?" -> tool:demo_info (expected none)
+
+Raw trials: results/2026-11-07-select-subset-flat.jsonl
