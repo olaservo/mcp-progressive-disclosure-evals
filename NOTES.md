@@ -217,7 +217,7 @@ Any comment for #19 or #22 is drafted to a `.md` file first and posted only afte
 - `drafts/pr22-comment.md`, `drafts/pr19-comment.md` (short) and `drafts/wg-findings-writeup.md` (long) await review before posting. They link to the repo by URL, which resolves once it is public.
 - The demo repo is private and audited for going public (section 11). Flip it with `gh repo edit --visibility public`, then decide whether the long write-up goes to a WG Discussion or a PR to `docs/experimental-findings.md`, which is empty on `main`.
 - `explainer.html` is written but not yet copied into olaservo.github.io. That is a PR to the site repo, as the skills-research pages do it. Its skills paragraph links the published catalog-regimes page (www.olahungerford.com/skills-research). A Skills-over-MCP version of the skills research and a tools-against-skills comparison page are still listed as future work in skills-research-temp's TODO.md; when they exist, link them here too.
-- `writeup.html` is rendered from the markdown write-up by `npm run pages:build` and committed alongside it. The Google Docs copy is made by importing the markdown by hand and is not synced back.
+- The long write-up stays markdown only (`drafts/wg-findings-writeup.md`); a rendered HTML copy was tried and dropped. A Google Docs copy is made by importing the markdown by hand and is not synced back.
 - GPT-6 Astra has not run the schema control (about 32 USD at list price).
 - Decide whether to restrict or delete the unrestricted Gemini key in AI Studio. The dialog was left open on 2026-11-07.
 - Section 7's claims about Haiku and the 9B model collapsing in flat modes predate the skill index and are superseded by section 10.

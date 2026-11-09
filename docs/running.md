@@ -42,7 +42,6 @@ npx wrangler deploy --env opt2      # one variant as its own Worker, served at /
 npm run deploy:all                  # all four
 npm run compare -- --urls flat=https://pd-groups-flat.<sub>.workers.dev/mcp,opt2=...
 npm run vendor:full && npm run dev   # the 3,036-tool catalog, locally; npm run vendor restores the subset
-npm run pages:build                 # render drafts/wg-findings-writeup.md to writeup.html
 ```
 
 ## Deployed
