@@ -1,0 +1,61 @@
+
+groups mode, task set v2, http://localhost:8787/opt2-rec/mcp. 0 top-level tools, 271 groups, 2 skills listed, 16538 prompt tokens (o200k_base) before the task. 20 tasks x 1 samples.
+
+| Model | Reasoning | Correct | Right name, either key | Picked a group | Picked a skill | Skill only, tool task | None | Unparsed or error | Avg input tokens | Cache read |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |
+| Qwen/Qwen3.5-9B:deepinfra | enable_thinking false, temperature 0.2, seeded | 17/20 | 17/20 | 17 | 1 | 0 | 2 | 0 | 16882 | 0 |
+| Qwen/Qwen3-14B:deepinfra | enable_thinking false, temperature 0.2, seeded | 18/20 | 18/20 | 19 | 1 | 0 | 0 | 0 | 16609 | 0 |
+| zai-org/GLM-5.3-Flash:baseten | enable_thinking false, temperature 0.2, seeded | 19/20 | 19/20 | 19 | 1 | 0 | 0 | 0 | 16584 | 229376 |
+| deepseek-ai/DeepSeek-V4.1-Flash:baseten | enable_thinking false, temperature 0.2, seeded | 17/20 | 17/20 | 18 | 0 | 0 | 0 | 2 | 16954 | 283136 |
+| Qwen/Qwen3.6-35B-A3B:deepinfra | enable_thinking false, temperature 0.2, seeded | 20/20 | 20/20 | 19 | 1 | 0 | 0 | 0 | 16882 | 251520 |
+| google/gemma-4-26B-A4B-it:deepinfra | enable_thinking false, temperature 0.2, seeded | 20/20 | 20/20 | 19 | 1 | 0 | 0 | 0 | 17287 | 0 |
+
+Picks by task:
+
+| Task | Expected | Qwen3.5-9B | Qwen3-14B | GLM-5.3-Flash | DeepSeek-V4.1-Flash | Qwen3.6-35B-A3B | gemma-4-26B-A4B-it |
+| :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
+| Add a bot check to our signup form and verify the challenge result on the server before accepting the submission. | turnstile-spin / turnstile-api / skill:turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin |
+| The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it. | turnstile-spin / turnstile-api / skill:turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin |
+| Forward everything sent to billing@ at our domain to a Gmail inbox. | cloudflare-email-service / email-routing-api / skill:cloudflare-email-service | email-routing-api | email-routing-api | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service |
+| Set up a sender address so our edge function can email order receipts after checkout. | cloudflare-email-service / email-sending-api / skill:cloudflare-email-service | email-sending-api | email-sending-api | email-sending-api | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service |
+| Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not. | cloudflare-email-service / email-sending-api / email-auth-api / email-domains-api / dns-records / skill:cloudflare-email-service | email-domains-api | email-sending-api | email-sending-api | email-sending-api | email-auth-api | email-sending-api |
+| Build a per-chat-room state holder that serializes writes and wakes itself once an hour. | durable-objects / durable-objects-api / skill:durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | durable-objects |
+| Which of our stateful object classes have instances that currently hold stored data? | durable-objects / durable-objects-api / skill:durable-objects | durable-objects-api | durable-objects-api | durable-objects-api | durable-objects-api | durable-objects-api | durable-objects-api |
+| Review our stateful coordination class for alarm-handling bugs. | durable-objects / skill:durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | durable-objects |
+| Process image-resize jobs in the background, retrying any job that fails. | queues-api / workflows-api | MISS none | queues-api | workflows-api | MISS group:durable-objects | queues-api | queues-api |
+| Add a dead-letter destination for messages that fail repeatedly on the orders pipeline. | queues-api | MISS group:pipelines-api | queues-api | MISS group:pipelines-api | queues-api | queues-api | queues-api |
+| Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed. | r2-buckets | r2-buckets | MISS group:cloudflare-email-service | r2-buckets | r2-buckets | r2-buckets | r2-buckets |
+| Expire files under tmp/ in our object store after 7 days. | r2-buckets | r2-buckets | MISS group:r2-objects | r2-buckets | r2-buckets | r2-buckets | r2-buckets |
+| Store small read-heavy feature flags at the edge. Eventual consistency is fine. | kv-api / flagship-api | flagship-api | flagship-api | kv-api | kv-api | flagship-api | flagship-api |
+| Remove every entry whose key begins with "session:" from the edge key-value store. | kv-api | kv-api | kv-api | kv-api | kv-api | kv-api | kv-api |
+| We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage. | d1-api | MISS none | d1-api | d1-api | d1-api | d1-api | d1-api |
+| Push a new build of our edge function and make it live. | workers-versions / workers-deployments / workers-legacy / workers-builds-api / builds-core / builds-triggers / builds-deploy-hooks / builds-workers / skill:wrangler | workers-builds-api | workers-builds-api | workers-versions | workers-deployments | builds-core | builds-core |
+| Run our edge function every night at 02:00. | workers-core / skill:wrangler | workers-core | workers-core | workers-core | workers-core | workers-core | workers-core |
+| Run our Docker image at the edge and show the running instances. | containers-api | containers-api | containers-api | containers-api | MISS unparsed | containers-api | containers-api |
+| What is the recommended structure for an edge function's fetch handler? | none / skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | MISS unparsed | skill:workers-best-practices | skill:workers-best-practices |
+| Rotate the account API token our deployment pipeline uses. | accounts-tokens / user-tokens | accounts-tokens | accounts-tokens | accounts-tokens | accounts-tokens | accounts-tokens | accounts-tokens |
+
+Tasks that accept either the skill group or the API group, correct answers only:
+- Qwen/Qwen3.5-9B:deepinfra: skill group 3, API group 3
+- Qwen/Qwen3-14B:deepinfra: skill group 3, API group 3
+- zai-org/GLM-5.3-Flash:baseten: skill group 4, API group 2
+- deepseek-ai/DeepSeek-V4.1-Flash:baseten: skill group 5, API group 1
+- Qwen/Qwen3.6-35B-A3B:deepinfra: skill group 5, API group 1
+- google/gemma-4-26B-A4B-it:deepinfra: skill group 5, API group 1
+
+Misses (right name under the wrong key is marked *):
+- Qwen/Qwen3.5-9B:deepinfra:
+  - "Process image-resize jobs in the background, retrying any job that fails." -> none (expected queues-api | workflows-api)
+  - "Add a dead-letter destination for messages that fail repeatedly on the orders pipeline." -> group:pipelines-api (expected queues-api)
+  - "We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage." -> none (expected d1-api)
+- Qwen/Qwen3-14B:deepinfra:
+  - "Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed." -> group:cloudflare-email-service (expected r2-buckets)
+  - "Expire files under tmp/ in our object store after 7 days." -> group:r2-objects (expected r2-buckets)
+- zai-org/GLM-5.3-Flash:baseten:
+  - "Add a dead-letter destination for messages that fail repeatedly on the orders pipeline." -> group:pipelines-api (expected queues-api)
+- deepseek-ai/DeepSeek-V4.1-Flash:baseten:
+  - "Process image-resize jobs in the background, retrying any job that fails." -> group:durable-objects (expected queues-api | workflows-api)
+  - "Run our Docker image at the edge and show the running instances." -> unparsed (expected containers-api)
+  - "What is the recommended structure for an edge function's fetch handler?" -> unparsed (expected none | skill:workers-best-practices)
+
+Raw trials: results/2026-11-09-select2-full-groups-rec.jsonl

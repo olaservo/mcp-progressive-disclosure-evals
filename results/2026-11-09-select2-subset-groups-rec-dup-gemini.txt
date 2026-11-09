@@ -1,0 +1,40 @@
+
+groups mode, task set v2, https://pd-groups-opt2-rec.olahungerford.workers.dev/mcp. 0 top-level tools, 22 groups, 5 skills listed (skills/list read as a Skills-only client), 1190 prompt tokens (o200k_base) before the task. 20 tasks x 1 samples.
+
+| Model | Reasoning | Correct | Right name, either key | Picked a group | Picked a skill | Skill only, tool task | None | Unparsed or error | Avg input tokens | Cache read |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |
+| gemini-4-argon | thinking_level low | 20/20 | 20/20 | 18 | 1 | 0 | 1 | 0 | 1359 | 0 |
+| gemini-3.8-flash | thinking_level low | 20/20 | 20/20 | 16 | 3 | 2 | 1 | 0 | 1273 | 0 |
+
+Picks by task:
+
+| Task | Expected | gemini-4-argon | gemini-3.8-flash |
+| :-- | :-- | :-- | :-- |
+| Add a bot check to our signup form and verify the challenge result on the server before accepting the submission. | turnstile-spin / turnstile-api / skill:turnstile-spin | turnstile-spin | turnstile-spin |
+| The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it. | turnstile-spin / turnstile-api / skill:turnstile-spin | turnstile-spin | turnstile-api |
+| Forward everything sent to billing@ at our domain to a Gmail inbox. | cloudflare-email-service / email-routing-api / skill:cloudflare-email-service | cloudflare-email-service | email-routing-api |
+| Set up a sender address so our edge function can email order receipts after checkout. | cloudflare-email-service / email-sending-api / skill:cloudflare-email-service | cloudflare-email-service | cloudflare-email-service |
+| Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not. | cloudflare-email-service / email-sending-api / skill:cloudflare-email-service | cloudflare-email-service | email-sending-api |
+| Build a per-chat-room state holder that serializes writes and wakes itself once an hour. | durable-objects / durable-objects-api / skill:durable-objects | durable-objects | skill:durable-objects |
+| Which of our stateful object classes have instances that currently hold stored data? | durable-objects / durable-objects-api / skill:durable-objects | durable-objects-api | durable-objects-api |
+| Review our stateful coordination class for alarm-handling bugs. | durable-objects / skill:durable-objects | durable-objects | skill:durable-objects |
+| Process image-resize jobs in the background, retrying any job that fails. | queues-api | queues-api | queues-api |
+| Add a dead-letter destination for messages that fail repeatedly on the orders pipeline. | queues-api | queues-api | queues-api |
+| Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed. | r2-buckets | r2-buckets | r2-buckets |
+| Expire files under tmp/ in our object store after 7 days. | r2-buckets | r2-buckets | r2-buckets |
+| Store small read-heavy feature flags at the edge. Eventual consistency is fine. | kv-api | kv-api | kv-api |
+| Remove every entry whose key begins with "session:" from the edge key-value store. | kv-api | kv-api | kv-api |
+| We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage. | d1-api | d1-api | d1-api |
+| Push a new build of our edge function and make it live. | workers-versions / workers-deployments / workers-legacy / skill:wrangler | workers-versions | workers-legacy |
+| Run our edge function every night at 02:00. | workers-core / skill:wrangler | workers-core | workers-core |
+| Run our Docker image at the edge and show the running instances. | containers-api | containers-api | containers-api |
+| What is the recommended structure for an edge function's fetch handler? | none / skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices |
+| Rotate the account API token our deployment pipeline uses. | none | none | none |
+
+Tasks that accept either the skill group or the API group, correct answers only:
+- gemini-4-argon: skill group 6, API group 1
+- gemini-3.8-flash: skill group 3, API group 4
+
+Misses (right name under the wrong key is marked *):
+
+Raw trials: results\2026-11-09-select2-subset-groups-rec-dup-gemini.jsonl

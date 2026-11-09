@@ -1,0 +1,126 @@
+237 tools. One task per cloudflare/skills workflow: set up Turnstile (turnstile-spin), inspect Durable Objects (durable-objects), configure email (cloudflare-email-service).
+Token counts are tiktoken o200k_base over the compact JSON the model would see.
+
+| Variant | Task | Upfront tokens | Task-load tokens | Task tools | Tools for a 2025 client | Bytes on the wire |
+| :-- | :-- | --: | --: | --: | --: | --: |
+| flat | set up Turnstile | 157695 | 6570 | 6 | 237 | 750797 |
+| flat | inspect Durable Objects | 157695 | 1369 | 3 | 237 | 728239 |
+| flat | configure email | 157695 | 1493 | 41 | 237 | 728742 |
+| opt1 | set up Turnstile | 487 | 2190 | 6 | 237 | 11945 |
+| opt1 | inspect Durable Objects | 487 | 897 | 3 | 237 | 6460 |
+| opt1 | configure email | 487 | 7822 | 24 | 237 | 38098 |
+| opt2 | set up Turnstile | 674 | 8768 | 6 | 237 | 49704 |
+| opt2 | inspect Durable Objects | 674 | 2305 | 3 | 237 | 20256 |
+| opt2 | configure email | 674 | 9319 | 24 | 237 | 52700 |
+| opt2-rec | set up Turnstile | 1221 | 8781 | 6 | 237 | 47955 |
+| opt2-rec | inspect Durable Objects | 1221 | 2322 | 3 | 237 | 18527 |
+| opt2-rec | configure email | 1221 | 11661 | 33 | 237 | 61387 |
+| opt3 | set up Turnstile | 595 | 9037 | 6 | 237 | 42803 |
+| opt3 | inspect Durable Objects | 595 | 2313 | 3 | 237 | 13468 |
+| opt3 | configure email | 595 | 9291 | 24 | 237 | 45087 |
+
+flat / turnstile-spin:
+  - skill verified=true; the skill names no tools, so all 237 tools stay in front of the model
+flat / durable-objects:
+  - skill verified=true; the skill names no tools, so all 237 tools stay in front of the model
+flat / cloudflare-email-service:
+  - skill verified=true; the skill names no tools, so all 237 tools stay in front of the model
+opt1 / turnstile-spin:
+  - placement: no scoped resource is also in resources/list
+  - no skill: the workflow prose is authored in the group and drops the skill's reference files
+  - turnstile_widgets_create ran on a connection with no groups/get; in that connection's tools/list: false
+opt1 / durable-objects:
+  - placement: no scoped resource is also in resources/list
+  - no skill: the workflow prose is authored in the group and drops the skill's reference files
+  - durableObjects_namespaces_list ran on a connection with no groups/get; in that connection's tools/list: false
+opt1 / cloudflare-email-service:
+  - placement: no scoped resource is also in resources/list
+  - no skill: the workflow prose is authored in the group and drops the skill's reference files
+  - emailSending_get ran on a connection with no groups/get; in that connection's tools/list: false
+opt2 / turnstile-spin:
+  - placement: no scoped resource is also in resources/list
+  - group lists skill://turnstile-spin/SKILL.md; skills/get + read verified=true; listed in skills/list: true
+  - turnstile_widgets_create ran on a connection with no groups/get; in that connection's tools/list: false
+opt2 / durable-objects:
+  - placement: no scoped resource is also in resources/list
+  - group lists skill://durable-objects/SKILL.md; skills/get + read verified=true; listed in skills/list: true
+  - durableObjects_namespaces_list ran on a connection with no groups/get; in that connection's tools/list: false
+opt2 / cloudflare-email-service:
+  - placement: no scoped resource is also in resources/list
+  - group lists skill://cloudflare-email-service/SKILL.md; skills/get + read verified=true; listed in skills/list: true
+  - emailSending_get ran on a connection with no groups/get; in that connection's tools/list: false
+opt2-rec / turnstile-spin:
+  - placement: no scoped resource is also in resources/list
+  - group lists skill://turnstile-spin/SKILL.md; skills/get + read verified=true; listed in skills/list: false
+  - turnstile_widgets_create ran on a connection with no groups/get; in that connection's tools/list: false
+opt2-rec / durable-objects:
+  - placement: no scoped resource is also in resources/list
+  - group lists skill://durable-objects/SKILL.md; skills/get + read verified=true; listed in skills/list: false
+  - durableObjects_namespaces_objects_list ran on a connection with no groups/get; in that connection's tools/list: false
+opt2-rec / cloudflare-email-service:
+  - placement: no scoped resource is also in resources/list
+  - group lists skill://cloudflare-email-service/SKILL.md; skills/get + read verified=true; listed in skills/list: false
+  - emailSending_get ran on a connection with no groups/get; in that connection's tools/list: false
+opt3 / turnstile-spin:
+  - a SEP-2640 skills client fails: skills/list returned invalid entries: #0 : uri: missing; frontmatter: missing; resources: Invalid input
+  - placement: no scoped resource is also in resources/list
+  - 7 relative links in instructions (e.g. references/vanilla-html.md); 7 match a scoped resource only if the host takes skill://turnstile-spin/ as their base, which the response does not state
+  - SKILL.md body delivered as instructions: no skill entry, no digests
+  - turnstile_widgets_create ran on a connection with no skills/get; in that connection's tools/list: false
+opt3 / durable-objects:
+  - a SEP-2640 skills client fails: skills/list returned invalid entries: #0 : uri: missing; frontmatter: missing; resources: Invalid input
+  - placement: no scoped resource is also in resources/list
+  - 1 relative links in instructions (e.g. references/skill-feedback.md); 1 match a scoped resource only if the host takes skill://durable-objects/ as their base, which the response does not state
+  - SKILL.md body delivered as instructions: no skill entry, no digests
+  - durableObjects_namespaces_list ran on a connection with no skills/get; in that connection's tools/list: false
+opt3 / cloudflare-email-service:
+  - a SEP-2640 skills client fails: skills/list returned invalid entries: #0 : uri: missing; frontmatter: missing; resources: Invalid input
+  - placement: no scoped resource is also in resources/list
+  - 16 relative links in instructions (e.g. references/cli-and-mcp.md); 16 match a scoped resource only if the host takes skill://cloudflare-email-service/ as their base, which the response does not state
+  - SKILL.md body delivered as instructions: no skill entry, no digests
+  - emailSending_get ran on a connection with no skills/get; in that connection's tools/list: false
+
+opt2: task-load tokens per top-level group (groups/get: instructions, tools and resources), 13 groups.
+
+| Group | Tools | Task-load tokens |
+| :-- | --: | --: |
+| turnstile-spin | 6 | 2198 |
+| durable-objects | 3 | 936 |
+| cloudflare-email-service | 24 | 7826 |
+| turnstile-api | 0 | 2 |
+| durable-objects-api | 0 | 2 |
+| email-sending-api | 3 | 1556 |
+| email-routing-api | 2 | 402 |
+| workers-api | 6 | 8825 |
+| d1-api | 9 | 2705 |
+| kv-api | 0 | 2 |
+| r2-api | 0 | 2 |
+| queues-api | 5 | 837 |
+| containers-api | 0 | 2 |
+
+opt2-rec: task-load tokens per top-level group (groups/get: instructions, tools and resources), 22 groups.
+
+| Group | Tools | Task-load tokens |
+| :-- | --: | --: |
+| turnstile-spin | 6 | 2211 |
+| durable-objects | 3 | 953 |
+| cloudflare-email-service | 33 | 10168 |
+| turnstile-api | 6 | 2062 |
+| durable-objects-api | 3 | 830 |
+| email-sending-api | 21 | 6127 |
+| email-routing-api | 20 | 6082 |
+| workers-core | 20 | 11351 |
+| workers-deployments | 4 | 1282 |
+| workers-domains | 4 | 1010 |
+| workers-legacy | 18 | 36196 |
+| workers-previews | 10 | 24278 |
+| workers-routes | 5 | 868 |
+| workers-secrets | 5 | 2230 |
+| workers-versions | 6 | 23759 |
+| d1-api | 11 | 3240 |
+| kv-api | 13 | 4406 |
+| r2-buckets | 35 | 13360 |
+| r2-objects | 5 | 2462 |
+| r2-super-slurper | 12 | 3334 |
+| queues-api | 25 | 6548 |
+| containers-api | 14 | 8137 |

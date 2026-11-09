@@ -1,0 +1,66 @@
+
+groups mode, task set v2, https://pd-groups-opt2.olahungerford.workers.dev/mcp. 0 top-level tools, 13 groups, 5 skills listed, 616 prompt tokens (o200k_base) before the task. 20 tasks x 1 samples.
+
+| Model | Reasoning | Correct | Right name, either key | Picked a group | Picked a skill | Skill only, tool task | None | Unparsed or error | Avg input tokens | Cache read |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |
+| Qwen/Qwen3.5-9B:deepinfra | enable_thinking false, temperature 0.2, seeded | 17/20 | 17/20 | 10 | 6 | 5 | 4 | 0 | 674 | 0 |
+| Qwen/Qwen3-14B:deepinfra | enable_thinking false, temperature 0.2, seeded | 16/20 | 16/20 | 15 | 2 | 1 | 3 | 0 | 652 | 0 |
+| zai-org/GLM-5.3-Flash:baseten | enable_thinking false, temperature 0.2, seeded | 19/20 | 19/20 | 15 | 4 | 3 | 1 | 0 | 649 | 2560 |
+| deepseek-ai/DeepSeek-V4.1-Flash:baseten | enable_thinking false, temperature 0.2, seeded | 18/20 | 18/20 | 12 | 6 | 6 | 1 | 1 | 664 | 9216 |
+| Qwen/Qwen3.6-35B-A3B:deepinfra | enable_thinking false, temperature 0.2, seeded | 19/20 | 19/20 | 14 | 5 | 4 | 1 | 0 | 674 | 0 |
+| google/gemma-4-26B-A4B-it:deepinfra | enable_thinking false, temperature 0.2, seeded | 19/20 | 19/20 | 18 | 1 | 0 | 1 | 0 | 691 | 0 |
+
+Picks by task:
+
+| Task | Expected | Qwen3.5-9B | Qwen3-14B | GLM-5.3-Flash | DeepSeek-V4.1-Flash | Qwen3.6-35B-A3B | gemma-4-26B-A4B-it |
+| :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
+| Add a bot check to our signup form and verify the challenge result on the server before accepting the submission. | turnstile-spin / turnstile-api / skill:turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | skill:turnstile-spin | skill:turnstile-spin | turnstile-spin |
+| The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it. | turnstile-spin / turnstile-api / skill:turnstile-spin | turnstile-api | turnstile-spin | turnstile-api | turnstile-api | turnstile-api | turnstile-api |
+| Forward everything sent to billing@ at our domain to a Gmail inbox. | cloudflare-email-service / email-routing-api / skill:cloudflare-email-service | skill:cloudflare-email-service | cloudflare-email-service | email-routing-api | skill:cloudflare-email-service | cloudflare-email-service | email-routing-api |
+| Set up a sender address so our edge function can email order receipts after checkout. | cloudflare-email-service / email-sending-api / skill:cloudflare-email-service | skill:cloudflare-email-service | cloudflare-email-service | skill:cloudflare-email-service | skill:cloudflare-email-service | cloudflare-email-service | cloudflare-email-service |
+| Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not. | cloudflare-email-service / email-sending-api / skill:cloudflare-email-service | skill:cloudflare-email-service | cloudflare-email-service | MISS group:email-routing-api | MISS group:email-routing-api | cloudflare-email-service | MISS group:email-routing-api |
+| Build a per-chat-room state holder that serializes writes and wakes itself once an hour. | durable-objects / durable-objects-api / skill:durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | durable-objects |
+| Which of our stateful object classes have instances that currently hold stored data? | durable-objects / durable-objects-api / skill:durable-objects | durable-objects | durable-objects | durable-objects-api | durable-objects-api | durable-objects | durable-objects-api |
+| Review our stateful coordination class for alarm-handling bugs. | durable-objects / skill:durable-objects | durable-objects | durable-objects | skill:durable-objects | skill:durable-objects | skill:durable-objects | durable-objects |
+| Process image-resize jobs in the background, retrying any job that fails. | queues-api | MISS none | queues-api | queues-api | queues-api | queues-api | queues-api |
+| Add a dead-letter destination for messages that fail repeatedly on the orders pipeline. | queues-api | queues-api | queues-api | queues-api | queues-api | queues-api | queues-api |
+| Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed. | r2-api | MISS none | r2-api | r2-api | r2-api | r2-api | r2-api |
+| Expire files under tmp/ in our object store after 7 days. | r2-api | r2-api | MISS group:containers-api | r2-api | r2-api | r2-api | r2-api |
+| Store small read-heavy feature flags at the edge. Eventual consistency is fine. | kv-api | kv-api | kv-api | kv-api | kv-api | kv-api | kv-api |
+| Remove every entry whose key begins with "session:" from the edge key-value store. | kv-api | kv-api | kv-api | kv-api | kv-api | kv-api | kv-api |
+| We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage. | d1-api | MISS none | MISS none | d1-api | d1-api | MISS group:durable-objects | d1-api |
+| Push a new build of our edge function and make it live. | workers-api / skill:wrangler | skill:wrangler | workers-api | skill:wrangler | skill:wrangler | skill:wrangler | workers-api |
+| Run our edge function every night at 02:00. | workers-api / skill:wrangler | skill:wrangler | MISS skill:workers-best-practices | workers-api | skill:wrangler | skill:wrangler | workers-api |
+| Run our Docker image at the edge and show the running instances. | containers-api | containers-api | MISS none | containers-api | containers-api | containers-api | containers-api |
+| What is the recommended structure for an edge function's fetch handler? | none / skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | MISS unparsed | skill:workers-best-practices | skill:workers-best-practices |
+| Rotate the account API token our deployment pipeline uses. | none | none | none | none | none | none | none |
+
+Tasks that accept either the skill group or the API group, correct answers only:
+- Qwen/Qwen3.5-9B:deepinfra: skill group 6, API group 1
+- Qwen/Qwen3-14B:deepinfra: skill group 7, API group 0
+- zai-org/GLM-5.3-Flash:baseten: skill group 3, API group 3
+- deepseek-ai/DeepSeek-V4.1-Flash:baseten: skill group 4, API group 2
+- Qwen/Qwen3.6-35B-A3B:deepinfra: skill group 6, API group 1
+- google/gemma-4-26B-A4B-it:deepinfra: skill group 3, API group 3
+
+Misses (right name under the wrong key is marked *):
+- Qwen/Qwen3.5-9B:deepinfra:
+  - "Process image-resize jobs in the background, retrying any job that fails." -> none (expected queues-api)
+  - "Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed." -> none (expected r2-api)
+  - "We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage." -> none (expected d1-api)
+- Qwen/Qwen3-14B:deepinfra:
+  - "Expire files under tmp/ in our object store after 7 days." -> group:containers-api (expected r2-api)
+  - "We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage." -> none (expected d1-api)
+  - "Run our edge function every night at 02:00." -> skill:workers-best-practices (expected workers-api | skill:wrangler)
+  - "Run our Docker image at the edge and show the running instances." -> none (expected containers-api)
+- zai-org/GLM-5.3-Flash:baseten:
+  - "Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not." -> group:email-routing-api (expected cloudflare-email-service | email-sending-api | skill:cloudflare-email-service)
+- deepseek-ai/DeepSeek-V4.1-Flash:baseten:
+  - "Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not." -> group:email-routing-api (expected cloudflare-email-service | email-sending-api | skill:cloudflare-email-service)
+  - "What is the recommended structure for an edge function's fetch handler?" -> unparsed (expected none | skill:workers-best-practices)
+- Qwen/Qwen3.6-35B-A3B:deepinfra:
+  - "We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage." -> group:durable-objects (expected d1-api)
+- google/gemma-4-26B-A4B-it:deepinfra:
+  - "Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not." -> group:email-routing-api (expected cloudflare-email-service | email-sending-api | skill:cloudflare-email-service)
+
+Raw trials: results/2026-11-09-select2-subset-groups.jsonl

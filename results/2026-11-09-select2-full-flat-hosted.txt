@@ -1,0 +1,52 @@
+
+flat mode, task set v2, http://localhost:8787/flat/mcp. 3036 top-level tools, 0 groups, 5 skills listed, 81586 prompt tokens (o200k_base) before the task. 20 tasks x 1 samples.
+
+| Model | Reasoning | Correct | Right name, either key | Picked a group | Picked a skill | Skill only, tool task | None | Unparsed or error | Avg input tokens | Cache read |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |
+| claude-opus-5-5 | effort low | 20/20 | 20/20 | 0 | 6 | 5 | 0 | 0 | 90 | 2765184 |
+| claude-sonnet-5-5 | effort low | 19/20 | 19/20 | 0 | 7 | 6 | 0 | 0 | 90 | 2765184 |
+| claude-haiku-5-5 | effort low | 18/20 | 18/20 | 0 | 6 | 5 | 0 | 0 | 90 | 2765184 |
+| gpt-6-astra | reasoning_effort low | 20/20 | 20/20 | 0 | 6 | 5 | 0 | 0 | 81614 | 0 |
+| gpt-6.1-sol | reasoning_effort low | 20/20 | 20/20 | 0 | 7 | 6 | 0 | 0 | 81614 | 0 |
+| gpt-6.1-terra | reasoning_effort none | 18/20 | 18/20 | 0 | 8 | 7 | 0 | 0 | 81614 | 0 |
+| gpt-6-luna | reasoning_effort none | 19/20 | 19/20 | 0 | 6 | 5 | 0 | 0 | 81614 | 0 |
+| kimi-k3.1-pro | reasoning_effort low | 20/20 | 20/20 | 0 | 6 | 5 | 0 | 0 | 81315 | 1460736 |
+
+Picks by task:
+
+| Task | Expected | claude-opus-5-5 | claude-sonnet-5-5 | claude-haiku-5-5 | gpt-6-astra | gpt-6.1-sol | gpt-6.1-terra | gpt-6-luna | kimi-k3.1-pro |
+| :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
+| Add a bot check to our signup form and verify the challenge result on the server before accepting the submission. | turnstile_ / skill:turnstile-spin | skill:turnstile-spin | skill:turnstile-spin | skill:turnstile-spin | skill:turnstile-spin | skill:turnstile-spin | skill:turnstile-spin | skill:turnstile-spin | skill:turnstile-spin |
+| The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it. | turnstile_widgets_rotateSecret / skill:turnstile-spin | tool:turnstile_widgets_rotateSecret | tool:turnstile_widgets_rotateSecret | tool:turnstile_widgets_rotateSecret | tool:turnstile_widgets_rotateSecret | tool:turnstile_widgets_rotateSecret | MISS tool:turnstile_widgets_list | tool:turnstile_widgets_rotateSecret | tool:turnstile_widgets_rotateSecret |
+| Forward everything sent to billing@ at our domain to a Gmail inbox. | emailRouting_ / skill:cloudflare-email-service | tool:emailRouting_addresses_create | tool:emailRouting_addresses_create | tool:emailRouting_rules_create | skill:cloudflare-email-service | skill:cloudflare-email-service | skill:cloudflare-email-service | skill:cloudflare-email-service | tool:emailRouting_rules_create |
+| Set up a sender address so our edge function can email order receipts after checkout. | emailSending_ / skill:cloudflare-email-service | skill:cloudflare-email-service | skill:cloudflare-email-service | skill:cloudflare-email-service | skill:cloudflare-email-service | skill:cloudflare-email-service | skill:cloudflare-email-service | skill:cloudflare-email-service | skill:cloudflare-email-service |
+| Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not. | emailSending_subdomains_dns / dns_records / emailAuth_ / emailDomains_ / skill:cloudflare-email-service | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status | skill:cloudflare-email-service | skill:cloudflare-email-service | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status |
+| Build a per-chat-room state holder that serializes writes and wakes itself once an hour. | durableObjects_ / skill:durable-objects | skill:durable-objects | skill:durable-objects | skill:durable-objects | skill:durable-objects | skill:durable-objects | skill:durable-objects | skill:durable-objects | skill:durable-objects |
+| Which of our stateful object classes have instances that currently hold stored data? | durableObjects_ / skill:durable-objects | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_list | tool:durableObjects_namespaces_objects_list | tool:durableObjects_namespaces_list |
+| Review our stateful coordination class for alarm-handling bugs. | durableObjects_ / skill:durable-objects | skill:durable-objects | skill:durable-objects | skill:durable-objects | skill:durable-objects | skill:durable-objects | skill:durable-objects | skill:durable-objects | skill:durable-objects |
+| Process image-resize jobs in the background, retrying any job that fails. | queues_ / workflows_ | tool:queues_create | MISS skill:workers-best-practices | MISS tool:workers_scripts_search | tool:queues_create | tool:queues_create | tool:queues_create | tool:queues_messages_pull | tool:queues_create |
+| Add a dead-letter destination for messages that fail repeatedly on the orders pipeline. | queues_ | tool:queues_list | tool:queues_consumers_list | MISS tool:pipelines_list | tool:queues_list | tool:queues_list | tool:queues_list | tool:queues_consumers_update | tool:queues_list |
+| Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed. | r2_ | tool:r2_buckets_cors_update | tool:r2_buckets_cors_update | tool:r2_buckets_cors_update | tool:r2_buckets_cors_update | tool:r2_buckets_cors_update | tool:r2_buckets_cors_update | tool:r2_buckets_cors_update | tool:r2_buckets_cors_update |
+| Expire files under tmp/ in our object store after 7 days. | r2_buckets_lifecycle | tool:r2_buckets_lifecycle_get | tool:r2_buckets_lifecycle_update | tool:r2_buckets_lifecycle_get | tool:r2_buckets_lifecycle_get | tool:r2_buckets_lifecycle_get | tool:r2_buckets_lifecycle_get | tool:r2_buckets_lifecycle_update | tool:r2_buckets_lifecycle_update |
+| Store small read-heavy feature flags at the edge. Eventual consistency is fine. | kv_ / flagship_ | tool:kv_namespaces_create | tool:kv_namespaces_create | tool:flagship_apps_create | tool:kv_namespaces_create | tool:kv_namespaces_create | tool:kv_namespaces_create | tool:kv_namespaces_create | tool:kv_namespaces_create |
+| Remove every entry whose key begins with "session:" from the edge key-value store. | kv_ | tool:kv_keys_list | tool:kv_keys_list | tool:kv_bulk_delete | tool:kv_namespaces_list | tool:kv_namespaces_list | tool:kv_namespaces_list | tool:kv_keys_list | tool:kv_keys_list |
+| We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage. | d1_ | tool:d1_create | tool:d1_create | tool:d1_create | tool:d1_create | tool:d1_create | tool:d1_create | MISS tool:hyperdrive_create | tool:d1_create |
+| Push a new build of our edge function and make it live. | workers_ / workersBuilds_ / builds_ / skill:wrangler | skill:wrangler | skill:wrangler | skill:wrangler | tool:workers_legacy_scripts_update | tool:builds_create | MISS skill:workers-best-practices | tool:workers_legacy_scripts_update | skill:wrangler |
+| Run our edge function every night at 02:00. | workers_scripts_schedules / skill:wrangler | tool:workers_scripts_schedules_update | tool:workers_scripts_schedules_update | tool:workers_scripts_schedules_update | tool:workers_scripts_schedules_update | tool:workers_scripts_schedules_update | tool:workers_scripts_schedules_get | tool:workers_scripts_schedules_update | tool:workers_scripts_schedules_update |
+| Run our Docker image at the edge and show the running instances. | containers_ | tool:containers_applications_create | tool:containers_applications_create | tool:containers_applications_list | tool:containers_applications_create | tool:containers_applications_create | tool:containers_applications_create | tool:containers_applications_create | tool:containers_applications_create |
+| What is the recommended structure for an edge function's fetch handler? | none / skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices |
+| Rotate the account API token our deployment pipeline uses. | accounts_tokens / user_tokens | tool:accounts_tokens_list | tool:accounts_tokens_roll | tool:accounts_tokens_roll | tool:accounts_tokens_roll | tool:accounts_tokens_list | tool:accounts_tokens_list | tool:user_tokens_list | tool:accounts_tokens_roll |
+
+Misses (right name under the wrong key is marked *):
+- claude-sonnet-5-5:
+  - "Process image-resize jobs in the background, retrying any job that fails." -> skill:workers-best-practices (expected queues_ | workflows_)
+- claude-haiku-5-5:
+  - "Process image-resize jobs in the background, retrying any job that fails." -> tool:workers_scripts_search (expected queues_ | workflows_)
+  - "Add a dead-letter destination for messages that fail repeatedly on the orders pipeline." -> tool:pipelines_list (expected queues_)
+- gpt-6.1-terra:
+  - "The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it." -> tool:turnstile_widgets_list (expected turnstile_widgets_rotateSecret | skill:turnstile-spin)
+  - "Push a new build of our edge function and make it live." -> skill:workers-best-practices (expected workers_ | workersBuilds_ | builds_ | skill:wrangler)
+- gpt-6-luna:
+  - "We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage." -> tool:hyperdrive_create (expected d1_)
+
+Raw trials: results/2026-11-09-select2-full-flat-hosted.jsonl

@@ -1,0 +1,62 @@
+
+groups mode, task set v2, http://localhost:8787/opt2/mcp. 0 top-level tools, 139 groups, 5 skills listed, 3856 prompt tokens (o200k_base) before the task. 20 tasks x 1 samples.
+
+| Model | Reasoning | Correct | Right name, either key | Picked a group | Picked a skill | Skill only, tool task | None | Unparsed or error | Avg input tokens | Cache read |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |
+| claude-opus-5-5 | effort low | 20/20 | 20/20 | 14 | 6 | 5 | 0 | 0 | 105 | 116603 |
+| claude-sonnet-5-5 | effort low | 19/20 | 19/20 | 16 | 3 | 2 | 0 | 1 | 105 | 116603 |
+| claude-haiku-5-5 | effort low | 19/20 | 19/20 | 17 | 3 | 2 | 0 | 0 | 105 | 116603 |
+| gpt-6-astra | reasoning_effort low | 20/20 | 20/20 | 19 | 1 | 0 | 0 | 0 | 3884 | 0 |
+| gpt-6.1-sol | reasoning_effort low | 20/20 | 20/20 | 19 | 1 | 0 | 0 | 0 | 3884 | 0 |
+| gpt-6.1-terra | reasoning_effort none | 20/20 | 20/20 | 19 | 1 | 0 | 0 | 0 | 3884 | 0 |
+| gpt-6-luna | reasoning_effort none | 19/20 | 19/20 | 16 | 4 | 3 | 0 | 0 | 3884 | 0 |
+| kimi-k3.1-pro | reasoning_effort low | 19/20 | 19/20 | 17 | 3 | 2 | 0 | 0 | 4000 | 72960 |
+| decisions:gpt-6-luna | decisions api, choice question | 20/20 | 20/20 | 18 | 2 | 1 | 0 | 0 | 3979 | 0 |
+
+Picks by task:
+
+| Task | Expected | claude-opus-5-5 | claude-sonnet-5-5 | claude-haiku-5-5 | gpt-6-astra | gpt-6.1-sol | gpt-6.1-terra | gpt-6-luna | kimi-k3.1-pro | decisions |
+| :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
+| Add a bot check to our signup form and verify the challenge result on the server before accepting the submission. | turnstile-spin / turnstile-api / skill:turnstile-spin | skill:turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | skill:turnstile-spin | turnstile-spin | turnstile-spin |
+| The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it. | turnstile-spin / turnstile-api / skill:turnstile-spin | turnstile-api | turnstile-api | turnstile-spin | turnstile-api | turnstile-api | turnstile-api | turnstile-api | turnstile-api | turnstile-spin |
+| Forward everything sent to billing@ at our domain to a Gmail inbox. | cloudflare-email-service / email-routing-api / skill:cloudflare-email-service | email-routing-api | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | email-routing-api | email-routing-api | email-routing-api |
+| Set up a sender address so our edge function can email order receipts after checkout. | cloudflare-email-service / email-sending-api / skill:cloudflare-email-service | skill:cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service |
+| Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not. | cloudflare-email-service / email-sending-api / dns-api / email-auth-api / email-domains-api / skill:cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | email-domains-api | cloudflare-email-service | email-sending-api |
+| Build a per-chat-room state holder that serializes writes and wakes itself once an hour. | durable-objects / durable-objects-api / skill:durable-objects | skill:durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | skill:durable-objects | durable-objects | durable-objects |
+| Which of our stateful object classes have instances that currently hold stored data? | durable-objects / durable-objects-api / skill:durable-objects | durable-objects-api | durable-objects-api | durable-objects | durable-objects-api | durable-objects-api | durable-objects-api | durable-objects-api | durable-objects-api | durable-objects-api |
+| Review our stateful coordination class for alarm-handling bugs. | durable-objects / skill:durable-objects | skill:durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | skill:durable-objects | skill:durable-objects | durable-objects |
+| Process image-resize jobs in the background, retrying any job that fails. | queues-api / workflows-api | queues-api | queues-api | queues-api | queues-api | queues-api | queues-api | MISS group:durable-objects | MISS group:durable-objects | workflows-api |
+| Add a dead-letter destination for messages that fail repeatedly on the orders pipeline. | queues-api | queues-api | queues-api | queues-api | queues-api | queues-api | queues-api | queues-api | queues-api | queues-api |
+| Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed. | r2-api | r2-api | r2-api | r2-api | r2-api | r2-api | r2-api | r2-api | r2-api | r2-api |
+| Expire files under tmp/ in our object store after 7 days. | r2-api | r2-api | r2-api | r2-api | r2-api | r2-api | r2-api | r2-api | r2-api | r2-api |
+| Store small read-heavy feature flags at the edge. Eventual consistency is fine. | kv-api / flagship-api | kv-api | kv-api | kv-api | kv-api | kv-api | kv-api | kv-api | kv-api | kv-api |
+| Remove every entry whose key begins with "session:" from the edge key-value store. | kv-api | kv-api | kv-api | kv-api | kv-api | kv-api | kv-api | kv-api | kv-api | kv-api |
+| We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage. | d1-api | d1-api | d1-api | d1-api | d1-api | d1-api | d1-api | d1-api | d1-api | d1-api |
+| Push a new build of our edge function and make it live. | workers-api / workers-builds-api / builds-api / skill:wrangler | skill:wrangler | skill:wrangler | skill:wrangler | workers-api | workers-api | workers-api | workers-api | skill:wrangler | skill:wrangler |
+| Run our edge function every night at 02:00. | workers-api / skill:wrangler | workers-api | skill:wrangler | skill:wrangler | workers-api | workers-api | workers-api | workers-api | workers-api | workers-api |
+| Run our Docker image at the edge and show the running instances. | containers-api | containers-api | containers-api | containers-api | containers-api | containers-api | containers-api | containers-api | containers-api | containers-api |
+| What is the recommended structure for an edge function's fetch handler? | none / skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices |
+| Rotate the account API token our deployment pipeline uses. | accounts-api / user-api | accounts-api | MISS unparsed | MISS group:iam-api | accounts-api | accounts-api | accounts-api | accounts-api | accounts-api | accounts-api |
+
+Tasks that accept either the skill group or the API group, correct answers only:
+- claude-opus-5-5: skill group 3, API group 3
+- claude-sonnet-5-5: skill group 4, API group 2
+- claude-haiku-5-5: skill group 6, API group 0
+- gpt-6-astra: skill group 4, API group 2
+- gpt-6.1-sol: skill group 4, API group 2
+- gpt-6.1-terra: skill group 4, API group 2
+- gpt-6-luna: skill group 3, API group 3
+- kimi-k3.1-pro: skill group 3, API group 3
+- decisions:gpt-6-luna: skill group 4, API group 2
+
+Misses (right name under the wrong key is marked *):
+- claude-sonnet-5-5:
+  - "Rotate the account API token our deployment pipeline uses." -> unparsed (expected accounts-api | user-api)
+- claude-haiku-5-5:
+  - "Rotate the account API token our deployment pipeline uses." -> group:iam-api (expected accounts-api | user-api)
+- gpt-6-luna:
+  - "Process image-resize jobs in the background, retrying any job that fails." -> group:durable-objects (expected queues-api | workflows-api)
+- kimi-k3.1-pro:
+  - "Process image-resize jobs in the background, retrying any job that fails." -> group:durable-objects (expected queues-api | workflows-api)
+
+Raw trials: results/2026-11-09-select2-full-groups-hosted.jsonl

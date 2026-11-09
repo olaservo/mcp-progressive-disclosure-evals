@@ -1,0 +1,78 @@
+
+groups mode, task set v2, http://localhost:8787/opt2-rec/mcp. 0 top-level tools, 271 groups, 2 skills listed, 16538 prompt tokens (o200k_base) before the task. 20 tasks x 1 samples.
+
+| Model | Reasoning | Correct | Right name, either key | Picked a group | Picked a skill | Skill only, tool task | None | Unparsed or error | Avg input tokens | Cache read |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |
+| claude-opus-5-5 | effort low | 20/20 | 20/20 | 19 | 1 | 0 | 0 | 0 | 105 | 538980 |
+| claude-sonnet-5-5 | effort low | 20/20 | 20/20 | 19 | 1 | 0 | 0 | 0 | 105 | 538980 |
+| claude-haiku-5-5 | effort low | 19/20 | 19/20 | 19 | 1 | 0 | 0 | 0 | 105 | 538980 |
+| gpt-6-astra | reasoning_effort low | 20/20 | 20/20 | 19 | 1 | 0 | 0 | 0 | 16566 | 0 |
+| gpt-6.1-sol | reasoning_effort low | 20/20 | 20/20 | 19 | 1 | 0 | 0 | 0 | 16566 | 0 |
+| gpt-6.1-terra | reasoning_effort none | 20/20 | 20/20 | 19 | 1 | 0 | 0 | 0 | 16566 | 0 |
+| gpt-6-luna | reasoning_effort none | 19/20 | 19/20 | 19 | 1 | 0 | 0 | 0 | 16566 | 0 |
+| kimi-k3.1-pro | reasoning_effort low | 20/20 | 20/20 | 19 | 1 | 0 | 0 | 0 | 16619 | 311296 |
+| decisions:gpt-6-luna | decisions api, choice question | 0/20 | 0/20 | 0 | 0 | 0 | 0 | 20 | 0 | 0 |
+
+Picks by task:
+
+| Task | Expected | claude-opus-5-5 | claude-sonnet-5-5 | claude-haiku-5-5 | gpt-6-astra | gpt-6.1-sol | gpt-6.1-terra | gpt-6-luna | kimi-k3.1-pro | decisions |
+| :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
+| Add a bot check to our signup form and verify the challenge result on the server before accepting the submission. | turnstile-spin / turnstile-api / skill:turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | MISS unparsed |
+| The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it. | turnstile-spin / turnstile-api / skill:turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | turnstile-spin | turnstile-api | turnstile-api | MISS unparsed |
+| Forward everything sent to billing@ at our domain to a Gmail inbox. | cloudflare-email-service / email-routing-api / skill:cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | email-routing-api | cloudflare-email-service | MISS unparsed |
+| Set up a sender address so our edge function can email order receipts after checkout. | cloudflare-email-service / email-sending-api / skill:cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | cloudflare-email-service | MISS unparsed |
+| Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not. | cloudflare-email-service / email-sending-api / email-auth-api / email-domains-api / dns-records / skill:cloudflare-email-service | email-sending-api | cloudflare-email-service | email-sending-api | cloudflare-email-service | cloudflare-email-service | email-sending-api | email-sending-api | email-sending-api | MISS unparsed |
+| Build a per-chat-room state holder that serializes writes and wakes itself once an hour. | durable-objects / durable-objects-api / skill:durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | MISS unparsed |
+| Which of our stateful object classes have instances that currently hold stored data? | durable-objects / durable-objects-api / skill:durable-objects | durable-objects-api | durable-objects-api | durable-objects-api | durable-objects-api | durable-objects-api | durable-objects-api | durable-objects-api | durable-objects-api | MISS unparsed |
+| Review our stateful coordination class for alarm-handling bugs. | durable-objects / skill:durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | durable-objects | MISS unparsed |
+| Process image-resize jobs in the background, retrying any job that fails. | queues-api / workflows-api | queues-api | queues-api | queues-api | queues-api | queues-api | queues-api | queues-api | queues-api | MISS unparsed |
+| Add a dead-letter destination for messages that fail repeatedly on the orders pipeline. | queues-api | queues-api | queues-api | MISS group:pipelines-api | queues-api | queues-api | queues-api | queues-api | queues-api | MISS unparsed |
+| Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed. | r2-buckets | r2-buckets | r2-buckets | r2-buckets | r2-buckets | r2-buckets | r2-buckets | r2-buckets | r2-buckets | MISS unparsed |
+| Expire files under tmp/ in our object store after 7 days. | r2-buckets | r2-buckets | r2-buckets | r2-buckets | r2-buckets | r2-buckets | r2-buckets | r2-buckets | r2-buckets | MISS unparsed |
+| Store small read-heavy feature flags at the edge. Eventual consistency is fine. | kv-api / flagship-api | kv-api | kv-api | flagship-api | kv-api | kv-api | kv-api | kv-api | kv-api | MISS unparsed |
+| Remove every entry whose key begins with "session:" from the edge key-value store. | kv-api | kv-api | kv-api | kv-api | kv-api | kv-api | kv-api | kv-api | kv-api | MISS unparsed |
+| We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage. | d1-api | d1-api | d1-api | d1-api | d1-api | d1-api | d1-api | d1-api | d1-api | MISS unparsed |
+| Push a new build of our edge function and make it live. | workers-versions / workers-deployments / workers-legacy / workers-builds-api / builds-core / builds-triggers / builds-deploy-hooks / builds-workers / skill:wrangler | workers-versions | workers-versions | workers-versions | workers-versions | workers-versions | workers-versions | MISS group:workers-core | workers-versions | MISS unparsed |
+| Run our edge function every night at 02:00. | workers-core / skill:wrangler | workers-core | workers-core | workers-core | workers-core | workers-core | workers-core | workers-core | workers-core | MISS unparsed |
+| Run our Docker image at the edge and show the running instances. | containers-api | containers-api | containers-api | containers-api | containers-api | containers-api | containers-api | containers-api | containers-api | MISS unparsed |
+| What is the recommended structure for an edge function's fetch handler? | none / skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | MISS unparsed |
+| Rotate the account API token our deployment pipeline uses. | accounts-tokens / user-tokens | accounts-tokens | accounts-tokens | accounts-tokens | accounts-tokens | accounts-tokens | accounts-tokens | accounts-tokens | accounts-tokens | MISS unparsed |
+
+Tasks that accept either the skill group or the API group, correct answers only:
+- claude-opus-5-5: skill group 5, API group 1
+- claude-sonnet-5-5: skill group 5, API group 1
+- claude-haiku-5-5: skill group 5, API group 1
+- gpt-6-astra: skill group 5, API group 1
+- gpt-6.1-sol: skill group 5, API group 1
+- gpt-6.1-terra: skill group 5, API group 1
+- gpt-6-luna: skill group 3, API group 3
+- kimi-k3.1-pro: skill group 4, API group 2
+
+Misses (right name under the wrong key is marked *):
+- claude-haiku-5-5:
+  - "Add a dead-letter destination for messages that fail repeatedly on the orders pipeline." -> group:pipelines-api (expected queues-api)
+- gpt-6-luna:
+  - "Push a new build of our edge function and make it live." -> group:workers-core (expected workers-versions | workers-deployments | workers-legacy | workers-builds-api | builds-core | builds-triggers | builds-deploy-hooks | builds-workers | skill:wrangler)
+- decisions:gpt-6-luna:
+  - "Add a bot check to our signup form and verify the challenge result on the server before accepting the submission." -> unparsed (expected turnstile-spin | turnstile-api | skill:turnstile-spin)
+  - "The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it." -> unparsed (expected turnstile-spin | turnstile-api | skill:turnstile-spin)
+  - "Forward everything sent to billing@ at our domain to a Gmail inbox." -> unparsed (expected cloudflare-email-service | email-routing-api | skill:cloudflare-email-service)
+  - "Set up a sender address so our edge function can email order receipts after checkout." -> unparsed (expected cloudflare-email-service | email-sending-api | skill:cloudflare-email-service)
+  - "Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not." -> unparsed (expected cloudflare-email-service | email-sending-api | email-auth-api | email-domains-api | dns-records | skill:cloudflare-email-service)
+  - "Build a per-chat-room state holder that serializes writes and wakes itself once an hour." -> unparsed (expected durable-objects | durable-objects-api | skill:durable-objects)
+  - "Which of our stateful object classes have instances that currently hold stored data?" -> unparsed (expected durable-objects | durable-objects-api | skill:durable-objects)
+  - "Review our stateful coordination class for alarm-handling bugs." -> unparsed (expected durable-objects | skill:durable-objects)
+  - "Process image-resize jobs in the background, retrying any job that fails." -> unparsed (expected queues-api | workflows-api)
+  - "Add a dead-letter destination for messages that fail repeatedly on the orders pipeline." -> unparsed (expected queues-api)
+  - "Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed." -> unparsed (expected r2-buckets)
+  - "Expire files under tmp/ in our object store after 7 days." -> unparsed (expected r2-buckets)
+  - "Store small read-heavy feature flags at the edge. Eventual consistency is fine." -> unparsed (expected kv-api | flagship-api)
+  - "Remove every entry whose key begins with "session:" from the edge key-value store." -> unparsed (expected kv-api)
+  - "We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage." -> unparsed (expected d1-api)
+  - "Push a new build of our edge function and make it live." -> unparsed (expected workers-versions | workers-deployments | workers-legacy | workers-builds-api | builds-core | builds-triggers | builds-deploy-hooks | builds-workers | skill:wrangler)
+  - "Run our edge function every night at 02:00." -> unparsed (expected workers-core | skill:wrangler)
+  - "Run our Docker image at the edge and show the running instances." -> unparsed (expected containers-api)
+  - "What is the recommended structure for an edge function's fetch handler?" -> unparsed (expected none | skill:workers-best-practices)
+  - "Rotate the account API token our deployment pipeline uses." -> unparsed (expected accounts-tokens | user-tokens)
+
+Raw trials: results\2026-11-09-select2-full-groups-rec-hosted.jsonl

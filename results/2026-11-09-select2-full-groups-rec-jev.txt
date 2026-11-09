@@ -1,0 +1,56 @@
+
+groups mode, task set v2, http://localhost:8787/opt2-rec/mcp. 0 top-level tools, 271 groups, 2 skills listed, 16538 prompt tokens (o200k_base) before the task. 20 tasks x 1 samples.
+
+| Model | Reasoning | Correct | Right name, either key | Picked a group | Picked a skill | Skill only, tool task | None | Unparsed or error | Avg input tokens | Cache read |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |
+| jev-latest | system one api, choice question | 0/20 | 0/20 | 0 | 0 | 0 | 0 | 20 | 0 | 0 |
+
+Picks by task:
+
+| Task | Expected | jev-latest |
+| :-- | :-- | :-- |
+| Add a bot check to our signup form and verify the challenge result on the server before accepting the submission. | turnstile-spin / turnstile-api / skill:turnstile-spin | MISS unparsed |
+| The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it. | turnstile-spin / turnstile-api / skill:turnstile-spin | MISS unparsed |
+| Forward everything sent to billing@ at our domain to a Gmail inbox. | cloudflare-email-service / email-routing-api / skill:cloudflare-email-service | MISS unparsed |
+| Set up a sender address so our edge function can email order receipts after checkout. | cloudflare-email-service / email-sending-api / skill:cloudflare-email-service | MISS unparsed |
+| Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not. | cloudflare-email-service / email-sending-api / email-auth-api / email-domains-api / dns-records / skill:cloudflare-email-service | MISS unparsed |
+| Build a per-chat-room state holder that serializes writes and wakes itself once an hour. | durable-objects / durable-objects-api / skill:durable-objects | MISS unparsed |
+| Which of our stateful object classes have instances that currently hold stored data? | durable-objects / durable-objects-api / skill:durable-objects | MISS unparsed |
+| Review our stateful coordination class for alarm-handling bugs. | durable-objects / skill:durable-objects | MISS unparsed |
+| Process image-resize jobs in the background, retrying any job that fails. | queues-api / workflows-api | MISS unparsed |
+| Add a dead-letter destination for messages that fail repeatedly on the orders pipeline. | queues-api | MISS unparsed |
+| Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed. | r2-buckets | MISS unparsed |
+| Expire files under tmp/ in our object store after 7 days. | r2-buckets | MISS unparsed |
+| Store small read-heavy feature flags at the edge. Eventual consistency is fine. | kv-api / flagship-api | MISS unparsed |
+| Remove every entry whose key begins with "session:" from the edge key-value store. | kv-api | MISS unparsed |
+| We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage. | d1-api | MISS unparsed |
+| Push a new build of our edge function and make it live. | workers-versions / workers-deployments / workers-legacy / workers-builds-api / builds-core / builds-triggers / builds-deploy-hooks / builds-workers / skill:wrangler | MISS unparsed |
+| Run our edge function every night at 02:00. | workers-core / skill:wrangler | MISS unparsed |
+| Run our Docker image at the edge and show the running instances. | containers-api | MISS unparsed |
+| What is the recommended structure for an edge function's fetch handler? | none / skill:workers-best-practices | MISS unparsed |
+| Rotate the account API token our deployment pipeline uses. | accounts-tokens / user-tokens | MISS unparsed |
+
+Misses (right name under the wrong key is marked *):
+- jev-latest:
+  - "Add a bot check to our signup form and verify the challenge result on the server before accepting the submission." -> unparsed (expected turnstile-spin | turnstile-api | skill:turnstile-spin)
+  - "The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it." -> unparsed (expected turnstile-spin | turnstile-api | skill:turnstile-spin)
+  - "Forward everything sent to billing@ at our domain to a Gmail inbox." -> unparsed (expected cloudflare-email-service | email-routing-api | skill:cloudflare-email-service)
+  - "Set up a sender address so our edge function can email order receipts after checkout." -> unparsed (expected cloudflare-email-service | email-sending-api | skill:cloudflare-email-service)
+  - "Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not." -> unparsed (expected cloudflare-email-service | email-sending-api | email-auth-api | email-domains-api | dns-records | skill:cloudflare-email-service)
+  - "Build a per-chat-room state holder that serializes writes and wakes itself once an hour." -> unparsed (expected durable-objects | durable-objects-api | skill:durable-objects)
+  - "Which of our stateful object classes have instances that currently hold stored data?" -> unparsed (expected durable-objects | durable-objects-api | skill:durable-objects)
+  - "Review our stateful coordination class for alarm-handling bugs." -> unparsed (expected durable-objects | skill:durable-objects)
+  - "Process image-resize jobs in the background, retrying any job that fails." -> unparsed (expected queues-api | workflows-api)
+  - "Add a dead-letter destination for messages that fail repeatedly on the orders pipeline." -> unparsed (expected queues-api)
+  - "Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed." -> unparsed (expected r2-buckets)
+  - "Expire files under tmp/ in our object store after 7 days." -> unparsed (expected r2-buckets)
+  - "Store small read-heavy feature flags at the edge. Eventual consistency is fine." -> unparsed (expected kv-api | flagship-api)
+  - "Remove every entry whose key begins with "session:" from the edge key-value store." -> unparsed (expected kv-api)
+  - "We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage." -> unparsed (expected d1-api)
+  - "Push a new build of our edge function and make it live." -> unparsed (expected workers-versions | workers-deployments | workers-legacy | workers-builds-api | builds-core | builds-triggers | builds-deploy-hooks | builds-workers | skill:wrangler)
+  - "Run our edge function every night at 02:00." -> unparsed (expected workers-core | skill:wrangler)
+  - "Run our Docker image at the edge and show the running instances." -> unparsed (expected containers-api)
+  - "What is the recommended structure for an edge function's fetch handler?" -> unparsed (expected none | skill:workers-best-practices)
+  - "Rotate the account API token our deployment pipeline uses." -> unparsed (expected accounts-tokens | user-tokens)
+
+Raw trials: results\2026-11-09-select2-full-groups-rec-jev.jsonl
