@@ -1,6 +1,6 @@
 # Results
 
-Every table in the repository, with the notes behind each. `drafts/wg-findings-writeup.md` is the same material written for the working group; this file is the fuller record.
+Every table in the repository, with the notes behind each.
 
 ## Token measurements
 
@@ -166,7 +166,7 @@ Raw session files are not committed: they embed the full system prompt and accou
 
 ## Second round, 2026-11-09: the recommended build, a client without tool search, and the duplicate listing
 
-The second round tested three questions from `drafts/rerun-plan.md`. A: does a groups server built the way #19 recommends behave differently from the as-generated one, and how do both compare with flat behind host tool search? B: what do groups cost in a client without tool search? C: does listing a grouped workflow in both `groups/list` and `skills/list` cost anything?
+The second round tested three questions. A: does a groups server built the way #19 recommends behave differently from the as-generated one, and how do both compare with flat behind host tool search? B: what do groups cost in a client without tool search? C: does listing a grouped workflow in both `groups/list` and `skills/list` cost anything?
 
 ### What changed
 

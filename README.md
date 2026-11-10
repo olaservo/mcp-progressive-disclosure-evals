@@ -23,7 +23,7 @@ Three measurements:
 
 ## Read more
 
-- [The explainer page](https://www.olahungerford.com/mcp-progressive-disclosure-evals/explainer.html): a one-page recap with the charts. [`drafts/wg-findings-writeup.md`](drafts/wg-findings-writeup.md) is the long form, the text for the working group.
+- [The explainer page](https://www.olahungerford.com/mcp-progressive-disclosure-evals/explainer.html): a one-page recap with the charts.
 - [`docs/results.md`](docs/results.md): every table, the notes behind each, and the limits.
 - [`docs/running.md`](docs/running.md): sources, variants, how to run the servers and the trials, the deployed Workers, the Claude Code mod.
 - [`results/traces/traces-public/`](results/traces/traces-public/): the 180 redacted sessions with their own README; also attached as a zip to the [`traces-2026-11-08`](https://github.com/olaservo/mcp-progressive-disclosure-evals/releases/tag/traces-2026-11-08) release. [`results/traces/traces2-public/`](results/traces/traces2-public/) holds the second round's 300.
