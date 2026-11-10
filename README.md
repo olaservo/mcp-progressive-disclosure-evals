@@ -16,7 +16,7 @@ Three measurements:
 - Templated group descriptions cost the mid-size open models up to 6 of 20 tasks at 139 groups. The SEP's guidance that descriptions carry task vocabulary is what this measures.
 - Second round: a server built the way #19 recommends (one level, groups sized to a task, task-vocabulary descriptions) closed the gap templated descriptions had opened. At 271 groups on the full catalog the open models scored 17 to 20 of 20, against 10 to 19 on 139 as-generated groups, and every hosted model scored 19 or 20. Its listing is 16.5k tokens, about a fifth of the tool-name list.
 - Second round: in a client without tool search, registering a group's tools resident saved the fetch turn and cost 2.2 to 2.4 times as much, because each open rewrites the cached prefix.
-- Second round: leaving grouped skills out of `skills/list` for a groups client cost no correct picks and removed the skill-only answers; listing them as well, with the new descriptions, left 7 such answers across the models that ran.
+- Second round: leaving grouped skills out of `skills/list` for a groups client cost no correct picks and removed the skill-only answers; listing them as well, with the new descriptions, left 7 such answers across the 18 models.
 - Through Claude Code, Sonnet and Opus completed 20 of 20 tasks under groups, under the host's tool search, and with all schemas up front. Groups read 2.32M to 2.37M input tokens per model, the host's tool search 1.96M to 2.22M, and all schemas up front 16.5M to 18.4M. Groups cost one more turn and 3 to 4 seconds per task, and their scoped tools loaded through the host's tool search, so the run shows groups composed with it. The prompt cache held across group opens.
 - Option 2 of the positioning document works as written on the shipped SDK. Neither document says whether a skill a group lists stays in `skills/list`, and the SDK lists every SKILL.md in `resources/list` by default. Option 3's flattening of a SKILL.md folder into instructions drops the skill's entry, digests and the root for its relative links.
 
@@ -37,7 +37,7 @@ npm run dev        # every variant at http://localhost:8787/<variant>/mcp
 npm run compare    # the token comparison against localhost
 ```
 
-Three variants are also deployed, with no auth and dry-run tools, at `https://pd-groups-{flat,opt2,opt2-rec}.olahungerford.workers.dev/mcp`; `opt1` and `opt3` run locally. Everything else is in [`docs/running.md`](docs/running.md).
+Three variants are also deployed, with no auth and dry-run tools, at `https://pd-groups-{flat,opt2,opt2-rec}.olahungerford.workers.dev/mcp`. The `opt1` and `opt3` Workers are still up but serve the 2026-11-08 build. Everything else is in [`docs/running.md`](docs/running.md).
 
 ## License
 

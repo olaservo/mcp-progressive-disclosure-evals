@@ -250,7 +250,7 @@ Five conditions, three models, 20 tasks, 300 sessions on 2026-11-09, no errors, 
 | `flat-toolsearch` | As in round one. |
 | `flat-all-schemas` | As in round one. |
 
-| Condition | Model | Done | Median turns, other 12 tasks | p50 wall s | Cost USD | Input tokens | From cache | Cache writes | ToolSearch calls | Group opens per session |
+| Condition | Model | Done | Median turns, 12 product tasks | p50 wall s | Cost USD | Input tokens | From cache | Cache writes | ToolSearch calls | Group opens per session |
 | :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |
 | groups-rec | Haiku 5.5 | 17/20 | 5 | 19.1 | 0.08 | 1.75M | 85% | 270k | 18 | 0.95 |
 | groups-rec | Sonnet 5.5 | 20/20 | 5 | 16.6 | 1.26 | 1.59M | 85% | 244k | 18 | 0.95 |

@@ -43,10 +43,10 @@ npm run vendor:full && npm run dev   # the 3,036-tool catalog, locally; npm run 
 Each variant runs as its own Worker, served at `/mcp`. There is no auth, and tool calls are dry runs.
 
 - https://pd-groups-flat.olahungerford.workers.dev/mcp
-- https://pd-groups-opt1.olahungerford.workers.dev/mcp
+- https://pd-groups-opt1.olahungerford.workers.dev/mcp (the 2026-11-08 build, with `demo_info`)
 - https://pd-groups-opt2.olahungerford.workers.dev/mcp
 - https://pd-groups-opt2-rec.olahungerford.workers.dev/mcp
-- https://pd-groups-opt3.olahungerford.workers.dev/mcp
+- https://pd-groups-opt3.olahungerford.workers.dev/mcp (the 2026-11-08 build, with `demo_info`)
 
 Each Worker answers 429 to a client past 120 requests a minute (the Workers Rate Limiting binding, keyed on the client IP, counted per Cloudflare location, approximate under bursts). The account is on the Workers Free plan, so Cloudflare stops a Worker with Error 1027 after 100,000 requests a day and bills nothing; the limiter keeps one client from using that quota up.
 
