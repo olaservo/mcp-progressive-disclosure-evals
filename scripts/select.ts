@@ -1,6 +1,6 @@
 // Asks models which group, skill or tool they would load for a task, given only what a client sees before groups/get.
 // Every mode shows the server's skills/list index, since a Skills-extension client would show it too.
-// Usage: tsx scripts/select.ts --url <mcp url> [--mode groups|flat|flat-schemas] [--tasks v1|v2] [--models a,b,c] [--seeds N] [--limit N] [--env <.env path>] [--label name] [--list-all-skills]
+// Usage: tsx scripts/select.ts --url <mcp url> [--mode groups|flat|flat-schemas] [--tasks v1|v2|v3] [--models a,b,c] [--seeds N] [--limit N] [--env <.env path>] [--label name] [--list-all-skills]
 // --list-all-skills reads skills/list on a second client that declares only the Skills extension, so a server that leaves
 // grouped skills out for a groups client still shows every skill.
 // Model ids route by prefix: claude-* through the Anthropic SDK, gpt-* through the OpenAI SDK, kimi-* through the OpenAI SDK
@@ -27,9 +27,9 @@ const args = process.argv.slice(2)
 const opt = (name: string, fallback?: string) => (args.includes(`--${name}`) ? args[args.indexOf(`--${name}`) + 1] : fallback)
 const url = opt('url', 'https://pd-groups-opt2.olahungerford.workers.dev/mcp')!
 let mode = opt('mode', 'groups') as Mode
-let taskSet = opt('tasks', 'v1') as 'v1' | 'v2'
+let taskSet = opt('tasks', 'v1') as 'v1' | 'v2' | 'v3'
 const models = opt('models', 'Qwen/Qwen3.5-9B:deepinfra,Qwen/Qwen3-14B:deepinfra,claude-opus-5-5')!.split(',')
-const seeds = Number(opt('seeds', taskSet === 'v2' ? '1' : '5'))
+const seeds = Number(opt('seeds', taskSet === 'v1' ? '5' : '1'))
 const limit = Number(opt('limit', '0'))
 const label = opt('label', mode)!
 const envFile = opt('env')
@@ -102,7 +102,17 @@ const TASKS_V2: Task[] = [
   // No fit in the subset. The full catalog has accounts_tokens_roll and user_tokens_roll.
   { task: 'Rotate the account API token our deployment pipeline uses.', groups: ['none'], tools: ['none'], full: { groups: ['accounts-api', 'user-api'], split: ['accounts-tokens', 'user-tokens'], tools: ['accounts_tokens', 'user_tokens'] } }
 ]
-const taskSets = { v1: TASKS_V1, v2: TASKS_V2 }
+/**
+ * The held-out third set: 20 tasks written by two models this demo does not test, from a product name alone
+ * (scripts/write-tasks.ts), with answers derived from the served listings by scripts/v3-answers.ts. Full catalog only.
+ */
+const V3_FILE = join(import.meta.dirname, 'select-v3.json')
+const TASKS_V3: Task[] = ((existsSync(V3_FILE) ? JSON.parse(readFileSync(V3_FILE, 'utf8')) : []) as { task: string; tools: string[]; groups: Record<string, string[]> }[]).map((t) => ({
+  task: t.task,
+  groups: [...new Set(Object.values(t.groups).flat())],
+  tools: t.tools
+}))
+const taskSets = { v1: TASKS_V1, v2: TASKS_V2, v3: TASKS_V3 }
 const tasks = limit > 0 ? taskSets[taskSet].slice(0, limit) : taskSets[taskSet]
 
 /**
@@ -467,7 +477,7 @@ if (retry) {
   const lines = readFileSync(retry, 'utf8').split('\n').filter(Boolean)
   const header = JSON.parse(lines[0]!) as Header
   mode = header.mode as Mode
-  taskSet = (header.taskSet ?? 'v1') as 'v1' | 'v2'
+  taskSet = (header.taskSet ?? 'v1') as 'v1' | 'v2' | 'v3'
   if (header.url !== url) throw new Error(`--retry: pass --url ${header.url}, the run's server`)
   const { text, instruction, groups, skills } = await catalog()
   const trials = lines.slice(1).map((line) => JSON.parse(line) as Trial)
@@ -491,7 +501,7 @@ if (retry) {
   const lines = readFileSync(replay, 'utf8').split('\n').filter(Boolean)
   const header = JSON.parse(lines[0]!) as Header
   mode = header.mode as Mode
-  taskSet = (header.taskSet ?? 'v1') as 'v1' | 'v2'
+  taskSet = (header.taskSet ?? 'v1') as 'v1' | 'v2' | 'v3'
   // Expected answers come from the task set, so a scoring change applies to old runs too.
   const byText = new Map(taskSets[taskSet].map((task) => [task.task, task]))
   const trials = lines
@@ -511,7 +521,7 @@ if (retry) {
   if (process.env.SELECT_DUMP_PROMPT) console.error(`--- prompt ---\n${text}\n${instruction}\n--- end ---`)
 
   mkdirSync('results', { recursive: true })
-  const out = join('results', `${new Date().toISOString().slice(0, 10)}-${taskSet === 'v2' ? 'select2' : 'select'}-${label}.jsonl`)
+  const out = join('results', `${new Date().toISOString().slice(0, 10)}-${taskSet === 'v3' ? 'select3' : taskSet === 'v2' ? 'select2' : 'select'}-${label}.jsonl`)
   const trials: Trial[] = []
   // With --parallel every model runs at once, each through its tasks in order. The file is kept in model order.
   const order = (t: Trial) => models.indexOf(t.model)
