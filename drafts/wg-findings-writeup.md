@@ -1,6 +1,6 @@
 # Groups and Skills over MCP on the Cloudflare API catalog: measurements from one implementation
 
-Draft for a progressive-disclosure-wg Discussion or a PR to `docs/experimental-findings.md`. Written against #19 at `15b2a5c` and #22 at `5e9ff2f`, measured on 2026-11-07 and 2026-11-08, with a second round on 2026-11-09. Code, raw answers, session files and the full tables: https://github.com/olaservo/mcp-progressive-disclosure-evals. Author: @olaservo.
+Draft for a progressive-disclosure-wg Discussion or a PR to `docs/experimental-findings.md`. Measured on 2026-11-07 and 2026-11-08 against #19 at `15b2a5c` and #22 at `5e9ff2f`, with a second round on 2026-11-09 that adds a server built the way #19 recommends, and a held-out task set on 2026-11-10. Code, raw answers, session files and the full tables: https://github.com/olaservo/mcp-progressive-disclosure-evals. Author: @olaservo.
 
 ## Summary
 
@@ -14,6 +14,7 @@ Draft for a progressive-disclosure-wg Discussion or a PR to `docs/experimental-f
 - Second round: a server built the way #19 recommends (one level, groups sized to a task, task-vocabulary descriptions) closed the gap templated descriptions had opened. At 271 groups on the full catalog the open models scored 17 to 20 of 20, against 10 to 19 on 139 as-generated groups, and every hosted model scored 19 or 20. Its listing is 16.5k tokens, about a fifth of the tool-name list.
 - Second round: in a client without tool search, registering a group's tools resident saved the fetch turn and cost 2.2 to 2.4 times as much, because each open rewrites the cached prefix.
 - Second round: leaving grouped skills out of `skills/list` for a groups client cost no correct picks and removed the skill-only answers; listing them as well, with the new descriptions, left 7 such answers across the models that ran.
+- Held-out tasks: 20 tasks written by two models the demo does not test, from a product name alone, reproduced the second round. The recommended build scored 17 to 19 of 20 for the open models and 18 to 20 for the hosted models; the as-generated build cost five open models 3 to 14 tasks. On flat tool names the hosted models scored 18 to 20 once a lookup such as `zones_list` counted as a first call, a rule decided after the results.
 - Against the problem statement's four criteria: groups deliver initial context size and total tokens, leave completion unchanged for frontier models, and add a turn. On this catalog a host with tool search gets the token result. What groups add is the server-authored bundle: instructions and a skill delivered with the tools. Round one's scoped tools loaded through Claude Code's own tool search, so it showed groups composed with host tool search; the second round tests a client without it.
 
 ## Setup
@@ -36,7 +37,7 @@ Deterministic, reproduced locally, against the deployed Workers, and from a fres
 - **Scoped tools are callable without `groups/get`** and stay out of that connection's `tools/list`. A client that does not declare the extension gets every tool.
 - **Option 3 flattens the skill.** When a SKILL.md folder becomes `instructions` plus scoped resources, the skill loses its entry (name, description, frontmatter), its digests, and the root that its relative `references/*.md` links resolve against. That is the concrete form of the mapping contract #22 lists as Option 3's cost.
 - **Option 1's paraphrase is cheapest and is a second copy.** 2,190 task-load tokens against 8,768 for Option 2. The paraphrase is mine; it drops the skill's seven framework guides and would have to track cloudflare/skills by hand. Options 1 and 3 were compared on wire shape and tokens only. The selection and completion runs put Option 2 against flat.
-- **Naming.** #22's prose and the accepted decision in `docs/decisions.md` say `group/list`; the examples and the SEP say `groups/list`. A commenter asked about the same drift on #19 on 2026-11-09 ([comment](https://github.com/modelcontextprotocol/progressive-disclosure-wg/pull/19#issuecomment-6735714636)).
+- **Naming.** #22's prose says `group/list` in four places; its examples, the SEP and `docs/decisions.md` (since #23) say `groups/list`. A commenter asked about the same drift on #19 on 2026-11-09 ([comment](https://github.com/modelcontextprotocol/progressive-disclosure-wg/pull/19#issuecomment-6735714636)).
 
 ## Tokens
 
@@ -132,7 +133,7 @@ The sessions, reduced to their conversation rows, are in the repository under `r
 
 The second round tested three questions. A: does a groups server built the way #19 recommends behave differently from the as-generated one, and how do both compare with flat behind host tool search? B: what do groups cost in a client without tool search? C: does listing a grouped workflow in both `groups/list` and `skills/list` cost anything?
 
-`opt2-rec` is the recommended build. Every group is top level. A product stays one group unless it has more than 25 tools or about 15k tokens of schemas; a larger one is split by its second-level directories, and areas under 4 tools join a `-core` group. On the subset that splits `workers` into 8 groups and `r2` into 3, for 22 groups; on the full catalog it gives 271. Product descriptions carry task vocabulary: hand-written for the subset, written by Sonnet 5.5 from each group's tool descriptions for the full catalog and spot-checked. Each workflow group's description says when to open it against the product group ("open `turnstile-api` to list or edit existing widgets"). A client that negotiated groups gets only `workers-best-practices` and `wrangler` in `skills/list`. The mod no longer inlines the SKILL.md on open: `read_skill` fetches the entry with `skills/get` and checks the digest, so this round exercises #22's interop rules 1 and 2. `demo_info` is gone from every server.
+`opt2-rec` is the recommended build. Every group is top level. A product stays one group unless it has more than 25 tools or about 15k tokens of schemas; a larger one is split by its second-level directories, and areas under 4 tools join a `-core` group. On the subset that splits `workers` into 8 groups and `r2` into 3, for 22 groups; on the full catalog it gives 271. Product descriptions carry task vocabulary: hand-written for the subset, written by Sonnet 5.5 from each group's tool descriptions for the full catalog and spot-checked. Each workflow group's description says when to open it against the product group ("open `turnstile-api` to list or edit existing widgets"). A client that negotiated groups gets only `workers-best-practices` and `wrangler` in `skills/list`; that listing is served with `cacheScope: "private"`. The descriptions were written after round one's results, and some of the hand-written ones reuse wording from the v2 tasks. `describe-groups.ts` gave the writing model four hand-written descriptions as examples. The held-out task set below tests the recommended build on tasks written after it, by models that did not see it. The mod no longer inlines the SKILL.md on open: `read_skill` fetches the entry with `skills/get` and checks the digest, so this round exercises #22's interop rules 1 and 2. `demo_info` is gone from every server.
 
 ### Selection
 
@@ -183,6 +184,37 @@ Haiku's rows and the all-schemas arm are in the full table in the repository.
 - B: without tool search, the prediction on turns held and the one on tokens did not. Every model took one fewer median turn on the product tasks (4 against 5) and made no ToolSearch calls. But each resident open rewrites the cached prefix: cache writes were 2.6 to 2.9 times the deferred arm's, input tokens 1.4 to 1.8 times, and cost 2.2 to 2.4 times. In the smoke run one `r2-buckets` open took the prefix from 25.7k to 48.7k tokens as the provider renders it, 23k for a group that measures 13.4k in o200k. Wall time was 0.7 to 2.8 seconds lower at p50.
 - Opening a group no longer loads its skill, and Sonnet and Opus read the skill anyway: 8 of 8 workflow tasks in both recommended arms, with 8 to 10 `read_skill` calls per model. Haiku answered the two Durable Objects knowledge tasks and the fetch-handler question from its own knowledge in one turn in several groups arms, which the rubric now scores as a miss. In round one the same answers counted, because the group open had already put the SKILL.md in context.
 - Every `read_skill` in round two went through `skills/get` with the digest checked; no digest failed.
+- In `flat-toolsearch`, every model called ToolSearch at least once on each of the 16 tasks that need a tool, in both rounds. The sessions with no call are the three knowledge tasks, plus Sonnet on `rotate-token`, the no-fit task, which it answered correctly without a tool. On these tasks no miss came from a model failing to search.
+
+## Held-out tasks, 2026-11-10
+
+The v2 tasks were written by this demo's author, who had read the group descriptions. The v3 set was written by two models the demo does not test, from a product name alone, and run on the full catalog against the three servers from round two.
+
+Fable 5.2 and Gemini 3.6 Flash each got one product at a time from a seeded draw (3 of the 10 subset products and 7 others each) and wrote a task in a developer's words without naming the product. Neither writer saw a group listing, a tool name or a description. Fable redrew six tasks that spanned products, missed their product or repeated its name, so the set is 14 Fable tasks and 6 Gemini tasks. Accepted answers were fixed before any model ran: the tools that do any step of the task, by name from the catalog, and every group whose `groups/get` subtree returns one of them. Same prompts and settings as round two, one sample.
+
+| Model | Recommended, 271 groups | As-generated, 139 groups | Flat names, strict | Flat names, first-call rule |
+| :-- | --: | --: | --: | --: |
+| Qwen 3.5 9B | 17 | 3 | 15 | 15 |
+| Qwen3 14B | 17 | 9 | 40k context | |
+| GLM-5.3 Flash | 19 | 14 | 20 | 20 |
+| DeepSeek V4.1 Flash | 19 | 18 | 20 | 20 |
+| Qwen3.6 35B-A3B | 19 | 9 | 17 | 17 |
+| Gemma 4 26B | 19 | 16 | 15 | 17 |
+| Opus 5.5 | 20 | 19 | 15 | 19 |
+| Sonnet 5.5 | 20 | 19 | 18 | 20 |
+| Haiku 5.5 | 20 | 18 | 18 | 19 |
+| GPT-6 Astra | 20 | 19 | 13 | 19 |
+| GPT-6.1 Sol | 20 | 18 | 13 | 19 |
+| GPT-6.1 Terra | 20 | 18 | 11 | 18 |
+| GPT-6 Luna | 18 | 16 | 19 | 20 |
+| Gemini 4 Argon | 20 | 19 | 11 | 19 |
+| Gemini 3.8 Flash | 20 | 19 | 15 | 19 |
+| Kimi K3.1 Pro | 20 | 20 | 18 | 19 |
+
+- On the recommended build the open models scored 17 to 19 and the hosted models 18 to 20, close to their round-two scores on the v2 tasks. The misses are mostly one task: 5 on the private connection (`workers-vpc-api` 3, `network-api` 2).
+- On the as-generated build the open models scored 3 to 18, and five of them lost 3 to 14 tasks against the recommended build. The hosted models scored 16 to 20. EU processing was missed 14 times across models and classifiers (`zones-api` 7, `dls-api` 5). Its tools sit in `addressing-api`, whose templated description names only the product. This repeats round one's finding on templated descriptions on tasks nobody tuned for, with a wider gap.
+- Flat, strict: the prompt asks for the tool a model would call first, and the committed answers list only the tools that do the job. A lookup first therefore scored a miss: `zones_list` on 35 picks for tasks that name a domain, and `d1_list` on 6 picks before a query. `scripts/v3-rescore.ts` applies a first-call rule decided after the results. It also accepts any tool of a needed tool's product, as v2's product prefixes did, and `zones_list` or `zones_get` when a needed tool's path takes `{zone_id}` (9 tasks, read from the catalog). Under it the hosted models score 18 to 20 flat, against 18 to 20 on the recommended build. Groups did not measurably change what the hosted models picked.
+- Writers: on the recommended build the Claude models scored 60 of 60 and the Gemini models 40 of 40, across both writers' tasks. On the as-generated build the Claude models scored 41 of 42 on Fable's tasks and 15 of 18 on Gemini's, so no arm shows a writer favouring its own family.
 
 ## What is next
 

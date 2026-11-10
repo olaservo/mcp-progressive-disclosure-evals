@@ -15,7 +15,7 @@ Tool calls are dry runs. They return the Cloudflare API request the tool would s
 | `flat` | Today, and Option 1's Skills server | All 237 in `tools/list` | None | SEP-2640 Skills extension |
 | `opt1` | Option 1's Groups server | Scoped | Toolset groups, and workflow groups with authored instructions | None |
 | `opt2` | Option 2, complementary | Scoped | Toolset groups, and a workflow group per skill that scopes its tools and lists the skill's `SKILL.md` in `resources` (#22 Example 3) | SEP-2640 Skills extension, with nothing in `resources/list` |
-| `opt2-rec` | Option 2, built the way #19 recommends | Scoped | One level of groups. A product with more than 25 tools or about 15k tokens of schemas is split by its second-level directories (areas under 4 tools join a `-core` group): 22 groups on the subset, 271 on the full catalog. Task-vocabulary descriptions from `src/group-descriptions.ts` (hand-written for the subset) and `src/group-descriptions.generated.json` (model-written for the full catalog by `npm run describe`, after `npm run vendor:full`). A workflow group per skill that says when to open it against the product group. | SEP-2640 Skills extension; a client that negotiated groups gets only the skills no group lists in `skills/list`, served `cacheScope: "private"` |
+| `opt2-rec` | Option 2, built the way #19 recommends | Scoped | One level of groups. A product stays one group unless it has more than 25 tools or about 15k tokens of schemas; a larger one is split by its second-level directories, and areas under 4 tools join a `-core` group. On the subset that splits `workers` into 8 groups and `r2` into 3, for 22 groups; on the full catalog it gives 271. Task-vocabulary descriptions from `src/group-descriptions.ts` (hand-written for the subset) and `src/group-descriptions.generated.json` (model-written for the full catalog by `npm run describe`, after `npm run vendor:full`). A workflow group per skill that says when to open it against the product group. | SEP-2640 Skills extension; a client that negotiated groups gets only the skills no group lists in `skills/list`, served `cacheScope: "private"` |
 | `opt3` | Option 3, Groups renamed to Skills | Scoped | Option 2's bundles under the skills method names, `skills/list` and `skills/get`, served under the existing `io.modelcontextprotocol/skills` identifier. Each SKILL.md folder is flattened to its body as `instructions` and its other files as scoped `skill://` resources. Toolsets are skills too. | Replaced |
 
 Groups follow the draft SEP in [progressive-disclosure-wg#19](https://github.com/modelcontextprotocol/progressive-disclosure-wg/pull/19) at `15b2a5c`: `io.modelcontextprotocol/groups`, `groups/list` and `groups/get`, with scoped primitives directly on the `groups/get` result. The WG prototype in [#20](https://github.com/modelcontextprotocol/progressive-disclosure-wg/pull/20) targets SDK 1.x; `src/groups.ts` implements the same shapes on `@modelcontextprotocol/server` 2.4.0. Skills use the SDK's native `@modelcontextprotocol/server/ext/skills`.
@@ -52,7 +52,7 @@ Each Worker answers 429 to a client past 120 requests a minute (the Workers Rate
 
 `scripts/select.ts` shows a model what a client sees before `groups/get` and asks for one pick. It reads keys from the environment or from a `.env` file passed as `--env`: `HF_TOKEN` (or an `hf auth login`) for open models, `ANTHROPIC_API_KEY` for `claude-*`, `OPENAI_API_KEY` for `gpt-*` and `decisions:*`, `GEMINI_API_KEY` for `gemini-*`, `MOONSHOT_API_KEY` for `kimi-*`, `TYPESAFE_API_KEY` for `jev-*`. A model id routes by prefix to its vendor's SDK; anything else goes to the Hugging Face router as `<org>/<model>:<provider>`.
 
-- `--tasks v1` is the 14 product-named tasks, `--tasks v2` the 20 that describe the job without naming the product.
+- `--tasks v1` is the 14 product-named tasks, `--tasks v2` the 20 that describe the job without naming the product, `--tasks v3` the 20 held-out tasks from `scripts/select-v3.json`. v3 is scored on the full catalog only.
 - `--mode` is `groups`, `flat` (tool names and first lines) or `flat-schemas` (the whole `tools/list` result). Every mode also shows the server's `skills/list` index, and a `{"skill":"<name>"}` answer is accepted where the matching workflow group is, plus `workers-best-practices` for the fetch-handler question and `wrangler` for the deploy and schedule tasks.
 - `SELECT_DUMP_PROMPT=1` prints the catalog text the model sees.
 - `--replay results/<file>.jsonl` rebuilds a summary from committed raw answers without calling a model. Hosted model answers can change over time; the raw answers are committed for that reason.
@@ -87,6 +87,16 @@ GEMINI=gemini-4-argon,gemini-3.8-flash   # the same five runs as $HOSTED, labell
 # <catalog>-flat[-hosted|-gemini], subset against the Workers (opt2, opt2-rec, flat) and full catalog against localhost:8787.
 # 2026-11-08, with the skill index in every prompt: the groups and flat (names) runs above repeated for $OPEN, $HOSTED, $GEMINI,
 # decisions:gpt-6-luna and jev-latest, subset against the Workers and full catalog against localhost:8787, then the schema control for the same models as before.
+# 2026-11-10, the held-out set: --tasks v3 with the same model lists, full catalog against localhost:8787, labelled full-groups-rec, full-groups and full-flat
+# with the -hosted, -gemini, -decisions and -jev suffixes. The classifiers ran on opt2 only.
+```
+
+The held-out set is built in three steps, each committed with its output:
+
+```bash
+npx tsx scripts/write-tasks.ts --env path/to/.env      # Fable 5.2 and Gemini 3.6 Flash write results/tasks-v3/tasks.json; --replace a,b redraws named products with Fable
+npx tsx scripts/v3-answers.ts                           # after vendor:full and npm run dev: accepted groups from groups/get, written to scripts/select-v3.json
+npx tsx scripts/v3-rescore.ts                           # the strict and first-call scores for the v3 flat runs
 ```
 
 ## The task-completion run

@@ -170,7 +170,7 @@ The second round tested three questions from `drafts/rerun-plan.md`. A: does a g
 
 ### What changed
 
-- `opt2-rec`, a new variant, deployed at `https://pd-groups-opt2-rec.olahungerford.workers.dev/mcp`. Every group is top level. A product stays one group unless it has more than 25 tools or about 15k tokens of schemas; a larger one is split by its second-level directories, and areas under 4 tools join a `-core` group. On the subset that splits `workers` into 8 groups and `r2` into 3, for 22 groups; on the full catalog it gives 271. Product descriptions carry task vocabulary. The subset's 19 were written by hand; the full catalog's 249 others were written by Sonnet 5.5 from each group's tool descriptions (`scripts/describe-groups.ts`) and the ones round one's misses landed on were reviewed by hand. Each workflow group's description says when to open it against the product group ("open `turnstile-api` to list or edit existing widgets"). A client that negotiated groups gets only `workers-best-practices` and `wrangler` in `skills/list`; that listing is served with `cacheScope: "private"`.
+- `opt2-rec`, a new variant, deployed at `https://pd-groups-opt2-rec.olahungerford.workers.dev/mcp`. Every group is top level. A product stays one group unless it has more than 25 tools or about 15k tokens of schemas; a larger one is split by its second-level directories, and areas under 4 tools join a `-core` group. On the subset that splits `workers` into 8 groups and `r2` into 3, for 22 groups; on the full catalog it gives 271. Product descriptions carry task vocabulary. The subset's 19 were written by hand; the full catalog's 249 others were written by Sonnet 5.5 from each group's tool descriptions (`scripts/describe-groups.ts`) and the ones round one's misses landed on were reviewed by hand. Each workflow group's description says when to open it against the product group ("open `turnstile-api` to list or edit existing widgets"). A client that negotiated groups gets only `workers-best-practices` and `wrangler` in `skills/list`; that listing is served with `cacheScope: "private"`. The descriptions were written after round one's results, and some of the hand-written ones reuse wording from the v2 tasks. `describe-groups.ts` gave the writing model four hand-written descriptions as examples. The held-out task set below tests the recommended build on tasks written after it, by models that did not see it.
 - `opt2` is kept as the as-generated baseline. `demo_info` is gone from every variant; its text is in the server `instructions`. Every selection prompt's "Top-level tools" line changed with it, so the flat-names and as-generated arms were re-run. The flat-schemas control was not; its 2026-11-08 file still shows `demo_info`.
 - The mod (0.2.0) no longer inlines the SKILL.md when a group opens. `open_group` returns the instructions, the tools and the skill's URI. `read_skill` fetches the entry with `skills/get`, reads the file and refuses it unless its SHA-256 matches the published digest. With `dedupGroupedSkills` (default on), a skill that is also a group is listed once, as the group, and `read_skill` on it opens the group first. Group opens are logged to the file `GROUPS_LOG` names.
 - The knowledge rubrics (`state-holder`, `review-alarms`, `fetch-handler`) now require a `read_skill` call. Round-one rows, which have no mod version in the index, keep the old rule, so the committed round-one traces re-score unchanged.
@@ -274,8 +274,52 @@ Five conditions, three models, 20 tasks, 300 sessions on 2026-11-09, no errors, 
 - Opening a group no longer loads its skill, and Sonnet and Opus read the skill anyway: 8 of 8 workflow tasks in both recommended arms, with 8 to 10 `read_skill` calls per model. Haiku answered the two Durable Objects knowledge tasks and the fetch-handler question from its own knowledge in one turn in several groups arms, which the rubric now scores as a miss. In round one the same answers counted, because the group open had already put the SKILL.md in context.
 - Every `read_skill` in round two went through `skills/get` with the digest checked; no digest failed.
 - Haiku's `nightly` miss in the resident arm reached for `CronCreate`, a host built-in that `trace-run.ts` does not disallow, and stopped to ask for a timezone.
+- In `flat-toolsearch`, every model called ToolSearch at least once on each of the 16 tasks that need a tool, in both rounds. The sessions with no call are the three knowledge tasks, plus Sonnet on `rotate-token`, the no-fit task, which it answered correctly without a tool. On these tasks no miss came from a model failing to search.
 
 Raw sessions are under `results/traces/traces2/` (gitignored); `results/traces/traces2-public/` is the redacted copy, 300 sessions with each session's group-open log, and re-scores identically.
+
+## Held-out task set, 2026-11-10
+
+The v2 tasks were written by this demo's author, who had read the group descriptions. The v3 set was written by two models the demo does not test, from a product name alone, and run on the full catalog against the three servers from round two.
+
+### How the tasks were made
+
+- `scripts/write-tasks.ts` gave Fable 5.2 and Gemini 3.6 Flash one product at a time, as `Cloudflare <product> (API directory "<dir>")`, with rules: one or two sentences, no product, Cloudflare or API names, a job done by reading or changing account resources, and SKIP for a product the writer does not know. Neither writer saw a group listing, a tool name or a description. Products were drawn from the 136 forge directories in a seeded order (mulberry32, seed 20261109), and each writer took 3 of the 10 subset products and 7 of the others.
+- Six of the first 20 tasks spanned products, missed their product or repeated its name (smartShield, emailAuth, observability, signedUrl, connectorTelemetrySnapshots, diagnostics). Fable redrew them from the next products in the same stratum, with two added rules: the job needs only this product, and no word from its name. It skipped webAssets, cps and connectorInterrupts. The final set is 14 Fable tasks and 6 Gemini tasks in `results/tasks-v3/tasks.json`. Every reply, skips included, is in `results/tasks-v3/raw.jsonl`.
+- Accepted answers were fixed before any model ran. `scripts/v3-answers.ts` names the tools that do any step of each task, by name prefix from the catalog. It accepts a top-level group when that group or one nested under it returns one of those tools from `groups/get` on the served variant, and writes `scripts/select-v3.json`. Six near neighbours were left as misses: `dls-api` for EU processing, `connector-telemetry-snapshots-api` and `connectors-api` for the appliance events, `network-api` for the private connection, `ai-gateway-logs` for the LLM proxy and `web-assets-labels` for the endpoint inventory.
+- `npm run select -- --tasks v3`, with the same prompts and settings as round two: one sample, the skill index in every prompt. Three arms: 271 recommended groups (16,538 tokens), 139 as-generated groups (3,856) and 3,036 tool names flat (81,586). Raw answers are in `results/2026-11-10-select3-full-*.jsonl`.
+
+### Selection
+
+Correct picks out of 20. The two flat columns are explained below the table.
+
+| Model | Recommended, 271 groups | As-generated, 139 groups | Flat names, strict | Flat names, first-call rule |
+| :-- | --: | --: | --: | --: |
+| Qwen 3.5 9B | 17 | 3 | 15 | 15 |
+| Qwen3 14B | 17 | 9 | not run (40k context) | |
+| GLM-5.3 Flash | 19 | 14 | 20 | 20 |
+| DeepSeek V4.1 Flash | 19 | 18 | 20 | 20 |
+| Qwen3.6 35B-A3B | 19 | 9 | 17 | 17 |
+| Gemma 4 26B | 19 | 16 | 15 | 17 |
+| Opus 5.5 | 20 | 19 | 15 | 19 |
+| Sonnet 5.5 | 20 | 19 | 18 | 20 |
+| Haiku 5.5 | 20 | 18, one call failed | 18 | 19 |
+| GPT-6 Astra | 20 | 19 | 13 | 19 |
+| GPT-6.1 Sol | 20 | 18 | 13 | 19 |
+| GPT-6.1 Terra | 20 | 18 | 11 | 18 |
+| GPT-6 Luna | 18 | 16 | 19 | 20 |
+| Gemini 4 Argon | 20 | 19 | 11 | 19 |
+| Gemini 3.8 Flash | 20 | 19 | 15 | 19 |
+| Kimi K3.1 Pro | 20 | 20 | 18 | 19 |
+| Decisions API (Luna) | over 255 choices | 17 | | |
+| Jev | too long | 15 | | |
+
+- On the recommended build the open models scored 17 to 19 and the hosted models 18 to 20, close to their round-two scores on the v2 tasks. The misses are mostly one task: 5 on the private connection (`workers-vpc-api` 3, `network-api` 2). Two went to `connector-telemetry-snapshots-api` for the appliance events and two were on the LLM proxy. Three tasks were missed once each.
+- On the as-generated build the open models scored 3 to 18, and five of them lost 3 to 14 tasks against the recommended build. The hosted models scored 16 to 20. EU processing was missed 14 times across models and classifiers (`zones-api` 7, `dls-api` 5). Its tools sit in `addressing-api`, whose templated description names only the product. This repeats round one's finding on templated descriptions on tasks nobody tuned for, with a wider gap.
+- Flat, strict: the prompt asks for the tool a model would call first, and the committed answers list only the tools that do the job. A lookup first therefore scored a miss: `zones_list` on 35 picks for tasks that name a domain, and `d1_list` on 6 picks before a query. `scripts/v3-rescore.ts` applies a first-call rule decided after the results. It also accepts any tool of a needed tool's product, as v2's product prefixes did, and `zones_list` or `zones_get` when a needed tool's path takes `{zone_id}` (9 tasks, read from the catalog). Under it the hosted models score 18 to 20 flat, against 18 to 20 on the recommended build. Groups did not measurably change what the hosted models picked. The open models do not move except Gemma, 15 to 17. The committed scoring and `--replay` are unchanged.
+- The custom-pages task names a zone, but this catalog's custom-pages tools are account-level, so its 7 `zones_list` picks stay misses under the first-call rule.
+- Writers: on the recommended build the Claude models scored 60 of 60 and the Gemini models 40 of 40, across both writers' tasks. On the as-generated build the Claude models scored 41 of 42 on Fable's tasks and 15 of 18 on Gemini's, so no arm shows a writer favouring its own family.
+- The classifiers ran on the as-generated listing only, for the reasons in round two: the Decisions API scored 17 and Jev 15.
 
 ## Limits
 
@@ -297,6 +341,7 @@ Raw sessions are under `results/traces/traces2/` (gitignored); `results/traces/t
 - Second round: the headless sessions still load this machine's user-level plugins, about 25.7k tokens of base prefix in every arm alike; config isolation was not set up. `CronCreate` is a host built-in the runner does not disallow, and one Haiku session used it.
 - Second round: completion jobs for all conditions and models ran side by side, so their wall times share the same API load. Gaps of one or two tasks in any cell are noise, as before.
 - Second round: DeepSeek V4.1 Flash on Baseten failed on most calls; its cells are marked. The OpenAI trials that failed on credits were asked again later the same day. The classifiers could not run on the 271-group listing.
+- Held-out set: 20 tasks, 14 from one writer and 6 from the other, one sample each. The accepted tools per task and the near neighbours left as misses are this demo's judgment, fixed before the runs. The flat first-call rule was decided after seeing the results, and both scores are shown.
 
 ## Results files
 
@@ -311,5 +356,6 @@ Raw sessions are under `results/traces/traces2/` (gitignored); `results/traces/t
 - `2026-11-09-deployed.txt`: the token table and per-group task load for the second round, `flat`, `opt2` and `opt2-rec` on the deployed Workers and `opt1` and `opt3` locally.
 - `2026-11-09-select2-*.jsonl` and `.txt`: the second round's selection runs. Labels with `-rec` are `opt2-rec`, `-rec-dup` the same with every skill listed.
 - `traces/traces2-public/`: the second round's 300 redacted sessions, their group-open logs, index and scored summary.
+- `tasks-v3/`: the held-out tasks and every writer reply. `2026-11-10-select3-full-*.jsonl`: their selection runs on the full catalog. Labels with `-rec` are `opt2-rec`.
 
 Re-runs that reproduced an earlier file were not kept, and the 2026-11-02 file from the build against the earlier drafts was removed. This repository starts from a single commit; the private predecessor repository holds the earlier history.

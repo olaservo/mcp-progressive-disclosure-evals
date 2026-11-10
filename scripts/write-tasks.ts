@@ -1,7 +1,7 @@
 // Has two models this demo does not test write the held-out task set (v3), so no task is worded by someone who has read the
 // group descriptions. Each writer sees only a product name from cloudflare/mcp's forge catalog: no group listing, no tool names,
 // no tool descriptions. Products are drawn in a seeded order; each writer gets 3 of the 10 subset products and 7 others.
-// Accepted answers are added by hand to scripts/select.ts afterwards, from the catalog's tool paths, before any model is scored.
+// Accepted answers come from scripts/v3-answers.ts afterwards, from the catalog's tool names, before any model is scored.
 // Usage: tsx scripts/write-tasks.ts [--env <.env path>] [--replace <product,product>]
 import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync, appendFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
