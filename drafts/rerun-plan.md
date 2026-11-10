@@ -2,7 +2,7 @@
 
 Carried out on 2026-11-09. The results are in the "Second round" section of `docs/results.md` and in the write-up.
 
-Written 2026-11-09 after a methodology review on 2026-11-09, whose corrections are committed in `53aac83`. Revised the same day after an adversarial read of the first draft. This file is the handoff for the session that runs the second round. Breaking changes to anything in this repository are allowed. The round is for understanding how groups behave in real use, so it tests three questions and leaves the rest.
+Written 2026-11-09 after a methodology review the same day, whose corrections are committed in `53aac83`. Revised the same day after an adversarial read of the first draft. This file is the handoff for the session that runs the second round. Breaking changes to anything in this repository are allowed. The round is for understanding how groups behave in real use, so it tests three questions and leaves the rest.
 
 ## The three questions
 
