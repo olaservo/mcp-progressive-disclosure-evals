@@ -37,7 +37,7 @@ npm run dev        # every variant at http://localhost:8787/<variant>/mcp
 npm run compare    # the token comparison against localhost
 ```
 
-Three variants are also deployed, with no auth and dry-run tools, at `https://pd-groups-{flat,opt2,opt2-rec}.olahungerford.workers.dev/mcp`. The `opt1` and `opt3` Workers are still up but serve the 2026-11-08 build. Everything else is in [`docs/running.md`](docs/running.md).
+Three variants are also deployed, with no auth and dry-run tools, at `https://pd-groups-{flat,opt2,opt2-rec}.olahungerford.workers.dev/mcp`. `opt1` and `opt3` run locally under `npm run dev`. Everything else is in [`docs/running.md`](docs/running.md).
 
 ## License
 
