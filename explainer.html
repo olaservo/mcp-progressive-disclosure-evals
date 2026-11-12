@@ -263,7 +263,7 @@
 <ul>
 <li>Haiku's groups misses are answers given without opening a group or reading a skill.</li>
 <li>Three tasks need data a dry-run server cannot return (a file, key names, namespace ids). Every model took the right first step and said why it stopped, which the rubric accepts.</li>
-<li>With tool search off, a mid-session tool registration rewrites the cached prefix; with it on, a group's deferred tools add about 2.7k tokens to a 42k prefix.</li>
+<li>With tool search off, a mid-session tool registration rewrites the cached prefix; with it on, the request after a group open wrote a median 0.5k tokens to the cache on a prefix of about 21k.</li>
 <li>The mod registers a group's tools as deferred, so Claude Code loaded them through ToolSearch after each <code>open_group</code>, 19 to 21 calls per model against 16 to 19 in the tool-search arm. The run shows groups composed with host tool search and does not test a client without it.</li>
 <li>The mod reads a group's SKILL.md with <code>resources/read</code> and inlines it on open. It never calls <code>skills/get</code> and checks no digests, so the run does not exercise the positioning document's interop rules 1 and 2.</li>
 <li>The sessions, reduced to their conversation rows, are in the repository under <code>results/traces/traces-public/</code> and re-score with the committed scripts.</li>
