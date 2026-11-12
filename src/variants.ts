@@ -10,7 +10,7 @@ export const VARIANTS = {
   flat: "Today's cloudflare/mcp direct-tool mode, which is also Option 1's Skills server: every tool in tools/list, skills over the Skills extension.",
   opt1: "Option 1's Groups server: groups only, with the workflow written into group instructions. No skills.",
   opt2: 'Option 2: the Skills extension unchanged, plus groups. A workflow group scopes its tools and lists the skill\'s SKILL.md in resources.',
-  'opt2-rec': 'Option 2 built the way #19 recommends: one level of groups sized to a task, task-vocabulary descriptions, and a workflow group per skill. A client that negotiated groups gets only the skills no group lists in skills/list.',
+  'opt2-rec': 'Option 2 rebuilt to the guidance in #19: one level of groups sized to a task, task-vocabulary descriptions, and a workflow group per skill. A client that negotiated groups gets only the skills no group lists in skills/list.',
   opt3: 'Option 3: Groups renamed to Skills. skills/list and skills/get serve code-defined skills; each SKILL.md folder maps to instructions plus scoped resources.'
 } as const
 export type Variant = keyof typeof VARIANTS

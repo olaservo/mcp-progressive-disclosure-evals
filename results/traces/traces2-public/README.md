@@ -8,7 +8,7 @@ The sessions are evidence for a write-up on the Model Context Protocol working g
 
 | Folder | What the agent had |
 | :-- | :-- |
-| `groups-rec/` | A Claude Code mod that implements the Groups extension over HTTP to a server built the way #19 recommends: 22 one-level groups with task-vocabulary descriptions, and the 2 skills no group lists. A group's tools are registered deferred, behind Claude Code's tool search. |
+| `groups-rec/` | A Claude Code mod that implements the Groups extension over HTTP to a server rebuilt to the guidance in #19: 22 one-level groups with task-vocabulary descriptions, and the 2 skills no group lists. A group's tools are registered deferred, behind Claude Code's tool search. |
 | `groups-rec-resident/` | The same with Claude Code's tool search off and a group's tools registered into the prompt's tool list, as a client without tool search would. |
 | `groups/` | The mod against the first round's server: 13 groups mirroring the generator's directory tree two levels deep, templated descriptions, all 5 skills listed. |
 | `flat-toolsearch/` | The 237 tools served flat as an ordinary MCP server, behind Claude Code's tool search, plus the skill index. |
