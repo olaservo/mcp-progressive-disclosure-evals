@@ -212,17 +212,17 @@ The second round tested three questions. A: does a groups server rebuilt to the 
 
 The 20 v2 tasks, one sample, the skill index in every prompt, as in the 2026-11-08 run. Four arms: as-generated (`opt2`), recommended (`opt2-rec`), recommended with every skill listed (`--list-all-skills`, which reads `skills/list` as a client that declares only the Skills extension), and flat names. The recommended server's split groups are accepted where they hold the task's tools: `r2-buckets` for CORS and lifecycle, `workers-versions`, `workers-deployments` or `workers-legacy` for pushing a build, `workers-core` for the schedule, and on the full catalog `dns-records`, the four `builds-*` groups and `accounts-tokens` or `user-tokens`. Runs that record the served group names (every 2026-11-09 run) accept only names that exist. Raw answers are in `results/2026-11-09-select2-*.jsonl`.
 
-Baseten's DeepSeek V4.1 Flash answered 503 or 429 to most calls all afternoon; its cells give correct picks out of the tasks that got an answer. The OpenAI account ran out of credits partway through, and the trials it failed were asked again with `--retry` the same day.
+Baseten's DeepSeek V4.1 Flash answered 503 or 429 to most calls on 2026-11-09. Its seven cells were run again in full on 2026-11-12, on Baseten, against the same servers and prompts, and every call was answered. The table shows the 2026-11-12 runs (`results/2026-11-12-select2-*-deepseek-baseten.jsonl`). The OpenAI account ran out of credits partway through, and the trials it failed were asked again with `--retry` the same day.
 
 | What the model read | Tokens before the task | Qwen 3.5 9B | Qwen3 14B | GLM-5.3 Flash | DeepSeek V4.1 Flash | Qwen3.6 35B-A3B | Gemma 4 26B |
 | :-- | --: | --: | --: | --: | --: | --: | --: |
-| As-generated, 13 groups and 5 skills (subset) | 616 | 17/20 | 16/20 | 19/20 | 18 of 19 | 19/20 | 19/20 |
-| Recommended, 22 groups and 2 skills (subset) | 1,112 | 19/20 | 20/20 | 20/20 | 13 of 13 | 18/20 | 20/20 |
-| Recommended, 22 groups and all 5 skills (subset) | 1,190 | 18/20 | 20/20 | 20/20 | 6 of 6 | 19/20 | 20/20 |
-| 237 tool names and 5 skills, flat | 6,892 | 15/20 | 19/20 | 19/20 | 18 of 19 | 19/20 | 20/20 |
-| As-generated, 139 groups and 5 skills (full catalog) | 3,856 | 10/20 | 16/20 | 19/20 | 1 of 1 | 15/20 | 18/20 |
-| Recommended, 271 groups and 2 skills (full catalog) | 16,538 | 17/20 | 18/20 | 19/20 | 17 of 18 | 20/20 | 20/20 |
-| 3,036 tool names and 5 skills, flat | 81,586 | 6/20 | not run (40k context) | 19/20 | 2 of 2 | 17/20 | 18/20 |
+| As-generated, 13 groups and 5 skills (subset) | 616 | 17/20 | 16/20 | 19/20 | 19/20 | 19/20 | 19/20 |
+| Recommended, 22 groups and 2 skills (subset) | 1,112 | 19/20 | 20/20 | 20/20 | 20/20 | 18/20 | 20/20 |
+| Recommended, 22 groups and all 5 skills (subset) | 1,190 | 18/20 | 20/20 | 20/20 | 20/20 | 19/20 | 20/20 |
+| 237 tool names and 5 skills, flat | 6,892 | 15/20 | 19/20 | 19/20 | 20/20 | 19/20 | 20/20 |
+| As-generated, 139 groups and 5 skills (full catalog) | 3,856 | 10/20 | 16/20 | 19/20 | 19/20 | 15/20 | 18/20 |
+| Recommended, 271 groups and 2 skills (full catalog) | 16,538 | 17/20 | 18/20 | 19/20 | 19/20 | 20/20 | 20/20 |
+| 3,036 tool names and 5 skills, flat | 81,586 | 6/20 | not run (40k context) | 19/20 | 19/20 | 17/20 | 18/20 |
 
 | What the model read | Opus 5.5 | Sonnet 5.5 | Haiku 5.5 | GPT-6 Astra | GPT-6.1 Sol | GPT-6.1 Terra | GPT-6 Luna | Gemini 4 Argon | Gemini 3.8 Flash | Kimi K3.1 Pro | Decisions API (Luna) | Jev |
 | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: |
@@ -237,7 +237,7 @@ Baseten's DeepSeek V4.1 Flash answered 503 or 429 to most calls all afternoon; i
 - A: at the full catalog, the recommended build raised the two open models the as-generated one had cost most: Qwen 3.5 9B from 10 to 17 and Qwen3.6 35B-A3B from 15 to 20. Qwen3 14B (16 to 18) and Gemma (18 to 20) moved by two, which is inside the noise. Every hosted model scored 19 or 20 of 20 on it. The price is the listing: 16,538 tokens against 3,856, about a fifth of the 81,586-token name list.
 - A: the misses at 271 groups are mostly one confusion, `pipelines-api` for the dead-letter destination on "the orders pipeline" (3 models). Retried background jobs was missed by two models, and every other miss is a single model. At 139 as-generated groups the misses spread across `iam-api`, `sql-api`, `durable-objects`, `workers-best-practices` and others, as in round one.
 - A: on the subset every model scored 18 to 20 of 20 on the recommended build, against 16 to 20 as-generated. Most of those gaps are inside one or two tasks, so the subset result is that the recommended build does no harm.
-- C: on the subset, listing every skill as well cost no correct picks: each model is within one task of itself between the two recommended arms. Skill answers on tasks that need a group fell to 0 across all models with the grouped skills left out, against 2 open-model and 5 hosted-model answers with them listed (Gemini 3.8 Flash 2, Opus, Haiku, Kimi, GLM, Qwen3.6 one each). Neither arm sent a task to `wrangler` or `workers-best-practices`. On the as-generated server the same count was 19 and 18. The arm that still lists every skill has 7, so most of the drop came with the rest of the recommended build, before the listing changed.
+- C: on the subset, listing every skill as well cost no correct picks: each model is within one task of itself between the two recommended arms. Skill answers on tasks that need a group fell to 0 across all models with the grouped skills left out, against 3 open-model and 5 hosted-model answers with them listed (Gemini 3.8 Flash 2, Opus, Haiku, Kimi, GLM, DeepSeek, Qwen3.6 one each). Neither arm sent a task to `wrangler` or `workers-best-practices`. On the as-generated server the same count was 18 and 18. The arm that still lists every skill has 8, so most of the drop came with the rest of the recommended build, before the listing changed.
 - The classifiers cannot take the full recommended listing. The Decisions API caps a choice list at 255 and the listing has 271 groups plus skills and none; Jev rejects the same list as too long.
 
 ### Task completion
@@ -346,7 +346,7 @@ Correct picks out of 20. The two flat columns are explained below the table.
 - Second round: the recommended server's split rule, size cap and hand-written descriptions are mine. The 249 full-catalog descriptions were written by a model and spot-checked, as a server author with 136 products would do it. Accepted answers for the split groups are this demo's judgment like the rest.
 - Second round: the headless sessions still load this machine's user-level plugins; config isolation was not set up. The base prefix differs by arm: about 15k tokens in the groups arms with tool search on, 18k in `flat-toolsearch`, and 26.6k in the resident arm, where turning tool search off also makes the host's built-in tools resident. Part of the resident arm's extra input tokens is that difference. `CronCreate` is a host built-in the runner does not disallow, and one Haiku session used it.
 - Second round: completion jobs for all conditions and models ran side by side, so their wall times share the same API load. Gaps of one or two tasks in any cell are noise, as before.
-- Second round: DeepSeek V4.1 Flash on Baseten failed on most calls; its cells are marked. The OpenAI trials that failed on credits were asked again later the same day. The classifiers could not run on the 271-group listing.
+- Second round: DeepSeek V4.1 Flash on Baseten failed on most calls on 2026-11-09, so its cells come from a full re-run three days after the other models'. The OpenAI trials that failed on credits were asked again later the same day. The classifiers could not run on the 271-group listing.
 - Held-out set: 20 tasks, 14 from one writer and 6 from the other, one sample each. The accepted tools per task are this demo's judgment, fixed before the runs. The list of near neighbours that count as misses was written after them. The flat first-call rule was decided after seeing the results, and both scores are shown. The task rules forbid the product name, which is the only vocabulary the templated descriptions carry, so the as-generated gap on this set is partly by construction.
 
 ## Results files
@@ -361,6 +361,7 @@ Correct picks out of 20. The two flat columns are explained below the table.
 - `traces/traces-public/`: the 180 redacted sessions, their index and scored summary.
 - `2026-11-09-deployed.txt`: the token table and per-group task load for the second round, `flat`, `opt2` and `opt2-rec` on the deployed Workers and `opt1` and `opt3` locally.
 - `2026-11-09-select2-*.jsonl` and `.txt`: the second round's selection runs. Labels with `-rec` are `opt2-rec`, `-rec-dup` the same with every skill listed.
+- `2026-11-12-select2-*-deepseek-baseten.jsonl` and `.txt`: DeepSeek V4.1 Flash's seven second-round cells, run again in full. They replace its rows in the 2026-11-09 files, which are kept.
 - `traces/traces2-public/`: the second round's 300 redacted sessions, their group-open logs, index and scored summary.
 - `tasks-v3/`: the held-out tasks and every writer reply. `2026-11-10-select3-full-*.jsonl`: their selection runs on the full catalog. Labels with `-rec` are `opt2-rec`.
 

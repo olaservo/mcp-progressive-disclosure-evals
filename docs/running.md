@@ -85,6 +85,7 @@ npm run select -- --env path/to/.env --tasks v2 --url http://localhost:8789/opt2
 GEMINI=gemini-4-argon,gemini-3.8-flash   # the same five runs as $HOSTED, labelled <catalog>-<mode>-gemini, local server on port 8790
 # 2026-11-09, the second round: the same model lists with --parallel, labelled <catalog>-groups[-rec[-dup]][-hosted|-gemini|-jev] and
 # <catalog>-flat[-hosted|-gemini], subset against the Workers (opt2, opt2-rec, flat) and full catalog against localhost:8787.
+# 2026-11-12: the seven second-round runs again for deepseek-ai/DeepSeek-V4.1-Flash:baseten alone, labelled <catalog>-groups[-rec[-dup]]-deepseek-baseten and <catalog>-flat-deepseek-baseten.
 # 2026-11-08, with the skill index in every prompt: the groups and flat (names) runs above repeated for $OPEN, $HOSTED, $GEMINI,
 # decisions:gpt-6-luna and jev-latest, subset against the Workers and full catalog against localhost:8787, then the schema control for the same models as before.
 # 2026-11-10, the held-out set: --tasks v3 with the same model lists, full catalog against localhost:8787, labelled full-groups-rec, full-groups and full-flat

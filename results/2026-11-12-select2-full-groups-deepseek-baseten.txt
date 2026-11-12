@@ -1,0 +1,40 @@
+
+groups mode, task set v2, http://localhost:8787/opt2/mcp. 0 top-level tools, 139 groups, 5 skills listed, 3856 prompt tokens (o200k_base) before the task. 20 tasks x 1 samples.
+
+| Model | Reasoning | Correct | Right name, either key | Picked a group | Picked a skill | Skill only, tool task | None | Unparsed or error | Avg input tokens | Cache read |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |
+| deepseek-ai/DeepSeek-V4.1-Flash:baseten | enable_thinking false, temperature 0.2, seeded | 19/20 | 19/20 | 13 | 7 | 6 | 0 | 0 | 3954 | 72960 |
+
+Picks by task:
+
+| Task | Expected | DeepSeek-V4.1-Flash |
+| :-- | :-- | :-- |
+| Add a bot check to our signup form and verify the challenge result on the server before accepting the submission. | turnstile-spin / turnstile-api / skill:turnstile-spin | skill:turnstile-spin |
+| The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it. | turnstile-spin / turnstile-api / skill:turnstile-spin | turnstile-spin |
+| Forward everything sent to billing@ at our domain to a Gmail inbox. | cloudflare-email-service / email-routing-api / skill:cloudflare-email-service | skill:cloudflare-email-service |
+| Set up a sender address so our edge function can email order receipts after checkout. | cloudflare-email-service / email-sending-api / skill:cloudflare-email-service | skill:cloudflare-email-service |
+| Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not. | cloudflare-email-service / email-sending-api / dns-api / email-auth-api / email-domains-api / skill:cloudflare-email-service | dns-api |
+| Build a per-chat-room state holder that serializes writes and wakes itself once an hour. | durable-objects / durable-objects-api / skill:durable-objects | durable-objects |
+| Which of our stateful object classes have instances that currently hold stored data? | durable-objects / durable-objects-api / skill:durable-objects | durable-objects-api |
+| Review our stateful coordination class for alarm-handling bugs. | durable-objects / skill:durable-objects | skill:durable-objects |
+| Process image-resize jobs in the background, retrying any job that fails. | queues-api / workflows-api | MISS group:durable-objects |
+| Add a dead-letter destination for messages that fail repeatedly on the orders pipeline. | queues-api | queues-api |
+| Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed. | r2-api | r2-api |
+| Expire files under tmp/ in our object store after 7 days. | r2-api | r2-api |
+| Store small read-heavy feature flags at the edge. Eventual consistency is fine. | kv-api / flagship-api | kv-api |
+| Remove every entry whose key begins with "session:" from the edge key-value store. | kv-api | kv-api |
+| We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage. | d1-api | d1-api |
+| Push a new build of our edge function and make it live. | workers-api / workers-builds-api / builds-api / skill:wrangler | skill:wrangler |
+| Run our edge function every night at 02:00. | workers-api / skill:wrangler | skill:wrangler |
+| Run our Docker image at the edge and show the running instances. | containers-api | containers-api |
+| What is the recommended structure for an edge function's fetch handler? | none / skill:workers-best-practices | skill:workers-best-practices |
+| Rotate the account API token our deployment pipeline uses. | accounts-api / user-api | user-api |
+
+Tasks that accept either the skill group or the API group, correct answers only:
+- deepseek-ai/DeepSeek-V4.1-Flash:baseten: skill group 5, API group 1
+
+Misses (right name under the wrong key is marked *):
+- deepseek-ai/DeepSeek-V4.1-Flash:baseten:
+  - "Process image-resize jobs in the background, retrying any job that fails." -> group:durable-objects (expected queues-api | workflows-api)
+
+Raw trials: results/2026-11-12-select2-full-groups-deepseek-baseten.jsonl

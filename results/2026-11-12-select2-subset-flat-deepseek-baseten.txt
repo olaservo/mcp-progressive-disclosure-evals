@@ -1,0 +1,35 @@
+
+flat mode, task set v2, https://pd-groups-flat.olahungerford.workers.dev/mcp. 237 top-level tools, 0 groups, 5 skills listed, 6892 prompt tokens (o200k_base) before the task. 20 tasks x 1 samples.
+
+| Model | Reasoning | Correct | Right name, either key | Picked a group | Picked a skill | Skill only, tool task | None | Unparsed or error | Avg input tokens | Cache read |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |
+| deepseek-ai/DeepSeek-V4.1-Flash:baseten | enable_thinking false, temperature 0.2, seeded | 20/20 | 20/20 | 0 | 7 | 6 | 1 | 0 | 7424 | 136192 |
+
+Picks by task:
+
+| Task | Expected | DeepSeek-V4.1-Flash |
+| :-- | :-- | :-- |
+| Add a bot check to our signup form and verify the challenge result on the server before accepting the submission. | turnstile_ / skill:turnstile-spin | skill:turnstile-spin |
+| The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it. | turnstile_widgets_rotateSecret / skill:turnstile-spin | tool:turnstile_widgets_rotateSecret |
+| Forward everything sent to billing@ at our domain to a Gmail inbox. | emailRouting_ / skill:cloudflare-email-service | skill:cloudflare-email-service |
+| Set up a sender address so our edge function can email order receipts after checkout. | emailSending_ / skill:cloudflare-email-service | skill:cloudflare-email-service |
+| Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not. | emailSending_subdomains_dns / skill:cloudflare-email-service | tool:emailSending_subdomains_dns_status |
+| Build a per-chat-room state holder that serializes writes and wakes itself once an hour. | durableObjects_ / skill:durable-objects | skill:durable-objects |
+| Which of our stateful object classes have instances that currently hold stored data? | durableObjects_ / skill:durable-objects | tool:durableObjects_namespaces_list |
+| Review our stateful coordination class for alarm-handling bugs. | durableObjects_ / skill:durable-objects | skill:durable-objects |
+| Process image-resize jobs in the background, retrying any job that fails. | queues_ | tool:queues_consumers_create |
+| Add a dead-letter destination for messages that fail repeatedly on the orders pipeline. | queues_ | tool:queues_consumers_list |
+| Serve 50 GB of user uploads to browsers on another origin, so cross-origin headers are needed. | r2_ | tool:r2_buckets_cors_update |
+| Expire files under tmp/ in our object store after 7 days. | r2_buckets_lifecycle | tool:r2_buckets_lifecycle_update |
+| Store small read-heavy feature flags at the edge. Eventual consistency is fine. | kv_ | tool:kv_namespaces_list |
+| Remove every entry whose key begins with "session:" from the edge key-value store. | kv_ | tool:kv_keys_list |
+| We need relational tables with SQL joins for orders, serverless, with no connection pooling to manage. | d1_ | tool:d1_create |
+| Push a new build of our edge function and make it live. | workers_ / skill:wrangler | skill:wrangler |
+| Run our edge function every night at 02:00. | workers_scripts_schedules / skill:wrangler | tool:workers_scripts_schedules_update |
+| Run our Docker image at the edge and show the running instances. | containers_ | tool:containers_applications_list |
+| What is the recommended structure for an edge function's fetch handler? | none / skill:workers-best-practices | skill:workers-best-practices |
+| Rotate the account API token our deployment pipeline uses. | none | none |
+
+Misses (right name under the wrong key is marked *):
+
+Raw trials: results/2026-11-12-select2-subset-flat-deepseek-baseten.jsonl
