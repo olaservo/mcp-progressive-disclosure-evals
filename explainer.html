@@ -237,7 +237,9 @@
 <figcaption>The same twenty tasks through Claude Code. Groups and the host's tool search land in the same band. Loading every schema costs seven to eight times the tokens and three times the money on Sonnet and Opus.</figcaption>
 </figure>
 
-<p>Groups cost a turn and 3 to 4 seconds per task. Opening a bundle is a round trip, and 5 of the 10 product groups on the subset hold only child groups, so those tasks open two. The prompt cache held when opening bundles.  Registering a group's tools added about 2.7 thousand tokens on a 42 thousand-token cached prefix, which is the behavior the draft's caching section predicts. Claude Code's own tool search, with nothing from the extension, reached the same completion and the same token band using one less turn.</p>
+<p>Groups cost a turn and 3 to 4 seconds per task. Opening a bundle is a round trip, and 5 of the 10 product groups on the subset hold only child groups, so those tasks open two. The prompt cache held when opening bundles: the request after a group open wrote a median 0.5k tokens to the cache on a prefix of about 21k. Claude Code's own tool search, with nothing from the extension, reached the same completion and the same token band using one less turn.</p>
+
+<p>The charts and table in this section are the first round. In the second round, with a one-level tree and 300 sessions, groups read 1.54M to 1.75M input tokens per model and the host's tool search 1.51M to 1.60M. Groups took a median 5 turns on the product tasks against 3 or 4. The second round's table is in <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals/blob/main/docs/results.md#task-completion" target="_blank">the results</a>.</p>
 
 <details>
 <summary>The completion run <span>&middot; conditions, per-model results, cost</span></summary>
