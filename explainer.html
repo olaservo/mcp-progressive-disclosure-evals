@@ -184,7 +184,7 @@
 </ul>
 </details>
 
-<p><strong>3. When testing through a real harness, the host's own tool search gets the same result.</strong> I wrote a Claude Code mod that implements the groups extension and ran the twenty tasks as 180 headless sessions, three models, three ways. Sonnet and Opus finished every task in every variant. Haiku finished 16, 18 and 19.</p>
+<p><strong>3. When testing through a real harness, the host's own tool search gets the same result.</strong> I wrote a Claude Code mod that implements the groups extension and ran the twenty tasks as headless sessions on the 238-tool subset: 180 in a first round, three models, three ways, and 300 in a second, three models, five ways. The numbers here are the second round's. Sonnet finished every task in every condition, and Opus missed one, under the host's tool search. Haiku finished 16 to 20.</p>
 
 <figure class="chart">
 <svg viewBox="0 0 680 250" role="img" aria-labelledby="flow-title">
@@ -193,10 +193,10 @@
   <text class="head" x="0" y="18">what sits in context before the first real tool call</text>
   <text x="0" y="50">groups</text><text class="small" x="0" y="65">median 5 turns</text>
   <rect class="box" x="120" y="36" width="180" height="36" rx="4"/>
-  <text class="mid" x="210" y="54">13 groups + 5 skills</text><text class="small mid" x="210" y="67">about 0.7k tokens</text>
+  <text class="mid" x="210" y="54">22 groups + 2 skills</text><text class="small mid" x="210" y="67">about 1.2k tokens</text>
   <line class="arrow" x1="300" y1="54" x2="328" y2="54" marker-end="url(#ar)"/>
   <rect class="box" x="330" y="36" width="200" height="36" rx="4"/>
-  <text class="mid" x="430" y="54">open_group: 6 tools + SKILL.md</text><text class="small mid" x="430" y="67">8.8k tokens, one round trip</text>
+  <text class="mid" x="430" y="54">open_group, then tool search</text><text class="small mid" x="430" y="67">the group's schemas, two round trips</text>
   <line class="arrow" x1="530" y1="54" x2="558" y2="54" marker-end="url(#ar)"/>
   <rect class="box" x="560" y="36" width="110" height="36" rx="4"/><text class="mid" x="615" y="58">tool call</text>
   <text x="0" y="120">host tool search</text><text class="small" x="0" y="135">3 to 4 turns</text>
@@ -209,72 +209,81 @@
   <rect class="box" x="560" y="106" width="110" height="36" rx="4"/><text class="mid" x="615" y="128">tool call</text>
   <text x="0" y="190">all schemas</text><text class="small" x="0" y="205">up front, 3 turns</text>
   <rect class="box" x="120" y="176" width="410" height="36" rx="4"/>
-  <text class="mid" x="325" y="194">238 schemas in the prompt</text><text class="small mid" x="325" y="207">about 305k tokens, cached after the first turn</text>
+  <text class="mid" x="325" y="194">238 schemas in the prompt</text><text class="small mid" x="325" y="207">about 300k tokens, cached after the first turn</text>
   <line class="arrow" x1="530" y1="194" x2="558" y2="194" marker-end="url(#ar)"/>
   <rect class="box" x="560" y="176" width="110" height="36" rx="4"/><text class="mid" x="615" y="198">tool call</text>
-  <text class="small" x="0" y="240">groups and tool search both spend a round trip to fetch schemas; loading everything spends tokens instead</text>
+  <text class="small" x="0" y="240">groups and tool search both spend round trips to fetch schemas; loading everything spends tokens instead</text>
 </svg>
-<figcaption>The three conditions as the model sees them. Groups and the host's tool search both defer schemas and pay a round trip to fetch them. The third condition pays in tokens on every turn.</figcaption>
+<figcaption>The three conditions as the model sees them. Groups and the host's tool search both defer schemas and pay round trips to fetch them. In this client a group's tools were themselves deferred, so groups paid two. The third condition pays in tokens on every turn.</figcaption>
 </figure>
 
 <figure class="chart">
 <svg viewBox="0 0 680 230" role="img" aria-labelledby="arms-title">
-  <title id="arms-title">Input tokens per model across the three conditions</title>
-  <text class="head" x="0" y="18">input tokens per model, 20 tasks</text>
+  <title id="arms-title">Input tokens per model in three of the second round's five conditions</title>
+  <text class="head" x="0" y="18">input tokens per model, 20 tasks, second round</text>
   <text x="0" y="52">groups</text>
-  <rect class="bar-groups" x="150" y="40" width="63" height="16" rx="2"/>
-  <text class="small" x="220" y="52">2.3M &middot; 20/20 &middot; 5 turns</text>
+  <rect class="bar-groups" x="150" y="40" width="47" height="16" rx="2"/>
+  <text class="small" x="204" y="52">1.5M to 1.8M &middot; 20/20 &middot; 5 turns</text>
   <text x="0" y="88">host tool search</text>
-  <rect class="bar-search" x="150" y="76" width="58" height="16" rx="2"/>
-  <text class="small" x="215" y="88">2.0M to 2.2M &middot; 20/20 &middot; 3 to 4 turns</text>
+  <rect class="bar-search" x="150" y="76" width="43" height="16" rx="2"/>
+  <text class="small" x="200" y="88">1.5M to 1.6M &middot; 20/20 &middot; 4 turns</text>
   <text x="0" y="124">all 238 schemas up front</text>
   <rect class="bar-allschemas" x="150" y="112" width="470" height="16" rx="2"/>
-  <text class="small" x="150" y="146">16.5M to 18.4M &middot; 20/20 &middot; 3 turns &middot; 97% served from the provider cache</text>
+  <text class="small" x="150" y="146">15.9M to 17.4M &middot; 20/20 &middot; 3 turns &middot; 97% served from the provider cache</text>
   <line class="line" x1="150" y1="30" x2="150" y2="156"/>
-  <text class="small" x="0" y="190">completion and turns are Sonnet 5.5; Opus matches; Haiku finished 16, 18 and 19 of 20</text>
-  <text class="small" x="0" y="210">tokens include cache reads; the all-schemas arm's 305k-token prefix is written once and read on every turn</text>
+  <text class="small" x="0" y="184">completion and median turns on the 12 product tasks are Sonnet 5.5</text>
+  <text class="small" x="0" y="202">Opus missed one task under tool search; Haiku finished 17, 20 and 20 of 20</text>
+  <text class="small" x="0" y="220">tokens include cache reads; the all-schemas arm's 300k-token prefix is written once and read on every turn</text>
 </svg>
-<figcaption>The same twenty tasks through Claude Code. Groups and the host's tool search land in the same band. Loading every schema costs seven to eight times the tokens and three times the money on Sonnet and Opus.</figcaption>
+<figcaption>The same twenty tasks through Claude Code, second round. Groups and the host's tool search land in the same band. Loading every schema costs nine to eleven times the tokens and three times the money on Sonnet and Opus.</figcaption>
 </figure>
 
-<p>Groups cost a turn and 3 to 4 seconds per task. Opening a bundle is a round trip, and 5 of the 10 product groups on the subset hold only child groups, so those tasks open two. The prompt cache held when opening bundles: the request after a group open wrote a median 0.5k tokens to the cache on a prefix of about 21k. Claude Code's own tool search, with nothing from the extension, reached the same completion and the same token band using one less turn.</p>
+<p>Groups took a median 5 turns on the product tasks against 3 or 4. Opening a group is a round trip, and in this client its tools then loaded through the host's tool search. The prompt cache held across group opens: after a deferred open every model read the whole prefix from cache and wrote under 1k tokens. Claude Code's own tool search, with nothing from the extension, reached the same completion and the same token band in fewer turns. The groups arm cost less, 1.26 against 1.72 USD on Sonnet and 2.59 against 3.53 on Opus.</p>
 
-<p>The charts and table in this section are the first round. In the second round, with a one-level tree and 300 sessions, groups read 1.54M to 1.75M input tokens per model and the host's tool search 1.51M to 1.60M. Groups took a median 5 turns on the product tasks against 3 or 4. The second round's table is in <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals/blob/main/docs/results.md#task-completion" target="_blank">the results</a>.</p>
+<p>The first round ran an earlier mod against a two-level tree. 5 of the 10 product groups on the subset held only child groups, so those tasks opened two, and groups read 2.32M to 2.37M input tokens per model against 1.96M to 2.22M for the host's tool search. Both rounds' tables are in <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals/blob/main/docs/results.md#task-completion" target="_blank">the results</a>.</p>
 
 <details>
 <summary>The completion run <span>&middot; conditions, per-model results, cost</span></summary>
-<p>The twenty tasks, reworded with concrete identifiers, ran as headless Claude Code sessions with the file and shell tools disallowed. One session per task per model per condition, 180 sessions, no errors. "Done" is a per-task rubric over the calls made: the right tool with the right arguments, or the right skill loaded and the answer showing it. Tokens are the provider's, summed over turns, cache reads included.</p>
+<p>The twenty tasks, reworded with concrete identifiers, ran as headless Claude Code sessions with the file and shell tools disallowed. One session per task per model per condition, 300 sessions on 2026-11-09, no errors. "Done" is a per-task rubric over the calls made: the right tool with the right arguments, or the right skill loaded and the answer showing it. Tokens are the provider's, summed over turns, cache reads included. Median turns are over the 12 product tasks.</p>
 <table>
 <tr><th>Condition</th><th>What the agent had</th></tr>
-<tr><td>groups</td><td>A Claude Code mod that implements the extension against the Option 2 Worker over HTTP: <code>list_groups</code>, <code>open_group</code> and <code>read_skill</code> as client-side tools, a prompt section listing the 13 groups and 5 skills, scoped tools registered as deferred when a group opens. No MCP server connected.</td></tr>
+<tr><td>groups, recommended</td><td>A Claude Code mod that implements the extension against the recommended Worker over HTTP: <code>list_groups</code>, <code>open_group</code> and <code>read_skill</code> as client-side tools, a prompt section listing the 22 groups and 2 skills, scoped tools registered as deferred when a group opens. No MCP server connected.</td></tr>
+<tr><td>groups, recommended, resident</td><td>The same with tool search off and scoped tools registered resident, as a client without tool search would.</td></tr>
+<tr><td>groups, as generated</td><td>The mod against the as-generated Worker: 13 groups in a two-level tree, every skill listed, scoped tools deferred.</td></tr>
 <tr><td>host tool search</td><td>The flat Worker as an ordinary MCP server, its 238 tools behind Claude Code's own tool search, plus the mod for the skill index.</td></tr>
-<tr><td>all schemas up front</td><td>The same with tool search off, so all 238 schemas sit in the prompt, about 305k tokens.</td></tr>
+<tr><td>all schemas up front</td><td>The same with tool search off, so all 238 schemas sit in the prompt, about 300k tokens.</td></tr>
 </table>
 <table>
-<tr><th>Condition</th><th>Model</th><th class="n">Done</th><th class="n">Median turns</th><th class="n">Median wall s</th><th class="n">Cost USD</th><th class="n">Input tokens</th><th class="n">From cache</th></tr>
-<tr><td>groups</td><td>Sonnet 5.5</td><td class="n">20/20</td><td class="n">5</td><td class="n">16</td><td class="n">1.18</td><td class="n">2.37M</td><td class="n">92%</td></tr>
-<tr><td>groups</td><td>Haiku 5.5</td><td class="n">16/20</td><td class="n">5</td><td class="n">16</td><td class="n">0.09</td><td class="n">2.36M</td><td class="n">88%</td></tr>
-<tr><td>groups</td><td>Opus 5.5</td><td class="n">20/20</td><td class="n">5</td><td class="n">19</td><td class="n">2.66</td><td class="n">2.32M</td><td class="n">90%</td></tr>
-<tr><td>host tool search</td><td>Sonnet 5.5</td><td class="n">20/20</td><td class="n">3</td><td class="n">13</td><td class="n">1.67</td><td class="n">1.96M</td><td class="n">83%</td></tr>
-<tr><td>host tool search</td><td>Haiku 5.5</td><td class="n">18/20</td><td class="n">4</td><td class="n">13</td><td class="n">0.10</td><td class="n">2.15M</td><td class="n">84%</td></tr>
-<tr><td>host tool search</td><td>Opus 5.5</td><td class="n">20/20</td><td class="n">4</td><td class="n">16</td><td class="n">3.56</td><td class="n">2.22M</td><td class="n">84%</td></tr>
-<tr><td>all schemas up front</td><td>Sonnet 5.5</td><td class="n">20/20</td><td class="n">3</td><td class="n">12</td><td class="n">3.53</td><td class="n">16.5M</td><td class="n">97%</td></tr>
-<tr><td>all schemas up front</td><td>Haiku 5.5</td><td class="n">19/20</td><td class="n">3</td><td class="n">13</td><td class="n">1.33</td><td class="n">16.6M</td><td class="n">97%</td></tr>
-<tr><td>all schemas up front</td><td>Opus 5.5</td><td class="n">20/20</td><td class="n">3</td><td class="n">15</td><td class="n">7.72</td><td class="n">18.4M</td><td class="n">97%</td></tr>
+<tr><th>Condition</th><th>Model</th><th class="n">Done</th><th class="n">Median turns</th><th class="n">p50 wall s</th><th class="n">Cost USD</th><th class="n">Input tokens</th><th class="n">From cache</th></tr>
+<tr><td>groups, recommended</td><td>Haiku 5.5</td><td class="n">17/20</td><td class="n">5</td><td class="n">19.1</td><td class="n">0.08</td><td class="n">1.75M</td><td class="n">85%</td></tr>
+<tr><td>groups, recommended</td><td>Sonnet 5.5</td><td class="n">20/20</td><td class="n">5</td><td class="n">16.6</td><td class="n">1.26</td><td class="n">1.59M</td><td class="n">85%</td></tr>
+<tr><td>groups, recommended</td><td>Opus 5.5</td><td class="n">20/20</td><td class="n">5</td><td class="n">23.7</td><td class="n">2.59</td><td class="n">1.54M</td><td class="n">84%</td></tr>
+<tr><td>groups, recommended, resident</td><td>Haiku 5.5</td><td class="n">16/20</td><td class="n">4</td><td class="n">18.4</td><td class="n">0.18</td><td class="n">2.51M</td><td class="n">71%</td></tr>
+<tr><td>groups, recommended, resident</td><td>Sonnet 5.5</td><td class="n">20/20</td><td class="n">4</td><td class="n">15.2</td><td class="n">2.91</td><td class="n">2.68M</td><td class="n">76%</td></tr>
+<tr><td>groups, recommended, resident</td><td>Opus 5.5</td><td class="n">20/20</td><td class="n">4</td><td class="n">20.9</td><td class="n">6.32</td><td class="n">2.81M</td><td class="n">75%</td></tr>
+<tr><td>groups, as generated</td><td>Haiku 5.5</td><td class="n">18/20</td><td class="n">6</td><td class="n">20.6</td><td class="n">0.09</td><td class="n">1.93M</td><td class="n">85%</td></tr>
+<tr><td>groups, as generated</td><td>Sonnet 5.5</td><td class="n">20/20</td><td class="n">5</td><td class="n">20.7</td><td class="n">1.26</td><td class="n">1.53M</td><td class="n">84%</td></tr>
+<tr><td>groups, as generated</td><td>Opus 5.5</td><td class="n">20/20</td><td class="n">6</td><td class="n">24.2</td><td class="n">2.64</td><td class="n">1.68M</td><td class="n">86%</td></tr>
+<tr><td>host tool search</td><td>Haiku 5.5</td><td class="n">20/20</td><td class="n">3</td><td class="n">19.0</td><td class="n">0.11</td><td class="n">1.60M</td><td class="n">76%</td></tr>
+<tr><td>host tool search</td><td>Sonnet 5.5</td><td class="n">20/20</td><td class="n">4</td><td class="n">15.3</td><td class="n">1.72</td><td class="n">1.51M</td><td class="n">76%</td></tr>
+<tr><td>host tool search</td><td>Opus 5.5</td><td class="n">19/20</td><td class="n">4</td><td class="n">21.5</td><td class="n">3.53</td><td class="n">1.54M</td><td class="n">76%</td></tr>
+<tr><td>all schemas up front</td><td>Haiku 5.5</td><td class="n">20/20</td><td class="n">3</td><td class="n">17.5</td><td class="n">1.31</td><td class="n">15.9M</td><td class="n">97%</td></tr>
+<tr><td>all schemas up front</td><td>Sonnet 5.5</td><td class="n">20/20</td><td class="n">3</td><td class="n">15.9</td><td class="n">3.62</td><td class="n">16.5M</td><td class="n">97%</td></tr>
+<tr><td>all schemas up front</td><td>Opus 5.5</td><td class="n">20/20</td><td class="n">3</td><td class="n">21.1</td><td class="n">7.63</td><td class="n">17.4M</td><td class="n">97%</td></tr>
 </table>
 <ul>
-<li>Haiku's groups misses are answers given without opening a group or reading a skill.</li>
-<li>Three tasks need data a dry-run server cannot return (a file, key names, namespace ids). Every model took the right first step and said why it stopped, which the rubric accepts.</li>
-<li>With tool search off, a mid-session tool registration rewrites the cached prefix; with it on, the request after a group open wrote a median 0.5k tokens to the cache on a prefix of about 21k.</li>
-<li>The mod registers a group's tools as deferred, so Claude Code loaded them through ToolSearch after each <code>open_group</code>, 19 to 21 calls per model against 16 to 19 in the tool-search arm. The run shows groups composed with host tool search and does not test a client without it.</li>
-<li>The mod reads a group's SKILL.md with <code>resources/read</code> and inlines it on open. It never calls <code>skills/get</code> and checks no digests, so the run does not exercise the positioning document's interop rules 1 and 2.</li>
-<li>The sessions, reduced to their conversation rows, are in the repository under <code>results/traces/traces-public/</code> and re-score with the committed scripts.</li>
+<li>Haiku answered the two Durable Objects knowledge tasks and the fetch-handler question from its own knowledge in one turn in several groups arms, which the rubric scores as a miss.</li>
+<li>Three tasks need data a dry-run server cannot return (a file, key names, namespace ids). The rubrics accept the right first step for these three.</li>
+<li>After a deferred open every model read the whole prefix from cache and wrote under 1k. On Opus the turn after a resident open read nothing from cache and wrote a median 30k tokens.</li>
+<li>In the deferred arms Claude Code loaded a group's tools through ToolSearch after each <code>open_group</code>, 16 to 28 calls per model against 16 to 18 in the tool-search arm. Those arms show groups composed with host tool search. The resident arm is the client without it.</li>
+<li>Opening a group does not load its skill. Every <code>read_skill</code> went through <code>skills/get</code> with the digest checked, and no digest failed. The mod does not check file size or compare frontmatter.</li>
+<li>The sessions, reduced to their conversation rows, are in the repository under <code>results/traces/traces2-public/</code>, with the first round's under <code>results/traces/traces-public/</code>, and re-score with the committed scripts.</li>
 </ul>
 </details>
 
 <h3>So what do groups solve?</h3>
 
-<p>Against the working group's own four criteria: groups deliver initial context size and total tokens, leave task completion unchanged for frontier models, and add a turn in exchange for each harness not needing to invent its own solution for reducing token bloat. On this catalog a host with tool search gets the token result. What groups add that tool search cannot is the <em>bundle</em>: a server-authored set of tools with the instructions and the skill that go with them, delivered together, scoped to the caller. The draft also argues groups give a client without tool search a path; the second round tested that, below. It also provides the same solution for skills served over MCP, and any other MCP primitive besides just tools. Harnesses are still working out how to handle large numbers of file-based skills (<a href="https://www.olahungerford.com/skills-research/skills_catalog_regimes.html" target="_blank">how harnesses bound their agent skills catalog</a>), so a server-side bundle is one more reason to serve skills over MCP.</p>
+<p>Against the working group's own four criteria: groups deliver initial context size and total tokens, leave task completion unchanged for frontier models, and add a turn in exchange for each harness not needing to invent its own solution for reducing token bloat. On this catalog a host with tool search gets the token result. What groups add that tool search cannot is the <em>bundle</em>: a server-authored set of tools with the instructions and the skill that go with them, delivered together. The draft also argues groups give a client without tool search a path; the second round tested that, below. It also provides the same solution for skills served over MCP, and any other MCP primitive besides just tools. Harnesses are still working out how to handle large numbers of file-based skills (<a href="https://www.olahungerford.com/skills-research/skills_catalog_regimes.html" target="_blank">how harnesses bound their agent skills catalog</a>), so a server-side bundle is one more reason to serve skills over MCP.</p>
 
 <p>Two things the server author controls turned out to matter more than the mechanism itself. Group <em>descriptions</em> directly influenced the whole selection: my templated one-liners ("Call the Cloudflare queues API directly") cost the mid-size open models up to six of twenty tasks at 139 groups, which is what the draft's guidance warns about. And a server that offers both a workflow group and a plain toolset group for one product splits the models between them, so it should say in the descriptions which to open when.</p>
 
@@ -295,7 +304,7 @@
 
 <h3>Caveats</h3>
 
-<p>This experiment only included one sample per task. The group names and descriptions are mine, not Cloudflare's. The full completion run using Claude Code used one model family on one host.  It also tested against a dry-run server that returns the request a tool would send and never any data. The 'flat list' baseline is a mode Cloudflare itself ships only as an escape hatch; the server's default is Code Mode, which I did not compare, and I did not test per-caller scoping. The <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals/blob/main/docs/results.md" target="_blank">results</a> have every table, every accepted answer and every limit, and the <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals/releases/tag/traces-2026-11-08" target="_blank">180 sessions</a> are also there to review.</p>
+<p>This experiment only included one sample per task. The group names and descriptions are mine, not Cloudflare's. The full completion run using Claude Code used one model family on one host.  It also tested against a dry-run server that returns the request a tool would send and never any data. The 'flat list' baseline is a mode Cloudflare itself ships only as an escape hatch; the server's default is Code Mode, which I did not compare, and I did not test per-caller scoping. The <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals/blob/main/docs/results.md" target="_blank">results</a> have every table, every accepted answer and every limit, and the <a href="https://github.com/olaservo/mcp-progressive-disclosure-evals/tree/main/results/traces" target="_blank">480 redacted sessions</a> are also there to review.</p>
 
 <p class="footnote">Measured 2026-11-07 to 2026-11-10 against progressive-disclosure-wg#19 at <code>15b2a5c</code> and #22 at <code>5e9ff2f</code>, on the TypeScript SDK 2.4.0 and Claude Code 2.1.319. Tool counts and schemas are from cloudflare/mcp at <code>4938f2f3</code>; skills from cloudflare/skills at <code>1a33048</code>. Token counts in the first finding are tiktoken over compact JSON; in the third they are the provider's own.</p>
 </main>

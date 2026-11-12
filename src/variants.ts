@@ -21,7 +21,7 @@ const SKILLS_EXTENSION_ID = 'io.modelcontextprotocol/skills'
 const OPT3_NAMING: Naming = { extensionId: SKILLS_EXTENSION_ID, noun: 'skills' }
 const API_BASE = 'https://api.cloudflare.com/client/v4'
 const HOUR = { ttlMs: 60 * 60 * 1000, cacheScope: 'public' } as const
-/** opt2-rec's skills/list depends on the caller's negotiated extensions. */
+/** For a listing that depends on the caller's negotiated extensions: opt2-rec's skills/list, and tools/list on every groups variant. */
 const HOUR_PRIVATE = { ttlMs: 60 * 60 * 1000, cacheScope: 'private' } as const
 
 const ABOUT = `Tools from ${SOURCE.forge.repository} at ${SOURCE.forge.commit.slice(0, 8)}, skills from ${SOURCE.skills.repository} at ${SOURCE.skills.commit.slice(0, 7)}. Tool calls are dry runs that return the Cloudflare API request and send nothing.`
@@ -185,7 +185,7 @@ export async function createServer(variant: Variant): Promise<McpServer> {
   mcp.server.setRequestHandler('tools/list', async (_request, ctx) => {
     // Graceful degradation: a client that did not negotiate the extension gets the flattened list.
     const scoped = groups !== undefined && clientNegotiated(ctx, naming.extensionId)
-    return { tools: scoped ? [] : allForgeTools(), ...HOUR }
+    return { tools: scoped ? [] : allForgeTools(), ...(groups ? HOUR_PRIVATE : HOUR) }
   })
   mcp.server.setRequestHandler('tools/call', async (request) => callTool(request.params.name, request.params.arguments ?? {}))
   return mcp

@@ -5,7 +5,7 @@ import type { Prompt, Resource, Tool } from '@modelcontextprotocol/server'
 /**
  * The Groups extension as drafted in progressive-disclosure-wg#19
  * (seps/0000-progressive-disclosure-groups.md at 15b2a5c), written against SDK 2.4.0.
- * The WG prototype in #20 targets SDK 1.x; this follows the same shapes.
+ * The WG prototype in #20 targets SDK 1.x and wraps the groups/get result in `contents`; this follows the SEP's flat shape.
  */
 export const GROUPS_EXTENSION_ID = 'io.modelcontextprotocol/groups'
 const CLIENT_CAPABILITIES_META_KEY = 'io.modelcontextprotocol/clientCapabilities'
