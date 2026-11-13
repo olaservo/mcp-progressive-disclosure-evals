@@ -13,8 +13,18 @@ export type Phase = {
 export type Scenario = { id: string; phases: Phase[] }
 
 type Need = RegExp | ((args: Record<string, unknown>) => boolean)
-/** A body passed as a JSON string reads the same as one passed as an object. */
-const text = (args: unknown) => JSON.stringify(args).replace(/\\+"/g, '"')
+/**
+ * A body passed as a JSON string reads the same as one passed as an object. The version committed before the runs only
+ * unescaped the quotes, so a string body with spaces after its colons did not match; `asCommitted` scores that way.
+ */
+export const rubricOptions = { asCommitted: false }
+const unstring = (value: unknown): unknown => {
+  if (typeof value === 'string' && /^\s*[[{]/.test(value)) { try { return unstring(JSON.parse(value)) } catch { return value } }
+  if (Array.isArray(value)) return value.map(unstring)
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, v]) => [key, unstring(v)]))
+  return value
+}
+const text = (args: unknown) => (rubricOptions.asCommitted ? JSON.stringify(args).replace(/\\+"/g, '"') : JSON.stringify(unstring(args)))
 const meets = (call: AgentCall, name: RegExp, needs: Need[]) => !call.isError && name.test(call.name) && needs.every((need) => (need instanceof RegExp ? need.test(text(call.args)) : need(call.args)))
 /** Some call to a tool matching `name` whose arguments meet every need. */
 const has = (calls: AgentCall[], name: RegExp, ...needs: Need[]) => calls.some((call) => meets(call, name, needs))

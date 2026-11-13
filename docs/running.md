@@ -115,6 +115,28 @@ npm run trace:score -- --label traces2-public         # re-score the committed p
 
 Headless runs launched from inside a Claude Code session need `--allowedTools "mcp__groups__*"`; the runner sets that. Mod options do not reach a headless `--plugin-dir` run, so the runner writes a gitignored copy of the mod per condition and model list (`mods/.groups-*`) with the URL, `deferScoped` and `dedupGroupedSkills` rewritten. `groups-rec-resident` and `flat-all-schemas` run with `ENABLE_TOOL_SEARCH=false`. Each session's group opens go to `<session>.groups.jsonl` through the mod's `GROUPS_LOG`. Several conditions can run side by side against the same label. Raw session files are gitignored because they embed the host's system prompt and account ids.
 
+## The open-model agent run
+
+`scripts/agent-tasks.ts` holds five scenarios of six phases with a rubric each. A phase is one user turn that needs one or two tools from one group, and phase five returns to a group an earlier phase used. `scripts/agent-run.ts` drives a model on the Hugging Face router through them with its own loop, under one of three client designs:
+
+| Arm | What the client does |
+| :-- | :-- |
+| `A` | Puts every tool schema of the flat Worker in `tools` from the first request. |
+| `B` | Starts `tools` as `list_groups`, `open_group` and `read_skill` against the `opt2-rec` Worker, and appends a group's tools when it opens. Opened groups stay registered. |
+| `C` | Keeps `tools` fixed at `list_groups`, `open_group`, `read_skill` and `call_tool(name, arguments)`. `open_group` returns the group's schemas as tool-result text. |
+
+Each session's id leads its system prompt and ends its first tool's description, so no session reads a prefix another one cached. `--shared` leaves the id out of the tools, so sessions with the same tool list share its cached block. Requests are streamed, with thinking off, temperature 0.2 and the sample number as the seed. Each request is one JSONL row with the provider's `prompt_tokens` and `cached_tokens`, the time to first token, and every tool call with whether its arguments pass the tool's input schema (ajv) and whether the server rejected it. `scripts/agent-ref.ts` runs the same phases through headless Claude Code, one process per scenario with `--input-format stream-json`, and writes the same rows. `scripts/agent-score.ts` scores any of these files and re-derives completion from the recorded calls.
+
+```bash
+npm run agent:run -- --arm B --samples 3 --parallel 3 --label arm-b      # also --arm A and --arm C; --models, --scenarios, --phases, --shared
+npm run agent:run -- --arm B --samples 3 --parallel 3 --models Qwen/Qwen3.6-35B-A3B:deepinfra,google/gemma-4-26B-A4B-it:deepinfra --label arm-b-deepinfra
+npm run agent:ref -- --condition groups-rec --samples 3 --label ref-groups-rec    # or flat-toolsearch
+npm run agent:score -- results/2026-11-13-agent-arm-*.jsonl results/2026-11-13-agent-ref-*.jsonl results/2026-11-13-agent-pilot-*.jsonl    # --as-committed for the rubric code as first committed
+npm run agent:probe      # whether the endpoint honours the chat templates' own mid-session tool paths
+```
+
+The result files are dated in UTC, so the runs of the evening of 2026-11-12 are named `2026-11-13`.
+
 ## The Claude Code mod
 
 `mods/groups` implements the Groups extension against one of the deployed Workers over HTTP. It registers `list_groups`, `open_group` and `read_skill`, adds a system-prompt section listing the groups and skills, and on `open_group` registers the group's scoped tools as deferred definitions and routes their calls to `tools/call`. `open_group` returns a listed skill's URI and does not load it. `read_skill` takes a skill name or `skill://` URI, fetches the entry with `skills/get`, and refuses a file whose SHA-256 does not match the published digest. Options: `url`, `deferScoped`, `listSkills`, `dedupGroupedSkills` (list a skill that is also a group once, as the group, and open the group first when `read_skill` names it). The `GROUPS_LOG` environment variable names a JSONL file for group opens.

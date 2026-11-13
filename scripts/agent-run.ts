@@ -2,12 +2,16 @@
 // cannot drive. Writes one JSONL row per model request with the provider's token and cache counts and the time to first token.
 // Score with agent-score.ts.
 //
-// Usage: tsx scripts/agent-run.ts --arm A|B|C [--models a,b] [--scenarios id,id] [--samples N] [--phases N] [--parallel N] [--label name] [--env <.env path>]
+// Usage: tsx scripts/agent-run.ts --arm A|B|C [--models a,b] [--scenarios id,id] [--samples N] [--phases N] [--parallel N] [--label name] [--shared] [--env <.env path>]
 //
 // Arms, each on the same model, scenarios and system prompt:
 //   A  every tool schema of the flat server in `tools` from the first request
 //   B  `tools` starts as list_groups, open_group and read_skill; each open appends the group's tools for the next request
 //   C  `tools` is fixed at list_groups, open_group, read_skill and call_tool; open_group returns the group's schemas as text
+//
+// Every session starts cold: its id leads the system prompt and ends the first tool's description. Both Baseten models
+// showed cache reads on tool blocks a session had never sent (2026-11-12), so the id in the system prompt alone leaves the
+// tool block shared between sessions. --shared leaves the id out of the tools, as a batch of sessions with one tool list would run.
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { execSync } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
@@ -38,6 +42,7 @@ const parallel = Number(opt('parallel', '2'))
 const maxTurns = Number(opt('max-turns', '10'))
 const label = opt('label', `arm-${arm.toLowerCase()}`)!
 const envFile = opt('env')
+const shared = args.includes('--shared')
 const url = opt('url', arm === 'A' ? 'https://pd-groups-flat.olahungerford.workers.dev/mcp' : 'https://pd-groups-opt2-rec.olahungerford.workers.dev/mcp')!
 
 // Keys come from --env or the environment. Values are never printed.
@@ -296,13 +301,13 @@ const toolsTokens = (tools: FnTool[]) => {
 const startTools = (): FnTool[] => (arm === 'A' ? [READ_SKILL, ...flatTools.map(asFn)] : arm === 'B' ? [LIST_GROUPS, OPEN_GROUP_B, READ_SKILL] : [LIST_GROUPS, OPEN_GROUP_C, READ_SKILL, CALL_TOOL])
 const commit = (() => { try { return execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim() } catch { return undefined } })()
 if (!existsSync(out)) {
-  writeFileSync(out, JSON.stringify({ kind: 'header', arm, url, commit, models, scenarios: scenarios.map((s) => s.id), samples, phases: phaseLimit, maxTurns, groups: groups.length, skills: skills.length, startTools: startTools().length, startToolsTokens: toolsTokens(startTools()), sectionTokens: encoding.encode(section()).length, settings: 'enable_thinking false, temperature 0.2, seeded, streamed' }) + '\n')
+  writeFileSync(out, JSON.stringify({ kind: 'header', arm, url, commit, models, scenarios: scenarios.map((s) => s.id), samples, phases: phaseLimit, maxTurns, sharedTools: shared, groups: groups.length, skills: skills.length, startTools: startTools().length, startToolsTokens: toolsTokens(startTools()), sectionTokens: encoding.encode(section()).length, settings: 'enable_thinking false, temperature 0.2, seeded, streamed' }) + '\n')
 }
 console.error(`arm ${arm} against ${url}: ${scenarios.length} scenarios x ${samples} samples x ${models.length} models -> ${out}`)
 
 async function runSession(model: string, scenario: (typeof SCENARIOS)[number], sample: number): Promise<void> {
   const session: Session = { id: randomUUID(), tools: startTools(), opened: [] }
-  // The id leads the system prompt, so no session reads a prefix another one cached.
+  if (!shared) session.tools[0] = fn(session.tools[0]!.function.name, `${session.tools[0]!.function.description} [session ${session.id}]`, session.tools[0]!.function.parameters)
   const messages: Message[] = [{ role: 'system', content: `Session ${session.id}.\n\n${PREAMBLE}\n\n${section()}` }]
   const base = { session: session.id, arm, model, scenario: scenario.id, sample }
   const done: boolean[] = []

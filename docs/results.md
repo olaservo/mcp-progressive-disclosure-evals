@@ -324,8 +324,94 @@ Correct picks out of 20. The two flat columns are explained below the table.
 - Writers: on the recommended build the Claude models scored 60 of 60 and the Gemini models 40 of 40, across both writers' tasks. On the as-generated build the Claude models scored 41 of 42 on Fable's tasks and 15 of 18 on Gemini's, so neither groups arm shows a writer favouring its own family. On flat names under strict scoring the Gemini models scored 10 of 12 on Gemini's tasks and 16 of 28 on Fable's, and the Claude models 16 of 18 and 35 of 42.
 - The classifiers ran on the as-generated listing only, for the reasons in round two: the Decisions API scored 17 and Jev 15.
 
+## Open-model agent run, 2026-11-12
+
+The completion runs above used Claude models through Claude Code, which defers tool loading. This run asks what groups cost on models whose endpoints have no mid-session tool mechanism, as the number of group opens in a session grows, and whether a client that keeps a fixed tool set still completes the tasks. The question came from the 2026-11-11 WG meeting.
+
+### Setup
+
+- `scripts/agent-tasks.ts`: five scenarios of six phases. A phase is one user turn that needs one or two tools from one group, and phase five returns to a group an earlier phase used, so a session opens five groups. The phases name no group and no tool. Each has a rubric over the tool calls and their arguments. Fable 5.2 wrote them with the subset's group listing and schemas in view. They were committed (`8d6e83f`) before the full runs and not changed after.
+- `scripts/agent-run.ts` drives a model through the phases with its own loop, under three client designs. Arm A puts all 237 schemas of the flat Worker in `tools` from the first request. Arm B starts with `list_groups`, `open_group` and `read_skill` against `opt2-rec` and appends a group's tools to `tools` when it opens. Arm C keeps `tools` fixed at those three plus `call_tool(name, arguments)`, and `open_group` returns the schemas as tool-result text.
+- Models: GLM-5.3 Flash and DeepSeek V4.1 Flash on Baseten, Qwen3.6 35B-A3B and Gemma 4 26B on DeepInfra, all through the Hugging Face router with thinking off, temperature 0.2 and streamed responses. Three samples per scenario, 15 sessions per cell.
+- Reference: Claude Sonnet 5.5 through Claude Code with the mod against `opt2-rec`, scoped tools deferred, each phase a user turn in one process (`scripts/agent-ref.ts`).
+- Cost is list price on 2026-11-12: GLM-5.3 Flash 0.15 USD per million input tokens, 0.03 cached, 0.50 output; DeepSeek V4.1 Flash 0.30, 0.007, 1.20; Qwen3.6 0.10, 0.10, 0.95; Gemma 0.07 with no cached price, 0.34.
+- Full tables: `results/2026-11-13-agent-summary.md`. The files are dated in UTC.
+
+### The endpoints do not expose the templates' own mid-session paths
+
+Both Baseten models' public chat templates can add tools after the first turn. GLM-5.3 Flash's template leaves out a tool marked `defer_loading` and renders it when a tool result carries a `tool_reference`. DeepSeek V4.1 Flash's template renders `tools` attached to a later system message. `scripts/agent-probe.ts` tried both through Baseten's chat completions endpoint on 2026-11-12 (`results/2026-11-13-agent-probe.txt`). The GLM endpoint rendered the 13 deferred schemas up front (4,455 prompt tokens against 234 without them) and answered a `tool_reference` tool result with HTTP 400. The DeepSeek endpoint accepted the system message and dropped its `tools` (407 prompt tokens against 4,726 with the tools resident), and the model called `open_group` again. So arm B re-sends a longer `tools` array.
+
+### Cold sessions need the marker in the tool block
+
+Each session's system prompt starts with a unique id, which was meant to keep sessions from reading each other's cache. The first B and C runs showed cache reads on a session's first request and on tool blocks the session had not sent before. Both Baseten endpoints behave as if tools are rendered ahead of the system prompt, so sessions that send the same tool list share its cached block. The runs were repeated with the session id also at the end of the first tool's description. The tables below are those cold runs. The earlier runs are kept as the shared-tool-block condition (`-shared` files), which is how a batch of sessions with one tool list would run.
+
+### Completion
+
+Phases done, cold runs, 15 sessions of 6 phases per cell:
+
+| Model | Arm B, tools appended on open | Arm C, fixed tool set | Valid arguments, B | Valid arguments, C |
+| :-- | --: | --: | --: | --: |
+| DeepSeek V4.1 Flash | 87/90 | 90/90 | 98% | 98% |
+| GLM-5.3 Flash | 88/90 | 81/90 | 96% | 99% |
+| Qwen3.6 35B-A3B | 85/90 | 84/90 | 55% | 97% |
+| Gemma 4 26B | 49/90 | 64/87 | 51% | 71% |
+| Sonnet 5.5, Claude Code, deferred loading | 90/90 | | | |
+
+- On the two Baseten models arm C finished within seven phases of arm B. With the shared-tool-block runs added, DeepSeek finished 177 of 180 phases in B and 178 in C, and GLM 173 and 168.
+- Arm C's arguments passed the tool's input schema at least as often as arm B's on every model. The prediction written before the runs was that a model reading schemas as text would produce arguments that do not validate. That did not happen.
+- Qwen3.6 in arm B passed the request body as a JSON string on 69 of its 71 invalid calls. The server accepts a string body, and the rubrics were meant to. The rubric code committed before the runs only unescaped quotes, so a string body with spaces after its colons did not match, and Qwen3.6 scored 48 of 90 in arm B. The fix parses string bodies and was made after seeing the results. No other cell changes under it. `--as-committed` reproduces the committed scoring (`results/2026-11-13-agent-summary-as-committed.md`).
+- Gemma's misses are wrong field names (`allowedOrigins` for `allowed.origins`, `query` for `sql`). Two of its arm C sessions ended when the Hugging Face account ran out of credit.
+- Six of GLM's nine arm C misses are one session. It put the tool's `name` inside `arguments` on every `call_tool`, the loop answered that `call_tool` needs a name and an arguments object, and the model repeated the same call through all six phases. A client that accepted that shape or explained the error would likely have recovered it. Three of GLM's 15 arm C sessions had a `call_tool` error and none of DeepSeek's.
+- The other misses on the Baseten models repeat: a URL-encoded key name (`config%3Amax_width`, GLM in every arm), a migration target without the bucket's EU jurisdiction (GLM, arm B), and the incremental-migration tools used for a bulk migration (DeepSeek, arm B).
+- Sonnet finished 30 of 30 phases in a pilot on the flat server behind the host's tool search and 90 of 90 with groups. The plan was to tune the tasks until a hosted model landed at 60 to 80 percent. That was not done: the tools are dry runs that return no data, and the tasks were left as first written.
+
+### Cache and cost after an open
+
+Cold runs. Re-read tokens are the part of the previous request's prompt that the request did not get from cache.
+
+| Model | Arm | Requests after an open | Median re-read tokens | Requests re-reading over half | Other requests | Median re-read tokens | Requests re-reading over half | Median first token ms, after an open / other |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: |
+| DeepSeek V4.1 Flash | B | 75 | 3.0k | 19 | 191 | 126 | 0 | 506 / 344 |
+| DeepSeek V4.1 Flash | C | 78 | 110 | 1 | 200 | 141 | 0 | 442 / 347 |
+| GLM-5.3 Flash | B | 75 | 6.8k | 39 | 211 | 91 | 13 | 1048 / 686 |
+| GLM-5.3 Flash | C | 75 | 151 | 0 | 259 | 76 | 1 | 840 / 681 |
+| Sonnet 5.5, Claude Code | deferred | 72 | 2 | 0 | 267 | 2 | 0 | |
+
+- Arm B lost part of its cache at every open, and the loss grew with the session. On DeepSeek the earlier tool block stayed cached and what followed it was re-read: a median 1.5k tokens at the first open, then 2.4k, 3.2k, 3.8k and 5.4k at the fifth. On GLM the median at opens two to five was 6.8k to 9.2k, and 15 of those 60 requests re-read at least 90% of the previous prompt. The claim under test predicted cached tokens near zero after every open. The observed loss is the conversation and system prompt on DeepSeek, and more than that on GLM.
+- Arm C kept its cache across opens: a median 110 and 151 tokens re-read. The Claude Code reference re-read a median 2 tokens after 72 opens and wrote a median 525 to cache.
+- GLM's cache also missed on requests that followed no open, 13 of 211 in arm B and 37 of 218 in the shared run, so part of its loss after an open is that endpoint's miss rate.
+
+Mean cumulative cost per session in USD through each phase:
+
+| Model | Arm | Sessions | Phase 1 | Phase 2 | Phase 3 | Phase 4 | Phase 5 | Phase 6 | Input tokens not from cache, 6 phases |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: |
+| DeepSeek V4.1 Flash | B | 15 | 0.0045 | 0.0079 | 0.0112 | 0.0151 | 0.0164 | 0.0223 | 58.1k |
+| DeepSeek V4.1 Flash | C | 15 | 0.0041 | 0.0070 | 0.0090 | 0.0116 | 0.0132 | 0.0167 | 38.8k |
+| GLM-5.3 Flash | B | 15 | 0.0036 | 0.0075 | 0.0117 | 0.0164 | 0.0182 | 0.0233 | 90.6k |
+| GLM-5.3 Flash | C | 15 | 0.0024 | 0.0049 | 0.0077 | 0.0109 | 0.0129 | 0.0169 | 32.7k |
+| GLM-5.3 Flash | A, shared tool block | 13 | 0.0317 | 0.0483 | 0.0626 | 0.0793 | 0.0937 | 0.1067 | 95.0k |
+| Qwen3.6 35B-A3B | B | 15 | 0.0043 | 0.0116 | 0.0204 | 0.0311 | 0.0389 | 0.0532 | 182.2k |
+| Qwen3.6 35B-A3B | C | 15 | 0.0042 | 0.0110 | 0.0185 | 0.0282 | 0.0372 | 0.0512 | 273.0k |
+| Gemma 4 26B | B | 15 | 0.0018 | 0.0049 | 0.0083 | 0.0139 | 0.0169 | 0.0211 | 295.9k |
+| Gemma 4 26B | C | 13 | 0.0026 | 0.0061 | 0.0107 | 0.0176 | 0.0242 | 0.0318 | 447.9k |
+| Sonnet 5.5, Claude Code | deferred | 15 | 0.0419 | 0.0667 | 0.0929 | 0.1185 | 0.1399 | 0.1713 | 21.2k |
+
+- Arm B cost 1.34 times arm C on DeepSeek and 1.38 times on GLM over six phases.
+- Arm B did not pass arm A. On GLM, all schemas up front cost 0.0317 USD after one phase, more than arm B's 0.0233 after six, and 0.1067 after six. Each arm A request carried about 197k prompt tokens against about 20k in arm B.
+- Arm A is incomplete. The Hugging Face account answered HTTP 402 partway through it, so there are 13 GLM sessions on the shared tool block and no complete session cold or on DeepSeek. The cold run got as far as three GLM first requests: 197k tokens with none from cache and 5.8 to 10.0 seconds to the first token, then 196,864 cached on the second request. Six of the 15 shared sessions also started with no cache read, so the shared mean already holds part of that cost. A fully cold GLM session would cost about 0.013 USD more than the shared mean.
+- On DeepInfra the cache does not change the bill. Qwen3.6's cached price equals its input price, and Gemma reported no cache reads on any of 631 requests. There arm B and arm C differ by what they send: Gemma's arm C sessions sent 448k input tokens against 296k.
+- With the tool block shared between sessions, arm B on DeepSeek cost 0.0148 USD against arm C's 0.0158, since tool blocks other sessions had opened in the same order came from cache. On GLM the shared runs cost 0.0273 and 0.0195.
+
 ## Limits
 
+- Open-model agent run: one catalog, the 237-tool subset, four open models on two providers through one router, on one evening. Fifteen sessions per cell. Phases need one or two tools, and Sonnet completed all of them, so the set separates the open models only.
+- Open-model agent run: the tasks and rubrics were written by a model with the group listing and schemas in view, which the held-out set avoided. The string-body fix to the rubric code was made after the results, and both scorings are committed.
+- Open-model agent run: arm A has 13 sessions, one model, and only the shared-tool-block condition. Its cold cost is arithmetic from three first requests.
+- Open-model agent run: arm C's `call_tool` error message and its strictness about the wrapper shape are this loop's. One GLM session failed on them alone.
+- Open-model agent run: arm C gives up the provider's typed tool calling and puts every opened schema in the conversation, where it is paid for again on a provider with no cache. Arm B never unloads a group. A batched open was not run: the phases are separate user turns, so the model cannot know the later groups in its first turn.
+- Open-model agent run: where each endpoint renders tools is inferred from cache counts. The public templates put tools first for GLM and after the system prompt for DeepSeek, and both endpoints behaved as tools-first.
+- Open-model agent run: the B and C runs for the Baseten models ran side by side, and arm A ran beside other jobs, so first-token times share load. Any mid-session tool change has the same cache effect as an open: client-side tool search, `list_changed`, connecting a server.
+- Open-model agent run: the reference is one Claude model on one host. Its sessions share the host's cached base prefix, as in round two.
 - The first set has five samples per task. At 13 groups they are identical on every task for the 14B model and Claude and on 9 of 14 for the 9B model. Other arms vary more: Claude is identical on 11 of 14 at 238 flat names. The second set has one. Read each cell as tasks, not answers, and two cells that differ by one or two as the same result. More tasks, not more samples, would add information.
 - The first set names the product (Turnstile, D1, KV, R2, queue, container), and the toolset group descriptions are templated around the product name ("Call the Cloudflare queues API directly. Use to read or change queues resources in an account."), so it measures keyword routing. The SEP says a group description SHOULD carry the task vocabulary a user would use; these do not, so the drop at 139 groups on the indirect tasks measures what templated descriptions cost, not what groups cost. The second round rewrote them with task vocabulary and re-ran.
 - The first set and the 2026-11-07 run of the second set showed no skill index, so their flat modes had no answer for a knowledge task. The 2026-11-08 run fixed that in every mode.
@@ -366,5 +452,6 @@ Correct picks out of 20. The two flat columns are explained below the table.
 - `2026-11-12-select2-*-deepseek-baseten.jsonl` and `.txt`: DeepSeek V4.1 Flash's seven second-round cells, run again in full. They replace its rows in the 2026-11-09 files, which are kept.
 - `traces/traces2-public/`: the second round's 300 redacted sessions, their group-open logs, index and scored summary.
 - `tasks-v3/`: the held-out tasks and every writer reply. `2026-11-10-select3-full-*.jsonl`: their selection runs on the full catalog. Labels with `-rec` are `opt2-rec`.
+- `2026-11-13-agent-*.jsonl`: the open-model agent run, one row per model request. `arm-b`, `arm-c` and `arm-a` are the cold runs for the Baseten models (`arm-a` holds only the requests made before the account ran out of credit), the `-shared` files the first runs with the tool block shared between sessions, and the `-deepinfra` files Qwen3.6 and Gemma. `ref-groups-rec` and `pilot-flat-toolsearch` are Sonnet through Claude Code. The `smoke-*` files are the one-scenario checks made before the task script was committed. `2026-11-13-agent-summary.md` is `npm run agent:score` over the arm, reference and pilot files, `-as-committed` the same with the rubric code as committed before the runs, and `2026-11-13-agent-probe.txt` the endpoint probe.
 
 Re-runs that reproduced an earlier file were not kept, and the 2026-11-02 file from the build against the earlier drafts was removed. This repository starts from a single commit; the private predecessor repository holds the earlier history.

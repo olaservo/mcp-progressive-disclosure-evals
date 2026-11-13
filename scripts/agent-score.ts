@@ -1,26 +1,38 @@
 // Scores agent-run.ts and agent-ref.ts result files. Completion is re-derived from the recorded calls with the rubrics in
 // agent-tasks.ts, so a rubric change applies to old runs too.
-// Usage: tsx scripts/agent-score.ts results/<file>.jsonl [more files]
+// Usage: tsx scripts/agent-score.ts [--as-committed] results/<file>.jsonl [more files]
+// --as-committed scores with the string-body handling the rubrics had when they were committed, before the runs.
 import { readFileSync } from 'node:fs'
-import { SCENARIOS, type AgentCall } from './agent-tasks.js'
+import { SCENARIOS, rubricOptions, type AgentCall } from './agent-tasks.js'
 
 type Call = AgentCall & { via?: string; valid?: boolean; added?: number }
 type Request = { kind: 'request'; session: string; arm: string; model: string; scenario: string; sample: number; phase: number; turn: number; index: number; afterOpen: boolean; promptTokens?: number; cachedTokens?: number; cacheWriteTokens?: number; completionTokens?: number; ttftMs?: number; totalMs?: number; retries?: number; calls: Call[] }
 type PhaseRow = { kind: 'phase'; session: string; phase: number; costUsd: number }
-type SessionRow = { kind: 'session'; session: string; arm: string; model: string; scenario: string; sample: number; error?: string }
+type SessionRow = { kind: 'session'; session: string; arm: string; model: string; scenario: string; sample: number; done?: boolean[]; error?: string }
 type Row = Request | PhaseRow | SessionRow | { kind: 'header' }
 
-/** USD per million tokens, from baseten.co/pricing on 2026-11-12. The reference rows carry the host's own cost. */
+/**
+ * USD per million tokens, from baseten.co/pricing and DeepInfra's model pages on 2026-11-12. DeepInfra lists Qwen3.6's
+ * cached input at the input price and no cached price for Gemma. The reference rows carry the host's own cost.
+ */
 const PRICES: Record<string, { input: number; cached: number; output: number }> = {
   'zai-org/GLM-5.3-Flash:baseten': { input: 0.15, cached: 0.03, output: 0.5 },
-  'deepseek-ai/DeepSeek-V4.1-Flash:baseten': { input: 0.3, cached: 0.007, output: 1.2 }
+  'deepseek-ai/DeepSeek-V4.1-Flash:baseten': { input: 0.3, cached: 0.007, output: 1.2 },
+  'Qwen/Qwen3.6-35B-A3B:deepinfra': { input: 0.1, cached: 0.1, output: 0.95 },
+  'google/gemma-4-26B-A4B-it:deepinfra': { input: 0.07, cached: 0.07, output: 0.34 }
 }
 const HELPERS = new Set(['list_groups', 'open_group', 'read_skill', 'call_tool', 'ToolSearch'])
 const PHASES = 6
 
-const files = process.argv.slice(2)
+rubricOptions.asCommitted = process.argv.includes('--as-committed')
+const files = process.argv.slice(2).filter((arg) => !arg.startsWith('--'))
 if (files.length === 0) throw new Error('pass one or more results/*-agent-*.jsonl files')
-const rows = files.flatMap((file) => readFileSync(file, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Row))
+// A file run with --shared, where sessions share one tool block, scores as its own arm.
+const rows = files.flatMap((file) => {
+  const parsed = readFileSync(file, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Row)
+  const header = parsed.find((r) => r.kind === 'header') as { sharedTools?: boolean } | undefined
+  return header?.sharedTools ? parsed.map((r) => ('arm' in r ? { ...r, arm: `${r.arm} shared` } : r)) : parsed
+})
 const requests = rows.filter((r): r is Request => r.kind === 'request')
 const phaseCost = new Map(rows.filter((r): r is PhaseRow => r.kind === 'phase').map((r) => [`${r.session}|${r.phase}`, r.costUsd]))
 
@@ -38,7 +50,8 @@ const sessions: Scored[] = rows.filter((r): r is SessionRow => r.kind === 'sessi
   let u = 0
   for (const [p, phase] of scenario.phases.entries()) {
     const inPhase = mine.filter((r) => r.phase === p + 1)
-    if (inPhase.length === 0) break
+    // A session that ended in an error keeps only the phases it finished.
+    if (inPhase.length === 0 || (s.error && p >= (s.done?.length ?? 0))) break
     done.push(phase.done(inPhase.flatMap((r) => r.calls).filter((call) => !HELPERS.has(call.name))))
     for (const r of inPhase) {
       const prompt = r.promptTokens ?? 0
@@ -61,7 +74,7 @@ const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.l
 const pct = (n: number, d: number) => (d ? `${Math.round((100 * n) / d)}%` : '-')
 const k = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(Math.round(n)))
 const short = (model: string) => model.replace(/^.*\//, '').replace(/:.*$/, '').replace(/^claude-/, '')
-const ARM_ORDER = ['A', 'B', 'C', 'ref-groups-rec', 'ref-flat-toolsearch']
+const ARM_ORDER = ['A', 'B', 'C', 'A shared', 'B shared', 'C shared', 'ref-groups-rec', 'ref-flat-toolsearch']
 const cells = [...new Set(sessions.map((s) => `${s.arm}|${s.model}`))].sort((a, b) => {
   const [aa, am] = a.split('|') as [string, string]
   const [ba, bm] = b.split('|') as [string, string]
@@ -79,7 +92,7 @@ for (const cell of cells) {
   const calls = mine.flatMap((s) => s.requests.flatMap((r) => r.calls)).filter((call) => !HELPERS.has(call.name))
   const checked = calls.filter((call) => call.valid !== undefined)
   const opens = mine.map((s) => s.requests.flatMap((r) => r.calls).filter((call) => call.name === 'open_group' && !call.isError).length)
-  const full = (n: number) => `${mine.filter((s) => s.done.length >= n && s.done.slice(0, n).every(Boolean)).length}/${mine.filter((s) => s.done.length >= n || s.error).length}`
+  const full = (n: number) => `${mine.filter((s) => s.done.length >= n && s.done.slice(0, n).every(Boolean)).length}/${mine.filter((s) => s.done.length >= n).length}`
   console.log(`| ${name(cell)} | ${mine.length} | ${mine.filter((s) => s.error).length} | ${phases.filter(Boolean).length}/${phases.length} | ${full(3)} | ${full(PHASES)} | ${median(mine.map((s) => s.requests.length))} | ${mean(opens).toFixed(2)} | ${calls.length} | ${checked.length ? pct(checked.filter((call) => call.valid).length, checked.length) : '-'} | ${pct(calls.filter((call) => call.isError).length, calls.length)} |`)
 }
 
