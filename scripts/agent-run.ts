@@ -2,7 +2,7 @@
 // cannot drive. Writes one JSONL row per model request with the provider's token and cache counts and the time to first token.
 // Score with agent-score.ts.
 //
-// Usage: tsx scripts/agent-run.ts --arm A|B|C [--models a,b] [--scenarios id,id] [--samples N] [--phases N] [--parallel N] [--label name] [--shared] [--env <.env path>]
+// Usage: tsx scripts/agent-run.ts --arm A|B|C [--models a,b] [--scenarios id,id] [--samples N] [--phases N] [--parallel N] [--label name] [--shared] [--only-samples 2,3] [--env <.env path>]
 //
 // Arms, each on the same model, scenarios and system prompt:
 //   A  every tool schema of the flat server in `tools` from the first request
@@ -43,6 +43,8 @@ const maxTurns = Number(opt('max-turns', '10'))
 const label = opt('label', `arm-${arm.toLowerCase()}`)!
 const envFile = opt('env')
 const shared = args.includes('--shared')
+// --only-samples re-runs the named sample numbers, for sessions that ended in an error.
+const onlySamples = opt('only-samples')?.split(',').map(Number)
 const url = opt('url', arm === 'A' ? 'https://pd-groups-flat.olahungerford.workers.dev/mcp' : 'https://pd-groups-opt2-rec.olahungerford.workers.dev/mcp')!
 
 // Keys come from --env or the environment. Values are never printed.
@@ -351,7 +353,7 @@ async function runSession(model: string, scenario: (typeof SCENARIOS)[number], s
   console.error(`${arm} ${model.replace(/^.*\//, '')} ${scenario.id} #${sample}: ${error ? `ERROR ${error.slice(0, 120)}` : done.map((d) => (d ? '✓' : '✗')).join('')} ${index} requests, opened ${session.opened.join(',') || '-'}`)
 }
 
-const jobs = models.flatMap((model) => scenarios.flatMap((scenario) => Array.from({ length: samples }, (_, i) => () => runSession(model, scenario, i + 1))))
+const jobs = models.flatMap((model) => scenarios.flatMap((scenario) => Array.from({ length: samples }, (_, i) => i + 1).filter((n) => !onlySamples || onlySamples.includes(n)).map((n) => () => runSession(model, scenario, n))))
 await Promise.all(Array.from({ length: Math.max(1, parallel) }, async () => { for (let job = jobs.shift(); job; job = jobs.shift()) await job() }))
 await client.close()
 console.error(`rows: ${out}`)

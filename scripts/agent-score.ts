@@ -37,7 +37,7 @@ const requests = rows.filter((r): r is Request => r.kind === 'request')
 const phaseCost = new Map(rows.filter((r): r is PhaseRow => r.kind === 'phase').map((r) => [`${r.session}|${r.phase}`, r.costUsd]))
 
 type Scored = { arm: string; model: string; scenario: string; sample: number; error?: string; requests: Request[]; done: boolean[]; /** Cumulative through each phase. */ cost: number[]; input: number[]; uncached: number[] }
-const sessions: Scored[] = rows.filter((r): r is SessionRow => r.kind === 'session').map((s) => {
+const everySession: Scored[] = rows.filter((r): r is SessionRow => r.kind === 'session').map((s) => {
   const mine = requests.filter((r) => r.session === s.session).sort((a, b) => a.index - b.index)
   const scenario = SCENARIOS.find((x) => x.id === s.scenario)!
   const price = PRICES[s.model]
@@ -67,6 +67,12 @@ const sessions: Scored[] = rows.filter((r): r is SessionRow => r.kind === 'sessi
   }
   return { arm: s.arm, model: s.model, scenario: s.scenario, sample: s.sample, error: s.error, requests: mine, done, cost, input, uncached }
 })
+
+// A session that ended in an error is listed at the end. It is left out of the tables when it finished no phase, or
+// when the same arm, model, scenario and sample was run again without an error.
+const cellOf = (s: Scored) => `${s.arm}|${s.model}|${s.scenario}|${s.sample}`
+const rerun = new Set(everySession.filter((s) => !s.error).map(cellOf))
+const sessions = everySession.filter((s) => !(s.error && (s.done.length === 0 || rerun.has(cellOf(s)))))
 
 const quantile = (xs: number[], q: number) => { const s = [...xs].sort((a, b) => a - b); return s.length ? s[Math.min(s.length - 1, Math.floor(q * (s.length - 1) + 1e-9))]! : 0 }
 const median = (xs: number[]) => quantile(xs, 0.5)
@@ -136,7 +142,7 @@ for (const scenario of SCENARIOS) {
   }
 }
 
-const failed = sessions.filter((s) => s.error)
+const failed = everySession.filter((s) => s.error)
 if (failed.length) {
   console.log('\nSessions that ended in an error:')
   for (const s of failed) console.log(`- ${short(s.model)} ${s.arm} ${s.scenario} #${s.sample}: ${s.error!.slice(0, 200)}`)
