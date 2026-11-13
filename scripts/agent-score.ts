@@ -1,0 +1,130 @@
+// Scores agent-run.ts and agent-ref.ts result files. Completion is re-derived from the recorded calls with the rubrics in
+// agent-tasks.ts, so a rubric change applies to old runs too.
+// Usage: tsx scripts/agent-score.ts results/<file>.jsonl [more files]
+import { readFileSync } from 'node:fs'
+import { SCENARIOS, type AgentCall } from './agent-tasks.js'
+
+type Call = AgentCall & { via?: string; valid?: boolean; added?: number }
+type Request = { kind: 'request'; session: string; arm: string; model: string; scenario: string; sample: number; phase: number; turn: number; index: number; afterOpen: boolean; promptTokens?: number; cachedTokens?: number; cacheWriteTokens?: number; completionTokens?: number; ttftMs?: number; totalMs?: number; retries?: number; calls: Call[] }
+type PhaseRow = { kind: 'phase'; session: string; phase: number; costUsd: number }
+type SessionRow = { kind: 'session'; session: string; arm: string; model: string; scenario: string; sample: number; error?: string }
+type Row = Request | PhaseRow | SessionRow | { kind: 'header' }
+
+/** USD per million tokens, from baseten.co/pricing on 2026-11-12. The reference rows carry the host's own cost. */
+const PRICES: Record<string, { input: number; cached: number; output: number }> = {
+  'zai-org/GLM-5.3-Flash:baseten': { input: 0.15, cached: 0.03, output: 0.5 },
+  'deepseek-ai/DeepSeek-V4.1-Flash:baseten': { input: 0.3, cached: 0.007, output: 1.2 }
+}
+const HELPERS = new Set(['list_groups', 'open_group', 'read_skill', 'call_tool', 'ToolSearch'])
+const PHASES = 6
+
+const files = process.argv.slice(2)
+if (files.length === 0) throw new Error('pass one or more results/*-agent-*.jsonl files')
+const rows = files.flatMap((file) => readFileSync(file, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Row))
+const requests = rows.filter((r): r is Request => r.kind === 'request')
+const phaseCost = new Map(rows.filter((r): r is PhaseRow => r.kind === 'phase').map((r) => [`${r.session}|${r.phase}`, r.costUsd]))
+
+type Scored = { arm: string; model: string; scenario: string; sample: number; error?: string; requests: Request[]; done: boolean[]; /** Cumulative through each phase. */ cost: number[]; input: number[]; uncached: number[] }
+const sessions: Scored[] = rows.filter((r): r is SessionRow => r.kind === 'session').map((s) => {
+  const mine = requests.filter((r) => r.session === s.session).sort((a, b) => a.index - b.index)
+  const scenario = SCENARIOS.find((x) => x.id === s.scenario)!
+  const price = PRICES[s.model]
+  const done: boolean[] = []
+  const cost: number[] = []
+  const input: number[] = []
+  const uncached: number[] = []
+  let c = 0
+  let i = 0
+  let u = 0
+  for (const [p, phase] of scenario.phases.entries()) {
+    const inPhase = mine.filter((r) => r.phase === p + 1)
+    if (inPhase.length === 0) break
+    done.push(phase.done(inPhase.flatMap((r) => r.calls).filter((call) => !HELPERS.has(call.name))))
+    for (const r of inPhase) {
+      const prompt = r.promptTokens ?? 0
+      const cached = r.cachedTokens ?? 0
+      i += prompt
+      u += prompt - cached
+      if (price) c += ((prompt - cached) * price.input + cached * price.cached + (r.completionTokens ?? 0) * price.output) / 1e6
+    }
+    if (!price) c += phaseCost.get(`${s.session}|${p + 1}`) ?? 0
+    cost.push(c)
+    input.push(i)
+    uncached.push(u)
+  }
+  return { arm: s.arm, model: s.model, scenario: s.scenario, sample: s.sample, error: s.error, requests: mine, done, cost, input, uncached }
+})
+
+const quantile = (xs: number[], q: number) => { const s = [...xs].sort((a, b) => a - b); return s.length ? s[Math.min(s.length - 1, Math.floor(q * (s.length - 1) + 1e-9))]! : 0 }
+const median = (xs: number[]) => quantile(xs, 0.5)
+const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0)
+const pct = (n: number, d: number) => (d ? `${Math.round((100 * n) / d)}%` : '-')
+const k = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(Math.round(n)))
+const short = (model: string) => model.replace(/^.*\//, '').replace(/:.*$/, '').replace(/^claude-/, '')
+const ARM_ORDER = ['A', 'B', 'C', 'ref-groups-rec', 'ref-flat-toolsearch']
+const cells = [...new Set(sessions.map((s) => `${s.arm}|${s.model}`))].sort((a, b) => {
+  const [aa, am] = a.split('|') as [string, string]
+  const [ba, bm] = b.split('|') as [string, string]
+  return am.localeCompare(bm) || ARM_ORDER.indexOf(aa) - ARM_ORDER.indexOf(ba)
+})
+const of = (cell: string) => sessions.filter((s) => `${s.arm}|${s.model}` === cell)
+const name = (cell: string) => { const [arm, model] = cell.split('|') as [string, string]; return `${short(model)} | ${arm}` }
+
+console.log(`Agent runs: ${files.length} files, ${sessions.length} sessions, ${requests.length} requests. A phase is done when its rubric in agent-tasks.ts holds over the calls the server accepted during it. A full task is a session's first 3 or all 6 phases done. Arguments are valid when they pass the tool's published input schema; rejected calls are those the server answered with an error.\n`)
+console.log('| Model | Arm | Sessions | Errors | Phases done | Full task, 3 phases | Full task, 6 phases | Median requests | Group opens per session | Server tool calls | Valid arguments | Rejected by server |')
+console.log('| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: |')
+for (const cell of cells) {
+  const mine = of(cell)
+  const phases = mine.flatMap((s) => s.done)
+  const calls = mine.flatMap((s) => s.requests.flatMap((r) => r.calls)).filter((call) => !HELPERS.has(call.name))
+  const checked = calls.filter((call) => call.valid !== undefined)
+  const opens = mine.map((s) => s.requests.flatMap((r) => r.calls).filter((call) => call.name === 'open_group' && !call.isError).length)
+  const full = (n: number) => `${mine.filter((s) => s.done.length >= n && s.done.slice(0, n).every(Boolean)).length}/${mine.filter((s) => s.done.length >= n || s.error).length}`
+  console.log(`| ${name(cell)} | ${mine.length} | ${mine.filter((s) => s.error).length} | ${phases.filter(Boolean).length}/${phases.length} | ${full(3)} | ${full(PHASES)} | ${median(mine.map((s) => s.requests.length))} | ${mean(opens).toFixed(2)} | ${calls.length} | ${checked.length ? pct(checked.filter((call) => call.valid).length, checked.length) : '-'} | ${pct(calls.filter((call) => call.isError).length, calls.length)} |`)
+}
+
+const complete = (cell: string) => of(cell).filter((s) => s.cost.length === PHASES)
+const through = (title: string, pick: (s: Scored) => number[], show: (n: number) => string) => {
+  console.log(`\n${title}, mean over the sessions that ran all ${PHASES} phases:\n`)
+  console.log(`| Model | Arm | Sessions | ${Array.from({ length: PHASES }, (_, p) => `Phase ${p + 1}`).join(' | ')} |`)
+  console.log(`| :-- | :-- | --: | ${Array.from({ length: PHASES }, () => '--:').join(' | ')} |`)
+  for (const cell of cells) {
+    const mine = complete(cell)
+    if (mine.length === 0) continue
+    console.log(`| ${name(cell)} | ${mine.length} | ${Array.from({ length: PHASES }, (_, p) => show(mean(mine.map((s) => pick(s)[p]!)))).join(' | ')} |`)
+  }
+}
+through('Cumulative cost in USD at list price through each phase', (s) => s.cost, (n) => n.toFixed(4))
+through('Cumulative input tokens through each phase', (s) => s.input, k)
+through('Cumulative input tokens not read from cache through each phase', (s) => s.uncached, k)
+
+// "Re-read" is the part of the previous request's prompt that this request did not get from cache: what a tool change costs,
+// apart from the new content any request adds.
+console.log("\nThe request after a group open against a session's other requests. Re-read tokens are the part of the previous request's prompt not served from cache. The first request of a session is left out.\n")
+console.log('| Model | Arm | Requests after an open | Median re-read tokens | Median re-read share | Requests with over half re-read | Median first token ms | Other requests | Median re-read tokens | Median re-read share | Requests with over half re-read | Median first token ms |')
+console.log('| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: |')
+for (const cell of cells) {
+  const pairs = of(cell).flatMap((s) => s.requests.slice(1).map((r, i) => ({ r, previous: s.requests[i]!.promptTokens ?? 0 }))).filter((x) => x.previous > 0)
+  const reread = (x: (typeof pairs)[number]) => Math.max(0, x.previous - (x.r.cachedTokens ?? 0))
+  const part = (xs: typeof pairs) => [String(xs.length), k(median(xs.map(reread))), xs.length ? `${Math.round(100 * median(xs.map((x) => reread(x) / x.previous)))}%` : '-', String(xs.filter((x) => reread(x) / x.previous > 0.5).length), String(Math.round(median(xs.map((x) => x.r.ttftMs ?? x.r.totalMs ?? 0))))]
+  console.log(`| ${name(cell)} | ${[...part(pairs.filter((x) => x.r.afterOpen)), ...part(pairs.filter((x) => !x.r.afterOpen))].join(' | ')} |`)
+}
+
+console.log('\nPhases done, by scenario and phase:\n')
+console.log(`| Scenario | Phase | Groups | ${cells.map(name).map((n) => n.replace(' | ', ' ')).join(' | ')} |`)
+console.log(`| :-- | --: | :-- | ${cells.map(() => '--:').join(' | ')} |`)
+for (const scenario of SCENARIOS) {
+  for (const [p, phase] of scenario.phases.entries()) {
+    const counts = cells.map((cell) => {
+      const ran = of(cell).filter((s) => s.scenario === scenario.id && s.done.length > p)
+      return ran.length ? `${ran.filter((s) => s.done[p]).length}/${ran.length}` : '-'
+    })
+    console.log(`| ${scenario.id} | ${p + 1} | ${phase.groups[0]} | ${counts.join(' | ')} |`)
+  }
+}
+
+const failed = sessions.filter((s) => s.error)
+if (failed.length) {
+  console.log('\nSessions that ended in an error:')
+  for (const s of failed) console.log(`- ${short(s.model)} ${s.arm} ${s.scenario} #${s.sample}: ${s.error!.slice(0, 200)}`)
+}

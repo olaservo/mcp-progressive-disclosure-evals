@@ -1,0 +1,9 @@
+zai-org/GLM-5.3-Flash:baseten
+  open_group only:                         prompt tokens 234, calls open_group
+  13 tools marked defer_loading:           prompt tokens 4455, calls open_group
+  the same, tool result of tool_reference: HTTP 400 { "error": { "code": "400", "message": "Failed to deserialize the JSON body into the target type: data did not match any variant of untagged enum ChatCompletionRequestToolMessageContent at line 1 column 19658", "type": "Bad Request" } } 
+  13 tools resident after the open:        prompt tokens 4477, calls kv_keys_list
+deepseek-ai/DeepSeek-V4.1-Flash:baseten
+  open_group only:                         prompt tokens 341, calls open_group
+  13 tools on a later system message:      prompt tokens 407, calls open_group
+  13 tools resident after the open:        prompt tokens 4726, calls kv_keys_list
