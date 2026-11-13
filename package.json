@@ -23,7 +23,8 @@
     "agent:run": "tsx scripts/agent-run.ts",
     "agent:ref": "tsx scripts/agent-ref.ts",
     "agent:score": "tsx scripts/agent-score.ts",
-    "agent:probe": "tsx scripts/agent-probe.ts"
+    "agent:probe": "tsx scripts/agent-probe.ts",
+    "agent:probe-order": "tsx scripts/agent-probe-order.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.4.0",

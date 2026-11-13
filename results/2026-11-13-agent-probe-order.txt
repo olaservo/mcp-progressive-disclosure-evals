@@ -1,0 +1,23 @@
+npm run agent:probe-order, 2026-11-12 (UTC 2026-11-13). Each cell is cached_tokens on a request that changes one thing after a warm request.
+
+Tool block: kv-api (13 tools), with x-session-affinity
+| Model | Prompt tokens | Repeat of the warm request | New start of the system prompt, same tools | Same system prompt, first tool changed | Same system prompt, last tool changed |
+| :-- | --: | --: | --: | --: | --: |
+| zai-org/GLM-5.3-Flash:baseten | 5313 | 5120 | 0 | 0 | 0 |
+| deepseek-ai/DeepSeek-V4.1-Flash:baseten | 5548 | 5376 | 4352 | 256 | 4352 |
+| Qwen/Qwen3.6-35B-A3B:deepinfra | 5847 | 0 | 4192 | 0 | 4192 |
+
+Tool block: kv-api, --no-affinity
+| zai-org/GLM-5.3-Flash:baseten | 5313 | 0 | 0 | 0 | 0 |
+| deepseek-ai/DeepSeek-V4.1-Flash:baseten | 5561 | 5376 | 4352 | 256 | 4352 |
+| Qwen/Qwen3.6-35B-A3B:deepinfra | 5845 | 0 | 0 | 0 | 4192 |
+
+GLM alone, kv-api, with the header: two runs at --wait 3000 and two at --wait 20000 all gave 5120 | 0 | 0 | 0.
+
+Tool block: r2-buckets (35 tools), with the header
+| zai-org/GLM-5.3-Flash:baseten | 14682 | 14592 | 0 | 0 | 0 |
+| deepseek-ai/DeepSeek-V4.1-Flash:baseten | 15167 | 15104 | 14080 | 256 | 13824 |
+
+Tool block: r2-buckets,queues-api,kv-api,containers-api (87 tools), with the header
+| zai-org/GLM-5.3-Flash:baseten | 32198 | 32000 | 16384 | 0 | 18176 |
+| deepseek-ai/DeepSeek-V4.1-Flash:baseten | 33181 | 33024 | 32000 | 256 | 32000 |

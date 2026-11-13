@@ -123,16 +123,19 @@ Headless runs launched from inside a Claude Code session need `--allowedTools "m
 | :-- | :-- |
 | `A` | Puts every tool schema of the flat Worker in `tools` from the first request. |
 | `B` | Starts `tools` as `list_groups`, `open_group` and `read_skill` against the `opt2-rec` Worker, and appends a group's tools when it opens. Opened groups stay registered. |
-| `C` | Keeps `tools` fixed at `list_groups`, `open_group`, `read_skill` and `call_tool(name, arguments)`. `open_group` returns the group's schemas as tool-result text. |
+| `C` | Keeps `tools` fixed at `list_groups`, `open_group`, `read_skill` and `call_tool(name, arguments)`. `open_group` returns the group's schemas as tool-result text. `call_tool` takes a tool name nested inside `arguments`; `--strict-wrapper` is the loop as it was for the first runs. |
 
 Each session's id leads its system prompt and ends its first tool's description, so no session reads a prefix another one cached. `--shared` leaves the id out of the tools, so sessions with the same tool list share its cached block. Requests are streamed, with thinking off, temperature 0.2 and the sample number as the seed. Each request is one JSONL row with the provider's `prompt_tokens` and `cached_tokens`, the time to first token, and every tool call with whether its arguments pass the tool's input schema (ajv) and whether the server rejected it. `scripts/agent-ref.ts` runs the same phases through headless Claude Code, one process per scenario with `--input-format stream-json`, and writes the same rows. `scripts/agent-score.ts` scores any of these files and re-derives completion from the recorded calls.
 
 ```bash
 npm run agent:run -- --arm B --samples 3 --parallel 3 --label arm-b      # also --arm A and --arm C; --models, --scenarios, --phases, --shared
+npm run agent:run -- --arm B --scenarios chain-forward,chain-reverse --pad-results 2000 --label chain30-b-pad    # 30-turn sessions, about 2k tokens added to each tool result
+npm run agent:run -- --arm B --listing-in-tool --url http://localhost:8799/opt2-rec/mcp --samples 3 --label full-b-listing    # after vendor:full and wrangler dev --port 8799
 npm run agent:run -- --arm B --samples 3 --parallel 3 --models Qwen/Qwen3.6-35B-A3B:deepinfra,google/gemma-4-26B-A4B-it:deepinfra --label arm-b-deepinfra
 npm run agent:ref -- --condition groups-rec --samples 3 --label ref-groups-rec    # or flat-toolsearch
 npm run agent:score -- results/2026-11-13-agent-arm-*.jsonl results/2026-11-13-agent-ref-*.jsonl results/2026-11-13-agent-pilot-*.jsonl    # --as-committed for the rubric code as first committed
 npm run agent:probe      # whether the endpoint honours the chat templates' own mid-session tool paths
+npm run agent:probe-order    # where the endpoint puts tools relative to the system prompt, from its cache counts
 ```
 
 The result files are dated in UTC, so the runs of the evening of 2026-11-12 are named `2026-11-13`.

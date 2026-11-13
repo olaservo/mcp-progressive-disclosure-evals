@@ -3,7 +3,7 @@
 // Usage: tsx scripts/agent-score.ts [--as-committed] results/<file>.jsonl [more files]
 // --as-committed scores with the string-body handling the rubrics had when they were committed, before the runs.
 import { readFileSync } from 'node:fs'
-import { SCENARIOS, rubricOptions, type AgentCall } from './agent-tasks.js'
+import { CHAINS, SCENARIOS, rubricOptions, type AgentCall } from './agent-tasks.js'
 
 type Call = AgentCall & { via?: string; valid?: boolean; added?: number }
 type Request = { kind: 'request'; session: string; arm: string; model: string; scenario: string; sample: number; phase: number; turn: number; index: number; afterOpen: boolean; promptTokens?: number; cachedTokens?: number; cacheWriteTokens?: number; completionTokens?: number; ttftMs?: number; totalMs?: number; retries?: number; calls: Call[] }
@@ -22,16 +22,17 @@ const PRICES: Record<string, { input: number; cached: number; output: number }> 
   'google/gemma-4-26B-A4B-it:deepinfra': { input: 0.07, cached: 0.07, output: 0.34 }
 }
 const HELPERS = new Set(['list_groups', 'open_group', 'read_skill', 'call_tool', 'ToolSearch'])
-const PHASES = 6
 
 rubricOptions.asCommitted = process.argv.includes('--as-committed')
 const files = process.argv.slice(2).filter((arg) => !arg.startsWith('--'))
 if (files.length === 0) throw new Error('pass one or more results/*-agent-*.jsonl files')
-// A file run with --shared, where sessions share one tool block, scores as its own arm.
+// A file run with --shared, where sessions share one tool block, scores as its own arm, and so do runs with padded results,
+// arm C with the lenient call_tool wrapper, and runs against a server other than the two deployed subset Workers.
 const rows = files.flatMap((file) => {
   const parsed = readFileSync(file, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Row)
-  const header = parsed.find((r) => r.kind === 'header') as { sharedTools?: boolean } | undefined
-  return header?.sharedTools ? parsed.map((r) => ('arm' in r ? { ...r, arm: `${r.arm} shared` } : r)) : parsed
+  const header = parsed.find((r) => r.kind === 'header') as { sharedTools?: boolean; listingInTool?: boolean; padResults?: number; wrapper?: string; groups?: number } | undefined
+  const suffix = `${header?.sharedTools ? ' shared' : ''}${header?.wrapper === 'lenient' ? ' lenient' : ''}${header?.listingInTool ? ' listing in tool' : ''}${header?.padResults ? ` pad ${header.padResults}` : ''}${(header?.groups ?? 0) > 60 ? ' full catalog' : ''}`
+  return suffix ? parsed.map((r) => ('arm' in r ? { ...r, arm: `${r.arm}${suffix}` } : r)) : parsed
 })
 const requests = rows.filter((r): r is Request => r.kind === 'request')
 const phaseCost = new Map(rows.filter((r): r is PhaseRow => r.kind === 'phase').map((r) => [`${r.session}|${r.phase}`, r.costUsd]))
@@ -39,7 +40,7 @@ const phaseCost = new Map(rows.filter((r): r is PhaseRow => r.kind === 'phase').
 type Scored = { arm: string; model: string; scenario: string; sample: number; error?: string; requests: Request[]; done: boolean[]; /** Cumulative through each phase. */ cost: number[]; input: number[]; uncached: number[] }
 const everySession: Scored[] = rows.filter((r): r is SessionRow => r.kind === 'session').map((s) => {
   const mine = requests.filter((r) => r.session === s.session).sort((a, b) => a.index - b.index)
-  const scenario = SCENARIOS.find((x) => x.id === s.scenario)!
+  const scenario = [...SCENARIOS, ...CHAINS].find((x) => x.id === s.scenario)!
   const price = PRICES[s.model]
   const done: boolean[] = []
   const cost: number[] = []
@@ -74,6 +75,9 @@ const cellOf = (s: Scored) => `${s.arm}|${s.model}|${s.scenario}|${s.sample}`
 const rerun = new Set(everySession.filter((s) => !s.error).map(cellOf))
 const sessions = everySession.filter((s) => !(s.error && (s.done.length === 0 || rerun.has(cellOf(s)))))
 
+/** The longest scenario among the sessions read: 6, or 30 for the chained ones. */
+const PHASES = Math.max(6, ...sessions.map((x) => [...SCENARIOS, ...CHAINS].find((y) => y.id === x.scenario)!.phases.length))
+
 const quantile = (xs: number[], q: number) => { const s = [...xs].sort((a, b) => a - b); return s.length ? s[Math.min(s.length - 1, Math.floor(q * (s.length - 1) + 1e-9))]! : 0 }
 const median = (xs: number[]) => quantile(xs, 0.5)
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0)
@@ -84,13 +88,14 @@ const ARM_ORDER = ['A', 'B', 'C', 'A shared', 'B shared', 'C shared', 'ref-group
 const cells = [...new Set(sessions.map((s) => `${s.arm}|${s.model}`))].sort((a, b) => {
   const [aa, am] = a.split('|') as [string, string]
   const [ba, bm] = b.split('|') as [string, string]
-  return am.localeCompare(bm) || ARM_ORDER.indexOf(aa) - ARM_ORDER.indexOf(ba)
+  const rank = (arm: string) => (ARM_ORDER.includes(arm) ? ARM_ORDER.indexOf(arm) : ARM_ORDER.length)
+  return am.localeCompare(bm) || rank(aa) - rank(ba) || aa.localeCompare(ba)
 })
 const of = (cell: string) => sessions.filter((s) => `${s.arm}|${s.model}` === cell)
 const name = (cell: string) => { const [arm, model] = cell.split('|') as [string, string]; return `${short(model)} | ${arm}` }
 
 console.log(`Agent runs: ${files.length} files, ${sessions.length} sessions, ${requests.length} requests. A phase is done when its rubric in agent-tasks.ts holds over the calls the server accepted during it. A full task is a session's first 3 or all 6 phases done. Arguments are valid when they pass the tool's published input schema; rejected calls are those the server answered with an error.\n`)
-console.log('| Model | Arm | Sessions | Errors | Phases done | Full task, 3 phases | Full task, 6 phases | Median requests | Group opens per session | Server tool calls | Valid arguments | Rejected by server |')
+console.log('| Model | Arm | Sessions | Errors | Phases done | Full task, 3 phases | Full task, every phase | Median requests | Group opens per session | Server tool calls | Valid arguments | Rejected by server |')
 console.log('| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: |')
 for (const cell of cells) {
   const mine = of(cell)
@@ -103,14 +108,16 @@ for (const cell of cells) {
 }
 
 const complete = (cell: string) => of(cell).filter((s) => s.cost.length === PHASES)
+/** Every phase of a six-phase scenario, every sixth of a chained one. */
+const shown = PHASES <= 6 ? Array.from({ length: PHASES }, (_, p) => p) : Array.from({ length: PHASES / 6 }, (_, i) => 6 * i + 5)
 const through = (title: string, pick: (s: Scored) => number[], show: (n: number) => string) => {
   console.log(`\n${title}, mean over the sessions that ran all ${PHASES} phases:\n`)
-  console.log(`| Model | Arm | Sessions | ${Array.from({ length: PHASES }, (_, p) => `Phase ${p + 1}`).join(' | ')} |`)
-  console.log(`| :-- | :-- | --: | ${Array.from({ length: PHASES }, () => '--:').join(' | ')} |`)
+  console.log(`| Model | Arm | Sessions | ${shown.map((p) => `Phase ${p + 1}`).join(' | ')} |`)
+  console.log(`| :-- | :-- | --: | ${shown.map(() => '--:').join(' | ')} |`)
   for (const cell of cells) {
     const mine = complete(cell)
     if (mine.length === 0) continue
-    console.log(`| ${name(cell)} | ${mine.length} | ${Array.from({ length: PHASES }, (_, p) => show(mean(mine.map((s) => pick(s)[p]!)))).join(' | ')} |`)
+    console.log(`| ${name(cell)} | ${mine.length} | ${shown.map((p) => show(mean(mine.map((s) => pick(s)[p]!)))).join(' | ')} |`)
   }
 }
 through('Cumulative cost in USD at list price through each phase', (s) => s.cost, (n) => n.toFixed(4))
@@ -132,7 +139,7 @@ for (const cell of cells) {
 console.log('\nPhases done, by scenario and phase:\n')
 console.log(`| Scenario | Phase | Groups | ${cells.map(name).map((n) => n.replace(' | ', ' ')).join(' | ')} |`)
 console.log(`| :-- | --: | :-- | ${cells.map(() => '--:').join(' | ')} |`)
-for (const scenario of SCENARIOS) {
+for (const scenario of [...SCENARIOS, ...CHAINS].filter((x) => sessions.some((s) => s.scenario === x.id))) {
   for (const [p, phase] of scenario.phases.entries()) {
     const counts = cells.map((cell) => {
       const ran = of(cell).filter((s) => s.scenario === scenario.id && s.done.length > p)

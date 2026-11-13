@@ -2,7 +2,7 @@
 // cannot drive. Writes one JSONL row per model request with the provider's token and cache counts and the time to first token.
 // Score with agent-score.ts.
 //
-// Usage: tsx scripts/agent-run.ts --arm A|B|C [--models a,b] [--scenarios id,id] [--samples N] [--phases N] [--parallel N] [--label name] [--shared] [--only-samples 2,3] [--env <.env path>]
+// Usage: tsx scripts/agent-run.ts --arm A|B|C [--models a,b] [--scenarios id,id] [--samples N] [--phases N] [--parallel N] [--label name] [--shared] [--only-samples 2,3] [--pad-results N] [--strict-wrapper] [--listing-in-tool] [--env <.env path>]
 //
 // Arms, each on the same model, scenarios and system prompt:
 //   A  every tool schema of the flat server in `tools` from the first request
@@ -22,7 +22,7 @@ import { Ajv, type ValidateFunction } from 'ajv'
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
 import { getEncoding } from 'js-tiktoken'
 import { PREAMBLE } from './trace-tasks.js'
-import { SCENARIOS, type AgentCall } from './agent-tasks.js'
+import { CHAINS, SCENARIOS, type AgentCall } from './agent-tasks.js'
 
 const GROUPS = 'io.modelcontextprotocol/groups'
 const SKILLS = 'io.modelcontextprotocol/skills'
@@ -37,7 +37,8 @@ if (!['A', 'B', 'C'].includes(arm)) throw new Error(`Unknown arm ${arm}; one of 
 const models = opt('models', 'zai-org/GLM-5.3-Flash:baseten,deepseek-ai/DeepSeek-V4.1-Flash:baseten')!.split(',')
 const only = opt('scenarios')?.split(',')
 const samples = Number(opt('samples', '1'))
-const phaseLimit = Number(opt('phases', '6'))
+// 0 runs every phase of a scenario.
+const phaseLimit = Number(opt('phases', '0'))
 const parallel = Number(opt('parallel', '2'))
 const maxTurns = Number(opt('max-turns', '10'))
 const label = opt('label', `arm-${arm.toLowerCase()}`)!
@@ -45,6 +46,16 @@ const envFile = opt('env')
 const shared = args.includes('--shared')
 // --only-samples re-runs the named sample numbers, for sessions that ended in an error.
 const onlySamples = opt('only-samples')?.split(',').map(Number)
+// --pad-results N adds about N tokens of filler to every server tool result. The dry-run results are about 100 tokens,
+// and what an appended tool block costs depends on how much conversation sits after it.
+const padResults = Number(opt('pad-results', '0'))
+// call_tool takes the tool name nested inside `arguments` and says what a rejected call was missing, since 64 of the 77
+// wrapper errors in the first runs were that shape. --strict-wrapper is the loop as it was for those runs.
+const strictWrapper = args.includes('--strict-wrapper')
+// --listing-in-tool moves the group listing from the system prompt into the description of list_groups, the first tool.
+// Both Baseten endpoints render tools ahead of the system prompt, so a listing in the system prompt is re-read whenever
+// the tool list changes, and one in the first tool is not.
+const listingInTool = args.includes('--listing-in-tool') && arm !== 'A'
 const url = opt('url', arm === 'A' ? 'https://pd-groups-flat.olahungerford.workers.dev/mcp' : 'https://pd-groups-opt2-rec.olahungerford.workers.dev/mcp')!
 
 // Keys come from --env or the environment. Values are never printed.
@@ -77,7 +88,19 @@ const asFn = (tool: McpTool) => fn(tool.name, tool.description ?? '', tool.input
 
 // The server's listings, read once. Every group is fetched so each tool's schema is known for validation.
 const client = new Client({ name: 'groups-agent-run', version: '0.1.0' }, { capabilities: { extensions: arm === 'A' ? { [SKILLS]: {} } : { [GROUPS]: {}, [SKILLS]: {} } }, versionNegotiation: { mode: 'auto' } })
-await client.connect(new StreamableHTTPClientTransport(new URL(url)))
+/** The Workers answer 429 past 120 requests a minute, which reading every group of the full catalog passes. As compare.ts does, this keeps under 100 a minute and waits out a 429. */
+const sentAt: number[] = []
+const patientFetch = async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+  for (;;) {
+    while (sentAt.length >= 100 && Date.now() - sentAt[0]! < 60_000) await new Promise((resolve) => setTimeout(resolve, 60_000 - (Date.now() - sentAt[0]!) + 50))
+    while (sentAt.length >= 100) sentAt.shift()
+    sentAt.push(Date.now())
+    const response = await fetch(input, init)
+    if (response.status !== 429) return response
+    await new Promise((resolve) => setTimeout(resolve, 20_000))
+  }
+}
+await client.connect(new StreamableHTTPClientTransport(new URL(url), { fetch: patientFetch }))
 const flatTools: McpTool[] = arm === 'A' ? ((await client.listTools()).tools as McpTool[]) : []
 const groups: Named[] = arm === 'A' ? [] : ((await client.request({ method: 'groups/list', params: {} }, Loose)) as { groups?: Named[] }).groups ?? []
 const skills = (((await client.request({ method: 'skills/list', params: {} }, Loose)) as { skills?: SkillEntry[] }).skills ?? []).filter((entry) => entry.frontmatter?.name)
@@ -125,8 +148,7 @@ function section(): string {
     arm === 'B' ? 'When a task matches a group below, call open_group with its name first, then use the tools it reveals.' : 'When a task matches a group below, call open_group with its name first, then call its tools through call_tool.',
     'A group may list a skill; read_skill loads its instructions. Call list_groups to re-list at any time.',
     '',
-    "Groups (open_group loads a group's tools and instructions):",
-    ...groups.map((g) => `- ${g.name}: ${firstLine(g.description)}`),
+    ...(listingInTool ? ['The groups are listed in the description of the list_groups tool.'] : ["Groups (open_group loads a group's tools and instructions):", ...groups.map((g) => `- ${g.name}: ${firstLine(g.description)}`)]),
     ...(shown.length > 0 ? ['', "Skills (read_skill loads a skill's instructions):", ...skillLines(shown)] : [])
   ].join('\n')
 }
@@ -274,8 +296,17 @@ async function execute(session: Session, call: ToolCall): Promise<{ text: string
   if (via === 'call_tool' && arm === 'C') {
     name = String(input.name ?? '')
     // A model may pass the inner arguments as a JSON string; a client would parse it.
-    const inner = typeof input.arguments === 'string' ? parseArgs(input.arguments) : (input.arguments as Record<string, unknown> | undefined)
-    if (!name || !inner || typeof inner !== 'object') return { text: 'call_tool needs `name` and an `arguments` object.', row: { name: name || via, via, args: input, isError: true } }
+    let inner = typeof input.arguments === 'string' ? parseArgs(input.arguments) : (input.arguments as Record<string, unknown> | undefined)
+    if (!strictWrapper && !name && inner && typeof inner === 'object' && typeof inner.name === 'string') {
+      const { name: nested, ...rest } = inner
+      name = nested as string
+      inner = rest
+    }
+    if (!name || !inner || typeof inner !== 'object') {
+      const problem = !name ? '`name` is missing' : typeof input.arguments === 'string' ? '`arguments` is a string that is not valid JSON' : '`arguments` is missing or not an object'
+      const text = strictWrapper ? 'call_tool needs `name` and an `arguments` object.' : `call_tool takes {"name": "<tool name>", "arguments": {<the tool's arguments>}}. In this call ${problem}.`
+      return { text, row: { name: name || via, via, args: input, isError: true } }
+    }
     toolArgs = inner
   } else if (!session.tools.some((t) => t.function.name === via)) {
     return { text: arm === 'A' ? `Tool ${via} not found.` : `Tool ${via} is not available. Open its group with open_group first.`, row: { name: via, via, args: input, isError: true } }
@@ -284,32 +315,50 @@ async function execute(session: Session, call: ToolCall): Promise<{ text: string
   try {
     const result = (await client.callTool({ name, arguments: toolArgs })) as { content?: { type: string; text?: string }[]; isError?: boolean }
     row.isError = result.isError === true
-    return { text: textOf(result) || (row.isError ? `${name} failed` : ''), row }
+    return { text: (textOf(result) || (row.isError ? `${name} failed` : '')) + (padResults > 0 && !row.isError ? padding() : ''), row }
   } catch (error) {
     row.isError = true
     return { text: `${name} failed: ${error instanceof Error ? error.message : String(error)}`, row }
   }
 }
 
-const scenarios = only ? SCENARIOS.filter((s) => only.includes(s.id)) : SCENARIOS
+let padCount = 0
+let padBody: string | undefined
+/** About `padResults` o200k tokens of filler, numbered so no two results are the same text. */
+function padding(): string {
+  if (padBody === undefined) {
+    const words: string[] = []
+    for (let i = 0; encoding.encode(words.join(' ')).length < padResults; i += 50) for (let j = 0; j < 50; j++) words.push(createHash('sha256').update(`pad-${i + j}`).digest('hex').slice(0, 6))
+    padBody = words.join(' ')
+  }
+  return `\n\nFiller standing in for a response body, with no information in it (${++padCount}): ${padBody}`
+}
+
+// The chained scenarios run only when named.
+const scenarios = only ? [...SCENARIOS, ...CHAINS].filter((s) => only.includes(s.id)) : SCENARIOS
 mkdirSync('results', { recursive: true })
 const out = join('results', `${new Date().toISOString().slice(0, 10)}-agent-${label}.jsonl`)
 const tokenCounts = new Map<number, number>()
 /** o200k tokens of the tools array, by its length: the array only grows within an arm. */
 const toolsTokens = (tools: FnTool[]) => {
-  if (!tokenCounts.has(tools.length)) tokenCounts.set(tools.length, encoding.encode(JSON.stringify(tools)).length)
-  return tokenCounts.get(tools.length)!
+  const key = tools.length * 1e6 + tools[0]!.function.description.length
+  if (!tokenCounts.has(key)) tokenCounts.set(key, encoding.encode(JSON.stringify(tools)).length)
+  return tokenCounts.get(key)!
 }
 const startTools = (): FnTool[] => (arm === 'A' ? [READ_SKILL, ...flatTools.map(asFn)] : arm === 'B' ? [LIST_GROUPS, OPEN_GROUP_B, READ_SKILL] : [LIST_GROUPS, OPEN_GROUP_C, READ_SKILL, CALL_TOOL])
 const commit = (() => { try { return execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim() } catch { return undefined } })()
 if (!existsSync(out)) {
-  writeFileSync(out, JSON.stringify({ kind: 'header', arm, url, commit, models, scenarios: scenarios.map((s) => s.id), samples, phases: phaseLimit, maxTurns, sharedTools: shared, groups: groups.length, skills: skills.length, startTools: startTools().length, startToolsTokens: toolsTokens(startTools()), sectionTokens: encoding.encode(section()).length, settings: 'enable_thinking false, temperature 0.2, seeded, streamed' }) + '\n')
+  writeFileSync(out, JSON.stringify({ kind: 'header', arm, url, commit, models, scenarios: scenarios.map((s) => s.id), samples, phases: phaseLimit, maxTurns, sharedTools: shared, listingInTool, padResults, wrapper: arm === 'C' ? (strictWrapper ? 'strict' : 'lenient') : undefined, groups: groups.length, skills: skills.length, startTools: startTools().length, startToolsTokens: toolsTokens(startTools()), sectionTokens: encoding.encode(section()).length, settings: 'enable_thinking false, temperature 0.2, seeded, streamed' }) + '\n')
 }
 console.error(`arm ${arm} against ${url}: ${scenarios.length} scenarios x ${samples} samples x ${models.length} models -> ${out}`)
 
 async function runSession(model: string, scenario: (typeof SCENARIOS)[number], sample: number): Promise<void> {
   const session: Session = { id: randomUUID(), tools: startTools(), opened: [] }
-  if (!shared) session.tools[0] = fn(session.tools[0]!.function.name, `${session.tools[0]!.function.description} [session ${session.id}]`, session.tools[0]!.function.parameters)
+  // With the listing in the first tool, the id leads its description so the listing is not shared between sessions either.
+  const listing = listingInTool ? `\n\nGroups (open_group loads a group's tools and instructions):\n${groups.map((g) => `- ${g.name}: ${firstLine(g.description)}`).join('\n')}` : ''
+  const first = session.tools[0]!.function
+  if (listingInTool) session.tools[0] = fn(first.name, `${shared ? '' : `[session ${session.id}] `}${first.description}${listing}`, first.parameters)
+  else if (!shared) session.tools[0] = fn(first.name, `${first.description} [session ${session.id}]`, first.parameters)
   const messages: Message[] = [{ role: 'system', content: `Session ${session.id}.\n\n${PREAMBLE}\n\n${section()}` }]
   const base = { session: session.id, arm, model, scenario: scenario.id, sample }
   const done: boolean[] = []
@@ -318,7 +367,7 @@ async function runSession(model: string, scenario: (typeof SCENARIOS)[number], s
   let added = 0
   let afterOpen = false
   try {
-    for (const [p, phase] of scenario.phases.slice(0, phaseLimit).entries()) {
+    for (const [p, phase] of scenario.phases.slice(0, phaseLimit || undefined).entries()) {
       messages.push({ role: 'user', content: phase.task })
       const phaseCalls: AgentCall[] = []
       for (let turn = 1; turn <= maxTurns; turn++) {

@@ -11,6 +11,11 @@ export type Phase = {
   done: (calls: AgentCall[]) => boolean
 }
 export type Scenario = { id: string; phases: Phase[] }
+/** All 30 phases as one session, in scenario order and in reverse scenario order. A session opens 17 groups. */
+export const chains = (scenarios: Scenario[]): Scenario[] => [
+  { id: 'chain-forward', phases: scenarios.flatMap((s) => s.phases) },
+  { id: 'chain-reverse', phases: [...scenarios].reverse().flatMap((s) => s.phases) }
+]
 
 type Need = RegExp | ((args: Record<string, unknown>) => boolean)
 /**
@@ -258,3 +263,5 @@ export const SCENARIOS: Scenario[] = [
     ]
   }
 ]
+
+export const CHAINS = chains(SCENARIOS)
