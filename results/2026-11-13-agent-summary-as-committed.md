@@ -1,6 +1,6 @@
 Agent runs: 13 files, 260 sessions, 5205 requests. A phase is done when its rubric in agent-tasks.ts holds over the calls the server accepted during it. A full task is a session's first 3 or all 6 phases done. Arguments are valid when they pass the tool's published input schema; rejected calls are those the server answered with an error.
 
-| Model | Arm | Sessions | Errors | Phases done | Full task, 3 phases | Full task, 6 phases | Median requests | Group opens per session | Server tool calls | Valid arguments | Rejected by server |
+| Model | Arm | Sessions | Errors | Phases done | Full task, 3 phases | Full task, every phase | Median requests | Group opens per session | Server tool calls | Valid arguments | Rejected by server |
 | :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: |
 | sonnet-5-5 | ref-groups-rec | 15 | 0 | 90/90 | 15/15 | 15/15 | 23 | 4.87 | 147 | - | 0% |
 | sonnet-5-5 | ref-flat-toolsearch | 5 | 0 | 30/30 | 5/5 | 5/5 | 18 | 0.00 | 53 | - | 6% |

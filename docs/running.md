@@ -133,7 +133,11 @@ npm run agent:run -- --arm B --scenarios chain-forward,chain-reverse --pad-resul
 npm run agent:run -- --arm B --listing-in-tool --url http://localhost:8799/opt2-rec/mcp --samples 3 --label full-b-listing    # after vendor:full and wrangler dev --port 8799
 npm run agent:run -- --arm B --samples 3 --parallel 3 --models Qwen/Qwen3.6-35B-A3B:deepinfra,google/gemma-4-26B-A4B-it:deepinfra --label arm-b-deepinfra
 npm run agent:ref -- --condition groups-rec --samples 3 --label ref-groups-rec    # or flat-toolsearch
-npm run agent:score -- results/2026-11-13-agent-arm-*.jsonl results/2026-11-13-agent-ref-*.jsonl results/2026-11-13-agent-pilot-*.jsonl    # --as-committed for the rubric code as first committed
+npm run agent:score -- $(ls results/2026-11-13-agent-arm-*.jsonl | grep -v lenient) results/2026-11-13-agent-ref-*.jsonl results/2026-11-13-agent-pilot-*.jsonl    # the first run's summary; --as-committed for the rubric code as first committed
+npm run agent:score -- results/2026-11-13-agent-full-*.jsonl results/2026-11-13-agent-arm-c-lenient*.jsonl    # the follow-up summary
+npm run agent:score -- results/2026-11-13-agent-chain30-*.jsonl    # the 30-turn summary
+npm run agent:run -- --arm A --shared --scenarios uploads --phases 1 --label chain30-a-shared-warm    # one session to cache the shared tool block, then the --shared chained runs
+npm run agent:score -- $(ls results/2026-11-1[345]-agent-chain30-*.jsonl | grep -v warm)    # the 30-turn summary with the 2026-11-14 sessions
 npm run agent:probe      # whether the endpoint honours the chat templates' own mid-session tool paths
 npm run agent:probe-order    # where the endpoint puts tools relative to the system prompt, from its cache counts
 ```
