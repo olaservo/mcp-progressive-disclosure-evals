@@ -95,7 +95,7 @@ function mimeOf(path: string): string {
 }
 
 /**
- * The recommended build: every group top level, products over the size cap split by area, descriptions in the
+ * The rewritten build: every group top level, products over the size cap split by area, descriptions in the
  * words a user would bring, and a workflow group per skill that says when to open it instead of the product group.
  */
 function recGroups(): ServedGroup[] {

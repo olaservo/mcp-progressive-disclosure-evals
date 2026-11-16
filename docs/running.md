@@ -56,7 +56,7 @@ Each Worker answers 429 to a client past 120 requests a minute (the Workers Rate
 - `--mode` is `groups`, `flat` (tool names and first lines) or `flat-schemas` (the whole `tools/list` result). Every mode also shows the server's `skills/list` index, and a `{"skill":"<name>"}` answer is accepted where the matching workflow group is, plus `workers-best-practices` for the fetch-handler question and `wrangler` for the deploy and schedule tasks.
 - `SELECT_DUMP_PROMPT=1` prints the catalog text the model sees.
 - `--replay results/<file>.jsonl` rebuilds a summary from committed raw answers without calling a model. Hosted model answers can change over time; the raw answers are committed for that reason.
-- `--list-all-skills` reads `skills/list` on a second client that declares only the Skills extension, so `opt2-rec` shows every skill (the "recommended, duplicated" arm).
+- `--list-all-skills` reads `skills/list` on a second client that declares only the Skills extension, so `opt2-rec` shows every skill (the "rewritten, duplicated" arm).
 - `--parallel` runs every model of a run at once, each through its tasks in order.
 - `--retry results/<file>.jsonl --url <the run's server>` asks again only the trials that ended in an error and rewrites the file.
 

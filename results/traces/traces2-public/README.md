@@ -1,4 +1,4 @@
-# Trace sessions, second round: the recommended groups server, a client without tool search, host tool search and all schemas up front
+# Trace sessions, second round: the rewritten groups server, a client without tool search, host tool search and all schemas up front
 
 300 Claude Code sessions in which an agent does the same 20 Cloudflare tasks five ways. Three models: Claude Sonnet, Haiku and Opus 5.5. One session per task, model and condition. Run on 2026-11-09. The first round's 180 sessions are in `../traces-public/`.
 
