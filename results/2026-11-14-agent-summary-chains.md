@@ -74,6 +74,17 @@ Cumulative input tokens not read from cache through each phase, mean over the se
 | GLM-5.3-Flash | C lenient | 2 | 37.9k | 52.4k | 100.2k | 220.6k | 225.3k |
 | GLM-5.3-Flash | C lenient pad 2000 | 2 | 116.3k | 382.7k | 805.7k | 986.5k | 1.11M |
 
+Where arm B's cumulative cost passes arm A's. A pair is an arm B session and the arm A session of the same model, scenario and sample. Its phase is the first from which arm B stays above arm A.
+
+| Model | Arm B | Arm A | Pairs | Phase, per pair | Arm B cost over arm A's at phase 30, paired sessions |
+| :-- | :-- | :-- | --: | :-- | --: |
+| DeepSeek-V4.1-Flash | B | A | 2 | not in 30, not in 30 | 0.71 |
+| DeepSeek-V4.1-Flash | B | A shared | 6 | 18, 19, not in 30, not in 30, not in 30, not in 30 | 0.91 |
+| DeepSeek-V4.1-Flash | B pad 2000 | A pad 2000 | 6 | 10, 10, 12, 12, 12, 13 | 1.62 |
+| DeepSeek-V4.1-Flash | B pad 2000 | A shared pad 2000 | 6 | 1, 1, 2, 3, 3, 3 | 1.98 |
+| GLM-5.3-Flash | B | A | 2 | not in 30, not in 30 | 0.54 |
+| GLM-5.3-Flash | B pad 2000 | A pad 2000 | 2 | not in 30, not in 30 | 0.43 |
+
 The request after a group open against a session's other requests. Re-read tokens are the part of the previous request's prompt not served from cache. The first request of a session is left out.
 
 | Model | Arm | Requests after an open | Median re-read tokens | Median re-read share | Requests with over half re-read | Median first token ms | Other requests | Median re-read tokens | Median re-read share | Requests with over half re-read | Median first token ms |

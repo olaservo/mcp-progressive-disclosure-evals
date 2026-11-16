@@ -418,7 +418,7 @@ The open-model run above had five weaknesses that could be checked or fixed with
 - The three samples of a scenario are near repeats. On the Baseten models they agree on which phases were done in 4 or 5 of 5 scenarios per cell, and in arms B and C cost varies 2 to 13% within a scenario against 17 to 32% between scenarios. A cell is five scenarios.
 - Of the 77 `call_tool` wrapper errors in arm C, 64 put the tool's name inside `arguments` (54 in one GLM session, 10 in one Gemma session), 9 were GLM passing `arguments` as a string of invalid JSON, which it corrected on the next call, and 4 were Qwen3.6 sending no name.
 
-### Where the endpoints put tools, measured
+### Where the endpoints put tools, from cache counts
 
 `scripts/agent-probe-order.ts` warms a request, then changes one thing and reads `cached_tokens` (`results/2026-11-13-agent-probe-order.txt`).
 
@@ -430,7 +430,7 @@ The open-model run above had five weaknesses that could be checked or fixed with
 | GLM-5.3 Flash, 35 tools | 14,682 | 14,592 | 0 | 0 | 0 |
 | GLM-5.3 Flash, 87 tools | 32,198 | 32,000 | 16,384 | 0 | 18,176 |
 
-- Both Baseten endpoints render tools ahead of the system prompt: a new system prompt still reads the tool block from cache, and a changed first tool reads nothing. DeepSeek's public chat template puts the system prompt first, so the endpoint does not follow it.
+- Both Baseten endpoints cache as if tools are rendered ahead of the system prompt: a new system prompt still reads the tool block from cache, and a changed first tool reads nothing. On GLM this shows only with the 87-tool block. Render order is inferred from these counts and was not observed. DeepSeek's public chat template puts the system prompt first, which the counts do not match.
 - DeepSeek reuses any shared prefix in 256-token steps. GLM reuses a prompt it has seen in full, and a shared part of one only in coarse steps: nothing under a 14.7k prompt, and about 16k of a 32k one.
 - GLM read its cache only when the request carried the `x-session-affinity` header, which the agent loop sends per session. Without it the exact repeat read 0. DeepSeek was the same either way.
 - Qwen3.6 on DeepInfra gave inconsistent counts across two runs of the probe.
@@ -461,8 +461,8 @@ Arms B and C against the recommended build of the full catalog, served locally: 
 | GLM-5.3 Flash | C | 86/90 | 0.0148 | 0.0297 | 101 | 736 |
 
 - Choosing among 271 groups did not cost completion: 86 to 89 of 90 in every cell, as on the subset.
-- Appending cost 2.4 times the fixed tool set on DeepSeek and 1.9 times on GLM, against 1.3 to 1.6 on the subset. GLM's subset cost for arm C in this table is the tolerant-wrapper run. Against its first run (0.0169 USD) the subset ratio is 1.4. The group listing sits in the system prompt, which these endpoints render after the tool block, so every open re-read it.
-- Moving the listing into the description of `list_groups`, the first tool, put it ahead of everything that changes. The re-read fell to 2.2k and 6.3k tokens and the cost to 1.3 and 1.4 times the fixed tool set. This is a client choice that depends on the endpoint rendering tools first.
+- Appending cost 2.4 times the fixed tool set on DeepSeek and 1.9 times on GLM, against 1.3 to 1.6 on the subset. GLM's subset cost for arm C in this table is the tolerant-wrapper run. Against its first run (0.0169 USD) the subset ratio is 1.4. The group listing sits in the system prompt, which these endpoints' caches place after the tool block, so every open re-read it.
+- Moving the listing into the description of `list_groups`, the first tool, put it ahead of everything that changes. The re-read fell to 2.2k and 6.3k tokens and the cost to 1.3 and 1.4 times the fixed tool set. This is a client choice that depends on the endpoint caching tools first.
 
 ### Thirty-turn sessions and larger results
 
@@ -502,6 +502,7 @@ The 2026-11-13 chained cells were two sessions each, and every arm A session sta
 
 - Follow-up runs: the chained sessions are two per cell, one per order, on GLM and for cold arm A with dry-run results. The other DeepSeek cells are six after 2026-11-14. The padding is filler of a fixed size, a stand-in for real response bodies and not a measurement of them. The full catalog was served by a local dev server. Arm C in these runs uses the tolerant wrapper.
 - Follow-up runs: the listing-in-the-first-tool variant was tried on the full catalog and arm B only.
+- Follow-up runs: render order on the Baseten endpoints is inferred from cache counts, and on GLM from one tool-block size.
 - Open-model agent run: one catalog, the 237-tool subset, four open models on two providers through one router, on one evening. Fifteen sessions per cell, which are five scenarios run three times. Phases need one or two tools, and Sonnet completed all of them, so the set separates the open models only.
 - Open-model agent run: the tasks and rubrics were written by a model with the group listing and schemas in view, which the held-out set avoided. The string-body fix to the rubric code was made after the results, and both scorings are committed.
 - Open-model agent run: arm A ran on the two Baseten models only, and later the same night than arms B and C, once the account had credit again. Its shared-tool-block run on GLM has 13 complete sessions.
@@ -550,6 +551,6 @@ The 2026-11-13 chained cells were two sessions each, and every arm A session sta
 - `traces/traces2-public/`: the second round's 300 redacted sessions, their group-open logs, index and scored summary.
 - `tasks-v3/`: the held-out tasks and every writer reply. `2026-11-10-select3-full-*.jsonl`: their selection runs on the full catalog. Labels with `-rec` are `opt2-rec`.
 - `2026-11-13-agent-*.jsonl`: the open-model agent run, one row per model request. `arm-b`, `arm-c` and `arm-a-rerun` are the cold runs for the Baseten models (`arm-a` holds the first attempt, made before the account ran out of credit), the `-shared` files the runs with the tool block shared between sessions, and the `-deepinfra` files Qwen3.6 and Gemma, with the two repeated Gemma sessions in `-deepinfra-rerun`. The scorer drops a session that ended in an error when the same sample was run again. `ref-groups-rec` and `pilot-flat-toolsearch` are Sonnet through Claude Code. The `smoke-*` files are the one-scenario checks made before the task script was committed. `2026-11-13-agent-summary.md` is `npm run agent:score` over the arm, reference and pilot files, `-as-committed` the same with the rubric code as committed before the runs, and `2026-11-13-agent-probe.txt` the endpoint probe. The follow-up runs are `arm-c-lenient*` (the tolerant wrapper), `full-*` (the full catalog, with `full-b-listing` the listing in the first tool) and `chain30-*` (30-turn sessions, `-pad` with padded results), with `2026-11-13-agent-summary-followup.md`, `2026-11-13-agent-summary-chains.md` and `2026-11-13-agent-probe-order.txt`. The follow-up files record `4f0a982` in their headers. They ran from the working tree that became `6e59282`, which is where their flags were committed.
-- `2026-11-14-agent-chain30-*.jsonl` and `2026-11-15-agent-chain30-*.jsonl`: samples 2 and 3 of the DeepSeek chained cells, and arm A with a shared tool block in `a-shared` and `a-shared-pad`, with its warm-up sessions in `a-shared-warm`. They hold the sessions that ended in a provider error and their re-runs. `2026-11-14-agent-summary-chains.md` is `npm run agent:score` over these and the 2026-11-13 chained files.
+- `2026-11-14-agent-chain30-*.jsonl` and `2026-11-15-agent-chain30-*.jsonl`: samples 2 and 3 of the DeepSeek chained cells, and arm A with a shared tool block in `a-shared` and `a-shared-pad`, with its warm-up sessions in `a-shared-warm`. They hold the sessions that ended in a provider error and their re-runs. `2026-11-14-agent-summary-chains.md` is `npm run agent:score` over these and the 2026-11-13 chained files. Both chain summaries list, for each pair of sessions, the phase at which arm B passes arm A.
 
 Re-runs that reproduced an earlier file were not kept, and the 2026-11-02 file from the build against the earlier drafts was removed. This repository starts from a single commit; the private predecessor repository holds the earlier history.

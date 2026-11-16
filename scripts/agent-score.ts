@@ -124,6 +124,25 @@ through('Cumulative cost in USD at list price through each phase', (s) => s.cost
 through('Cumulative input tokens through each phase', (s) => s.input, k)
 through('Cumulative input tokens not read from cache through each phase', (s) => s.uncached, k)
 
+// Chained sessions only: where appending passes all schemas up front. A pair is an arm B session and the arm A session of
+// the same model, scenario and sample. Its phase is the first from which arm B's cumulative cost stays above arm A's.
+if (PHASES > 6) {
+  console.log(`\nWhere arm B's cumulative cost passes arm A's. A pair is an arm B session and the arm A session of the same model, scenario and sample. Its phase is the first from which arm B stays above arm A.\n`)
+  console.log(`| Model | Arm B | Arm A | Pairs | Phase, per pair | Arm B cost over arm A's at phase ${PHASES}, paired sessions |`)
+  console.log('| :-- | :-- | :-- | --: | :-- | --: |')
+  for (const cell of cells) {
+    const [arm, model] = cell.split('|') as [string, string]
+    if (!/^B( |$)/.test(arm)) continue
+    for (const other of [`A${arm.slice(1)}`, `A shared${arm.slice(1)}`]) {
+      const pairs = complete(cell).flatMap((b) => complete(`${other}|${model}`).filter((a) => a.scenario === b.scenario && a.sample === b.sample).slice(0, 1).map((a) => ({ a, b })))
+      if (pairs.length === 0) continue
+      const from = pairs.map(({ a, b }) => b.cost.map((c, p) => c > a.cost[p]!).lastIndexOf(false) + 2).sort((x, y) => x - y)
+      const ratio = mean(pairs.map(({ b }) => b.cost[PHASES - 1]!)) / mean(pairs.map(({ a }) => a.cost[PHASES - 1]!))
+      console.log(`| ${short(model)} | ${arm} | ${other} | ${pairs.length} | ${from.map((p) => (p > PHASES ? `not in ${PHASES}` : String(p))).join(', ')} | ${ratio.toFixed(2)} |`)
+    }
+  }
+}
+
 // "Re-read" is the part of the previous request's prompt that this request did not get from cache: what a tool change costs,
 // apart from the new content any request adds.
 console.log("\nThe request after a group open against a session's other requests. Re-read tokens are the part of the previous request's prompt not served from cache. The first request of a session is left out.\n")
