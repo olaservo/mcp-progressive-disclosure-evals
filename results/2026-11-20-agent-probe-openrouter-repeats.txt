@@ -1,0 +1,186 @@
+scripts/agent-probe-deferred.ts through OpenRouter pinned to Baseten, loaded tool named group_search, five runs per model. GLM with --keep-reasoning.
+## run 1
+deepseek/deepseek-v4.1-flash
+  deferred beside function, 24 tools, first turn:  prompt 7017, cached 0, calls group_search
+  the same request again:                        prompt 7017, cached 6912, calls group_search
+  after open, tool_reference by tool_name (kv):  prompt 7066, cached 6912, calls group_search
+  the same request again:                        prompt 7066, cached 6912, calls group_search
+  second open, tool_reference by tool_name (d1): prompt 7548, cached 256, calls none
+  tool_reference by name, as agent-probe.ts:     prompt 7066, cached 6912, calls group_search
+  defer_loading inside function, first turn:     prompt 7019, cached 0, calls group_search
+  resend: flag inside function, first turn:      prompt 7019, cached 0, calls group_search
+  the same request again:                        prompt 7019, cached 6912, calls group_search
+  resend: kv tools sent without the flag:        prompt 11404, cached 256, calls kv_keys_list
+  the same request again:                        prompt 11404, cached 11264, calls kv_keys_list
+  resend: d1 tools sent without the flag:        prompt 14700, cached 4352, calls d1_list
+  control, open_group only, first turn:          prompt 7009, cached 0, calls group_search
+  the same request again:                        prompt 7009, cached 0, calls group_search
+  control, kv tools appended to tools:           prompt 11394, cached 256, calls kv_keys_list
+  the same request again:                        prompt 11394, cached 11264, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 14690, cached 4352, calls d1_list
+z-ai/glm-5.3-flash
+  deferred beside function, 24 tools, first turn:  prompt 7509, cached 0, calls group_search
+  the same request again:                        prompt 7509, cached 7424, calls group_search
+  after open, tool_reference by tool_name (kv):  prompt 7526, cached 7424, calls group_search
+  the same request again:                        prompt 7526, cached 0, calls group_search
+  second open, tool_reference by tool_name (d1): prompt 7919, cached 0, calls group_search
+  tool_reference by name, as agent-probe.ts:     prompt 7526, cached 7424, calls group_search
+  defer_loading inside function, first turn:     prompt 7509, cached 0, calls group_search
+  resend: flag inside function, first turn:      prompt 7509, cached 0, calls group_search
+  the same request again:                        prompt 7509, cached 7424, calls group_search
+  resend: kv tools sent without the flag:        prompt 11752, cached 0, calls kv_keys_list
+  the same request again:                        prompt 11752, cached 0, calls kv_keys_list
+  resend: d1 tools sent without the flag:        prompt 14917, cached 0, calls d1_list
+  control, open_group only, first turn:          prompt 7509, cached 0, calls group_search
+  the same request again:                        prompt 7509, cached 0, calls group_search
+  control, kv tools appended to tools:           prompt 11752, cached 0, calls kv_keys_list
+  the same request again:                        prompt 11752, cached 0, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 14917, cached 0, calls d1_list
+## run 2
+deepseek/deepseek-v4.1-flash
+  deferred beside function, 24 tools, first turn:  prompt 7015, cached 0, calls group_search
+  the same request again:                        prompt 7015, cached 6912, calls group_search
+  after open, tool_reference by tool_name (kv):  prompt 7064, cached 6912, calls group_search
+  the same request again:                        prompt 7064, cached 6912, calls group_search
+  second open, tool_reference by tool_name (d1): prompt 7546, cached 256, calls none
+  tool_reference by name, as agent-probe.ts:     prompt 7064, cached 6912, calls group_search
+  defer_loading inside function, first turn:     prompt 7011, cached 0, calls group_search
+  resend: flag inside function, first turn:      prompt 7009, cached 0, calls group_search
+  the same request again:                        prompt 7009, cached 6912, calls group_search
+  resend: kv tools sent without the flag:        prompt 11394, cached 256, calls kv_keys_list
+  the same request again:                        prompt 11394, cached 11264, calls kv_keys_list
+  resend: d1 tools sent without the flag:        prompt 14690, cached 4352, calls d1_list
+  control, open_group only, first turn:          prompt 7021, cached 0, calls group_search
+  the same request again:                        prompt 7021, cached 6912, calls group_search
+  control, kv tools appended to tools:           prompt 11406, cached 0, calls kv_keys_list
+  the same request again:                        prompt 11406, cached 11264, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 14702, cached 256, calls d1_list
+z-ai/glm-5.3-flash
+  deferred beside function, 24 tools, first turn:  prompt 7513, cached 0, calls group_search
+  the same request again:                        prompt 7513, cached 0, calls group_search
+  after open, tool_reference by tool_name (kv):  prompt 7530, cached 0, calls group_search
+  the same request again:                        prompt 7530, cached 0, calls group_search
+  second open, tool_reference by tool_name (d1): prompt 7923, cached 0, calls none
+  tool_reference by name, as agent-probe.ts:     prompt 7530, cached 0, calls group_search
+  defer_loading inside function, first turn:     prompt 7509, cached 0, calls group_search
+  resend: flag inside function, first turn:      prompt 7511, cached 0, calls group_search
+  the same request again:                        prompt 7511, cached 0, calls group_search
+  resend: kv tools sent without the flag:        prompt 11754, cached 0, calls kv_keys_list
+  the same request again:                        prompt 11754, cached 0, calls kv_keys_list
+  resend: d1 tools sent without the flag:        prompt 14919, cached 0, calls d1_list
+  control, open_group only, first turn:          prompt 7513, cached 0, calls group_search
+  the same request again:                        prompt 7513, cached 7424, calls group_search
+  control, kv tools appended to tools:           prompt 11756, cached 0, calls kv_keys_list
+  the same request again:                        prompt 11756, cached 0, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 14921, cached 0, calls d1_list
+## run 3
+deepseek/deepseek-v4.1-flash
+  deferred beside function, 24 tools, first turn:  prompt 7011, cached 0, calls group_search
+  the same request again:                        prompt 7011, cached 0, calls group_search
+  after open, tool_reference by tool_name (kv):  prompt 7060, cached 6912, calls group_search
+  the same request again:                        prompt 7060, cached 6912, calls group_search
+  second open, tool_reference by tool_name (d1): prompt 7542, cached 256, calls none
+  tool_reference by name, as agent-probe.ts:     prompt 7060, cached 6912, calls group_search
+  defer_loading inside function, first turn:     prompt 7015, cached 0, calls group_search
+  resend: flag inside function, first turn:      prompt 7011, cached 0, calls group_search
+  the same request again:                        prompt 7011, cached 0, calls group_search
+  resend: kv tools sent without the flag:        prompt 11396, cached 256, calls kv_keys_list
+  the same request again:                        prompt 11396, cached 11264, calls kv_keys_list
+  resend: d1 tools sent without the flag:        prompt 14692, cached 256, calls d1_list
+  control, open_group only, first turn:          prompt 7011, cached 0, calls group_search
+  the same request again:                        prompt 7011, cached 6912, calls group_search
+  control, kv tools appended to tools:           prompt 11396, cached 256, calls kv_keys_list
+  the same request again:                        prompt 11396, cached 11264, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 14692, cached 4352, calls d1_list
+z-ai/glm-5.3-flash
+  deferred beside function, 24 tools, first turn:  prompt 7513, cached 0, calls group_search
+  the same request again:                        prompt 7513, cached 0, calls group_search
+  after open, tool_reference by tool_name (kv):  prompt 7530, cached 0, calls group_search
+  the same request again:                        prompt 7530, cached 0, calls group_search
+  second open, tool_reference by tool_name (d1): prompt 7923, cached 0, calls none
+  tool_reference by name, as agent-probe.ts:     prompt 7530, cached 7424, calls group_search
+  defer_loading inside function, first turn:     prompt 7509, cached 0, calls group_search
+  resend: flag inside function, first turn:      prompt 7507, cached 0, calls group_search
+  the same request again:                        prompt 7507, cached 0, calls group_search
+  resend: kv tools sent without the flag:        prompt 11750, cached 0, calls kv_keys_list
+  the same request again:                        prompt 11750, cached 0, calls kv_keys_list
+  resend: d1 tools sent without the flag:        prompt 14915, cached 0, calls d1_list
+  control, open_group only, first turn:          prompt 7511, cached 0, calls group_search
+  the same request again:                        prompt 7511, cached 0, calls group_search
+  control, kv tools appended to tools:           prompt 11754, cached 0, calls kv_keys_list
+  the same request again:                        prompt 11754, cached 0, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 14919, cached 0, calls d1_list
+## run 4
+deepseek/deepseek-v4.1-flash
+  deferred beside function, 24 tools, first turn:  prompt 7011, cached 0, calls group_search
+  the same request again:                        prompt 7011, cached 0, calls group_search
+  after open, tool_reference by tool_name (kv):  prompt 7060, cached 6912, calls group_search
+  the same request again:                        prompt 7060, cached 6912, calls group_search
+  second open, tool_reference by tool_name (d1): prompt 7542, cached 256, calls none
+  tool_reference by name, as agent-probe.ts:     prompt 7060, cached 6912, calls group_search
+  defer_loading inside function, first turn:     prompt 7017, cached 0, calls group_search
+  resend: flag inside function, first turn:      prompt 7023, cached 0, calls group_search
+  the same request again:                        prompt 7023, cached 6912, calls group_search
+  resend: kv tools sent without the flag:        prompt 11408, cached 256, calls kv_keys_list
+  the same request again:                        prompt 11408, cached 11264, calls kv_keys_list
+  resend: d1 tools sent without the flag:        prompt 14704, cached 4608, calls d1_list
+  control, open_group only, first turn:          prompt 7019, cached 0, calls group_search
+  the same request again:                        prompt 7019, cached 0, calls group_search
+  control, kv tools appended to tools:           prompt 11404, cached 256, calls kv_keys_list
+  the same request again:                        prompt 11404, cached 11264, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 14700, cached 4352, calls d1_list
+z-ai/glm-5.3-flash
+  deferred beside function, 24 tools, first turn:  prompt 7509, cached 0, calls group_search
+  the same request again:                        prompt 7509, cached 0, calls group_search
+  after open, tool_reference by tool_name (kv):  prompt 7526, cached 0, calls group_search
+  the same request again:                        prompt 7526, cached 0, calls group_search
+  second open, tool_reference by tool_name (d1): prompt 7919, cached 0, calls none
+  tool_reference by name, as agent-probe.ts:     prompt 7526, cached 0, calls group_search
+  defer_loading inside function, first turn:     prompt 7507, cached 0, calls group_search
+  resend: flag inside function, first turn:      prompt 7517, cached 0, calls group_search
+  the same request again:                        prompt 7517, cached 0, calls group_search
+  resend: kv tools sent without the flag:        prompt 11760, cached 0, calls kv_keys_list
+  the same request again:                        prompt 11760, cached 11520, calls kv_keys_list
+  resend: d1 tools sent without the flag:        prompt 14925, cached 0, calls d1_list
+  control, open_group only, first turn:          prompt 7511, cached 0, calls group_search
+  the same request again:                        prompt 7511, cached 0, calls group_search
+  control, kv tools appended to tools:           prompt 11754, cached 0, calls kv_keys_list
+  the same request again:                        prompt 11754, cached 11520, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 14919, cached 0, calls d1_list
+## run 5
+deepseek/deepseek-v4.1-flash
+  deferred beside function, 24 tools, first turn:  prompt 7011, cached 0, calls group_search
+  the same request again:                        prompt 7011, cached 6912, calls group_search
+  after open, tool_reference by tool_name (kv):  prompt 7060, cached 6912, calls group_search
+  the same request again:                        prompt 7060, cached 6912, calls group_search
+  second open, tool_reference by tool_name (d1): prompt 7542, cached 0, calls none
+  tool_reference by name, as agent-probe.ts:     prompt 7060, cached 6912, calls group_search
+  defer_loading inside function, first turn:     prompt 7005, cached 0, calls group_search
+  resend: flag inside function, first turn:      prompt 7017, cached 0, calls group_search
+  the same request again:                        prompt 7017, cached 6912, calls group_search
+  resend: kv tools sent without the flag:        prompt 11402, cached 256, calls kv_keys_list
+  the same request again:                        prompt 11402, cached 11264, calls kv_keys_list
+  resend: d1 tools sent without the flag:        prompt 14698, cached 4352, calls d1_list
+  control, open_group only, first turn:          prompt 7009, cached 0, calls group_search
+  the same request again:                        prompt 7009, cached 6912, calls group_search
+  control, kv tools appended to tools:           prompt 11394, cached 256, calls kv_keys_list
+  the same request again:                        prompt 11394, cached 11264, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 14690, cached 4352, calls d1_list
+z-ai/glm-5.3-flash
+  deferred beside function, 24 tools, first turn:  prompt 7507, cached 0, calls group_search
+  the same request again:                        prompt 7507, cached 0, calls group_search
+  after open, tool_reference by tool_name (kv):  prompt 7524, cached 7424, calls group_search
+  the same request again:                        prompt 7524, cached 0, calls group_search
+  second open, tool_reference by tool_name (d1): prompt 7917, cached 0, calls none
+  tool_reference by name, as agent-probe.ts:     prompt 7524, cached 0, calls group_search
+  defer_loading inside function, first turn:     prompt 7511, cached 0, calls group_search
+  resend: flag inside function, first turn:      prompt 7509, cached 0, calls group_search
+  the same request again:                        prompt 7509, cached 0, calls group_search
+  resend: kv tools sent without the flag:        prompt 11752, cached 0, calls kv_keys_list
+  the same request again:                        prompt 11752, cached 11520, calls kv_keys_list
+  resend: d1 tools sent without the flag:        prompt 14917, cached 0, calls d1_list
+  control, open_group only, first turn:          prompt 7509, cached 0, calls group_search
+  the same request again:                        prompt 7509, cached 0, calls group_search
+  control, kv tools appended to tools:           prompt 11752, cached 0, calls kv_keys_list
+  the same request again:                        prompt 11752, cached 0, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 14917, cached 0, calls d1_list

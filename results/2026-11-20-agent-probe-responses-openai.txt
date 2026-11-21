@@ -1,0 +1,86 @@
+scripts/agent-probe-responses.ts on OpenAI's own endpoint (https://api.openai.com/v1/responses), gpt-6.1-terra, five runs.
+## run 1
+gpt-6.1-terra
+  client tool_search only, first turn:           input 6801, cached 0, output tool_search_call
+  the same request again:                        input 6801, cached 6798, output tool_search_call
+  after tool_search_output with kv tools:        input 9574, cached 6798, output function_call kv_keys_list
+  the same request again:                        input 9574, cached 9571, output function_call kv_keys_list
+  after a second tool_search_output, d1 tools:   input 11551, cached 9571, output function_call d1_list
+  open_group only, first turn:                   input 6799, cached 0, output function_call open_group
+  the same request again:                        input 6799, cached 6796, output function_call open_group
+  after additional_tools with kv tools:          input 9562, cached 6796, output function_call kv_keys_list
+  the same request again:                        input 9562, cached 6831, output function_call kv_keys_list
+  after a second additional_tools, d1 tools:     input 11530, cached 6831, output function_call d1_list
+  control, open_group only, first turn:          input 6799, cached 0, output function_call open_group
+  the same request again:                        input 6799, cached 6796, output function_call open_group
+  control, kv tools appended to tools:           input 9464, cached 0, output function_call kv_keys_list
+  the same request again:                        input 9464, cached 9461, output function_call kv_keys_list
+  control, d1 tools appended to tools:           input 11334, cached 0, output function_call d1_list
+## run 2
+gpt-6.1-terra
+  client tool_search only, first turn:           input 6803, cached 0, output tool_search_call
+  the same request again:                        input 6803, cached 6800, output tool_search_call
+  after tool_search_output with kv tools:        input 9576, cached 6800, output function_call kv_keys_list
+  the same request again:                        input 9576, cached 9573, output function_call kv_keys_list
+  after a second tool_search_output, d1 tools:   input 11553, cached 9573, output function_call d1_list
+  open_group only, first turn:                   input 6793, cached 0, output function_call open_group
+  the same request again:                        input 6793, cached 6790, output function_call open_group
+  after additional_tools with kv tools:          input 9556, cached 6790, output function_call kv_keys_list
+  the same request again:                        input 9556, cached 6825, output function_call kv_keys_list
+  after a second additional_tools, d1 tools:     input 11524, cached 6825, output function_call d1_list
+  control, open_group only, first turn:          input 6801, cached 0, output function_call open_group
+  the same request again:                        input 6801, cached 6798, output function_call open_group
+  control, kv tools appended to tools:           input 9466, cached 0, output function_call kv_keys_list
+  the same request again:                        input 9466, cached 9463, output function_call kv_keys_list
+  control, d1 tools appended to tools:           input 11336, cached 0, output function_call d1_list
+## run 3
+gpt-6.1-terra
+  client tool_search only, first turn:           input 6805, cached 0, output tool_search_call
+  the same request again:                        input 6805, cached 6802, output tool_search_call
+  after tool_search_output with kv tools:        input 9578, cached 6802, output function_call kv_keys_list
+  the same request again:                        input 9578, cached 9575, output function_call kv_keys_list
+  after a second tool_search_output, d1 tools:   input 11555, cached 9575, output function_call d1_list
+  open_group only, first turn:                   input 6797, cached 0, output function_call open_group
+  the same request again:                        input 6797, cached 6794, output function_call open_group
+  after additional_tools with kv tools:          input 9560, cached 6794, output function_call kv_keys_list
+  the same request again:                        input 9560, cached 6829, output function_call kv_keys_list
+  after a second additional_tools, d1 tools:     input 11528, cached 6829, output function_call d1_list
+  control, open_group only, first turn:          input 6799, cached 0, output function_call open_group
+  the same request again:                        input 6799, cached 6796, output function_call open_group
+  control, kv tools appended to tools:           input 9464, cached 0, output function_call kv_keys_list
+  the same request again:                        input 9464, cached 9461, output function_call kv_keys_list
+  control, d1 tools appended to tools:           input 11334, cached 0, output function_call d1_list
+## run 4
+gpt-6.1-terra
+  client tool_search only, first turn:           input 6807, cached 0, output tool_search_call
+  the same request again:                        input 6807, cached 6804, output tool_search_call
+  after tool_search_output with kv tools:        input 9580, cached 6804, output function_call kv_keys_list
+  the same request again:                        input 9580, cached 9577, output function_call kv_keys_list
+  after a second tool_search_output, d1 tools:   input 11557, cached 9577, output function_call d1_list
+  open_group only, first turn:                   input 6795, cached 0, output function_call open_group
+  the same request again:                        input 6795, cached 6792, output function_call open_group
+  after additional_tools with kv tools:          input 9558, cached 6792, output function_call kv_keys_list
+  the same request again:                        input 9558, cached 6827, output function_call kv_keys_list
+  after a second additional_tools, d1 tools:     input 11526, cached 6827, output function_call d1_list
+  control, open_group only, first turn:          input 6807, cached 0, output function_call open_group
+  the same request again:                        input 6807, cached 6804, output function_call open_group
+  control, kv tools appended to tools:           input 9472, cached 0, output function_call kv_keys_list
+  the same request again:                        input 9472, cached 9469, output function_call kv_keys_list
+  control, d1 tools appended to tools:           input 11342, cached 0, output function_call d1_list
+## run 5
+gpt-6.1-terra
+  client tool_search only, first turn:           input 6807, cached 0, output tool_search_call
+  the same request again:                        input 6807, cached 6804, output tool_search_call
+  after tool_search_output with kv tools:        input 9580, cached 6804, output function_call kv_keys_list
+  the same request again:                        input 9580, cached 9577, output function_call kv_keys_list
+  after a second tool_search_output, d1 tools:   input 11557, cached 9577, output function_call d1_list
+  open_group only, first turn:                   input 6795, cached 0, output function_call open_group
+  the same request again:                        input 6795, cached 6792, output function_call open_group
+  after additional_tools with kv tools:          input 9558, cached 6792, output function_call kv_keys_list
+  the same request again:                        input 9558, cached 6827, output function_call kv_keys_list
+  after a second additional_tools, d1 tools:     input 11526, cached 6827, output function_call d1_list
+  control, open_group only, first turn:          input 6797, cached 0, output function_call open_group
+  the same request again:                        input 6797, cached 6794, output function_call open_group
+  control, kv tools appended to tools:           input 9462, cached 0, output function_call kv_keys_list
+  the same request again:                        input 9462, cached 9459, output function_call kv_keys_list
+  control, d1 tools appended to tools:           input 11332, cached 0, output function_call d1_list

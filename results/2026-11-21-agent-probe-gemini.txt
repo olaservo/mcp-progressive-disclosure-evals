@@ -1,0 +1,75 @@
+run 1 2026-11-21T16:22:24Z
+gemini-4-hydrogen
+  client  turn 1 request 1                            input 9183, cached 0, tool_use 0, steps function_call open_group
+  client    the same request again                    input 9183, cached 7129, tool_use 0, steps function_call open_group
+  client    after the load                            input 13503, cached 9184, tool_use 0, steps function_call kv_keys_list
+  client    the same request again                    input 13503, cached 11454, tool_use 0, steps function_call kv_keys_list
+  client  turn 1 request 2                            input 13616, cached 11454, tool_use 0, steps model_output "I called `kv_keys_list` for the namespace `demo-kv` (under account `demo`) with "
+  client  turn 2 request 1                            input 13740, cached 11567, tool_use 0, steps function_call open_group
+  client    after the load                            input 16898, cached 13741, tool_use 0, steps function_call d1_list
+  client    the same request again                    input 16898, cached 14849, tool_use 0, steps function_call d1_list
+  client  turn 2 request 2                            input 16972, cached 14849, tool_use 0, steps model_output "I called `d1_list` for account `demo`. Because the connected MCP server tools ar"
+  server  turn 1 request 1                            input 9942, cached 7888, tool_use 10341, steps tool_search_call {"function_names":["kv_keys_list"]}; tool_search_result; function_call kv_keys_list
+  server    the same request again                    input 9942, cached 16180, tool_use 10349, steps tool_search_call {"function_names":["kv_keys_list"]}; tool_search_result; function_call kv_keys_list
+  server  turn 1 request 2                            input 10461, cached 8300, tool_use 0, steps model_output "The request to list keys beginning with `session:` in the `demo-kv` namespace (a"
+  server  turn 2 request 1                            input 10596, cached 16959, tool_use 10852, steps tool_search_call {"function_names":["d1_list"]}; tool_search_result; function_call d1_list
+  server  turn 2 request 2                            input 10930, cached 8803, tool_use 0, steps model_output "The request to list the D1 databases in account `demo` was executed using `d1_li"
+  control turn 1 request 1                            input 9193, cached 0, tool_use 0, steps function_call open_group
+  control   the same request again                    input 9193, cached 7139, tool_use 0, steps function_call open_group
+  control   after the load                            input 13386, cached 0, tool_use 0, steps function_call kv_keys_list
+  control   the same request again                    input 13386, cached 11337, tool_use 0, steps function_call kv_keys_list
+  control turn 1 request 2                            input 13499, cached 11337, tool_use 0, steps model_output "I opened the `kv-api` group and called `kv_keys_list` for namespace `demo-kv` un"
+  control turn 2 request 1                            input 13629, cached 11450, tool_use 0, steps function_call open_group
+  control   after the load                            input 16693, cached 0, tool_use 0, steps function_call d1_list
+  control   the same request again                    input 16693, cached 14644, tool_use 0, steps function_call d1_list
+  control turn 2 request 2                            input 16767, cached 14644, tool_use 0, steps model_output "I opened the `d1-api` group and called `d1_list` for account `demo`.\n\nBecause th"
+run 2 2026-11-21T16:25:20Z
+gemini-4-hydrogen
+  client  turn 1 request 1                            input 9187, cached 0, tool_use 0, steps function_call open_group
+  client    the same request again                    input 9187, cached 7133, tool_use 0, steps function_call open_group
+  client    after the load                            input 13504, cached 9188, tool_use 0, steps function_call kv_keys_list
+  client    the same request again                    input 13504, cached 11455, tool_use 0, steps function_call kv_keys_list
+  client  turn 1 request 2                            input 13617, cached 11455, tool_use 0, steps model_output "I called `kv_keys_list` for account `demo`, namespace `demo-kv`, with `prefix: \""
+  client  turn 2 request 1                            input 13726, cached 11568, tool_use 0, steps function_call open_group
+  client    after the load                            input 16884, cached 13727, tool_use 0, steps function_call d1_list
+  client    the same request again                    input 16884, cached 14835, tool_use 0, steps function_call d1_list
+  client  turn 2 request 2                            input 16958, cached 14835, tool_use 0, steps model_output "I called `d1_list` for account `demo`.\n\nBecause the connected MCP server is runn"
+  server  turn 1 request 1                            input 9938, cached 7884, tool_use 10371, steps tool_search_call {"function_names":["kv_keys_list"]}; tool_search_result; function_call kv_keys_list
+  server    the same request again                    input 9938, cached 15768, tool_use 10340, steps tool_search_call {"function_names":["kv_keys_list"]}; tool_search_result; function_call kv_keys_list
+  server  turn 1 request 2                            input 10491, cached 8325, tool_use 0, steps model_output "I invoked `kv_keys_list` for account `demo` and namespace `demo-kv` with the pre"
+  server  turn 2 request 1                            input 10632, cached 17025, tool_use 10875, steps tool_search_call {"function_names":["d1_list"]}; tool_search_result; function_call d1_list
+  server  turn 2 request 2                            input 10952, cached 8826, tool_use 0, steps model_output "I invoked `d1_list` for account `demo`.\n\nBecause the connected MCP server runs i"
+  control turn 1 request 1                            input 9191, cached 0, tool_use 0, steps function_call open_group
+  control   the same request again                    input 9191, cached 7137, tool_use 0, steps function_call open_group
+  control   after the load                            input 13390, cached 0, tool_use 0, steps function_call kv_keys_list
+  control   the same request again                    input 13390, cached 11341, tool_use 0, steps function_call kv_keys_list
+  control turn 1 request 2                            input 13503, cached 11341, tool_use 0, steps model_output "I called `kv_keys_list` for account `demo` and namespace `demo-kv` with `prefix:"
+  control turn 2 request 1                            input 13632, cached 11454, tool_use 0, steps function_call open_group
+  control   after the load                            input 16694, cached 0, tool_use 0, steps function_call d1_list
+  control   the same request again                    input 16694, cached 14645, tool_use 0, steps function_call d1_list
+  control turn 2 request 2                            input 16765, cached 14645, tool_use 0, steps model_output "I opened the `d1-api` group and called `d1_list` for account `demo`.\n\nBecause th"
+run 3 2026-11-21T16:28:15Z
+gemini-4-hydrogen
+  client  turn 1 request 1                            input 9183, cached 0, tool_use 0, steps function_call open_group
+  client    the same request again                    input 9183, cached 7129, tool_use 0, steps function_call open_group
+  client    after the load                            input 13503, cached 9184, tool_use 0, steps function_call kv_keys_list
+  client    the same request again                    input 13503, cached 11454, tool_use 0, steps function_call kv_keys_list
+  client  turn 1 request 2                            input 13617, cached 11454, tool_use 0, steps model_output "I called `kv_keys_list` for account `demo` and namespace `demo-kv` with `prefix:"
+  client  turn 2 request 1                            input 13752, cached 11568, tool_use 0, steps function_call open_group
+  client    after the load                            input 16910, cached 13753, tool_use 0, steps function_call d1_list
+  client    the same request again                    input 16910, cached 14861, tool_use 0, steps function_call d1_list
+  client  turn 2 request 2                            input 16981, cached 14861, tool_use 0, steps model_output "I called `d1_list` for account `demo`.\n\nBecause the connected MCP server's tools"
+  server  turn 1 request 1                            input 9943, cached 7889, tool_use 10345, steps tool_search_call {"function_names":["kv_keys_list"]}; tool_search_result; function_call kv_keys_list
+  server    the same request again                    input 9943, cached 16185, tool_use 10366, steps tool_search_call {"function_names":["kv_keys_list"]}; tool_search_result; function_call kv_keys_list
+  server  turn 1 request 2                            input 10462, cached 8317, tool_use 0, steps model_output "I called `kv_keys_list` for namespace `demo-kv` in account `demo` with prefix `s"
+  server  turn 2 request 1                            input 10586, cached 16950, tool_use 10828, steps tool_search_call {"function_names":["d1_list"]}; tool_search_result; function_call d1_list
+  server  turn 2 request 2                            input 10906, cached 8779, tool_use 0, steps model_output "I called `d1_list` for account `demo`. The MCP server returned `{\"dryRun\":true}`"
+  control turn 1 request 1                            input 9183, cached 0, tool_use 0, steps function_call open_group
+  control   the same request again                    input 9183, cached 7129, tool_use 0, steps function_call open_group
+  control   after the load                            input 13371, cached 0, tool_use 0, steps function_call kv_keys_list
+  control   the same request again                    input 13371, cached 11322, tool_use 0, steps function_call kv_keys_list
+  control turn 1 request 2                            input 13478, cached 11322, tool_use 0, steps model_output "I executed `kv_keys_list` for namespace `demo-kv` under account `demo` with the "
+  control turn 2 request 1                            input 13601, cached 11429, tool_use 0, steps function_call open_group
+  control   after the load                            input 16661, cached 0, tool_use 0, steps function_call d1_list
+  control   the same request again                    input 16661, cached 14612, tool_use 0, steps function_call d1_list
+  control turn 2 request 2                            input 16732, cached 14612, tool_use 0, steps model_output "I executed `d1_list` for account `demo`.\n\nBecause the connected MCP server is ru"

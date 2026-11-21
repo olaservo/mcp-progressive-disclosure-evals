@@ -1,0 +1,36 @@
+scripts/agent-probe-responses.ts through OpenRouter's Responses endpoint (https://openrouter.ai/api/v1/responses), 2026-11-20.
+npx tsx scripts/agent-probe-responses.ts --models openai/gpt-6.1-terra,deepseek/deepseek-v4.1-flash@baseten
+One request per line. Each request carried the whole input and a prompt_cache_key shared within its block.
+
+openai/gpt-6.1-terra
+  client tool_search only, first turn:           input 6799, cached 0, output tool_search_call
+  the same request again:                        input 6799, cached 6796, output tool_search_call
+  after tool_search_output with kv tools:        input 13480, cached 0, output function_call kv_keys_list
+  the same request again:                        input 13480, cached 13477, output function_call kv_keys_list
+  after a second tool_search_output, d1 tools:   input 18241, cached 0, output function_call d1_list
+  open_group only, first turn:                   input 6797, cached 0, output function_call open_group
+  the same request again:                        input 6797, cached 6794, output function_call open_group
+  after additional_tools with kv tools:          input 9560, cached 6794, output function_call kv_keys_list
+  the same request again:                        input 9560, cached 6829, output function_call kv_keys_list
+  after a second additional_tools, d1 tools:     input 11430, cached 0, output function_call d1_list
+  control, open_group only, first turn:          input 6793, cached 0, output function_call open_group
+  the same request again:                        input 6793, cached 6790, output function_call open_group
+  control, kv tools appended to tools:           input 9458, cached 0, output function_call kv_keys_list
+  the same request again:                        input 9458, cached 9455, output function_call kv_keys_list
+  control, d1 tools appended to tools:           input 11328, cached 0, output function_call d1_list
+deepseek/deepseek-v4.1-flash@baseten
+  client tool_search only, first turn:           input 7044, cached 0, output tool_search_call
+  the same request again:                        input 7044, cached 0, output tool_search_call
+  after tool_search_output with kv tools:        input 15805, cached 256, output function_call kv_keys_list
+  the same request again:                        input 15805, cached 15616, output function_call kv_keys_list
+  after a second tool_search_output, d1 tools:   input 22269, cached 4608, output function_call d1_list
+  open_group only, first turn:                   input 7044, cached 0, output message; function_call open_group
+  the same request again:                        input 7044, cached 6912, output message; function_call open_group
+  after additional_tools with kv tools:          input 11495, cached 256, output function_call kv_keys_list
+  the same request again:                        input 11495, cached 11264, output function_call kv_keys_list
+  after a second additional_tools, d1 tools:     input 14849, cached 4608, output function_call d1_list
+  control, open_group only, first turn:          input 7042, cached 0, output message; function_call open_group
+  the same request again:                        input 7042, cached 6912, output message; function_call open_group
+  control, kv tools appended to tools:           input 11493, cached 0, output function_call kv_keys_list
+  the same request again:                        input 11493, cached 11264, output function_call kv_keys_list
+  control, d1 tools appended to tools:           input 14847, cached 4608, output function_call d1_list

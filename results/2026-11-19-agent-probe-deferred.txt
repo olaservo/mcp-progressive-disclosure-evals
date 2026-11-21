@@ -1,0 +1,85 @@
+npx tsx scripts/agent-probe-deferred.ts, 2026-11-19. Through router.huggingface.co with the :baseten suffix. Every response named provider BaseTen.
+Tools: open_group plus kv-api (13) and d1-api (11) from opt2-rec. The system prompt carries about 7k tokens of filler.
+
+zai-org/GLM-5.3-Flash:baseten
+  deferred beside function, 24 tools, first turn:  prompt 14812, cached 0, calls open_group
+  the same request again:                        prompt 14812, cached 0, calls open_group
+  after open, tool_reference by tool_name (kv):  prompt 14829, cached 14592, calls kv_keys_list
+  the same request again:                        prompt 14829, cached 0, calls kv_keys_list
+  second open, tool_reference by tool_name (d1): prompt 7917, cached 0, calls none
+  tool_reference by name, as agent-probe.ts:     prompt 14829, cached 14592, calls kv_keys_list
+  defer_loading inside function, first turn:     prompt 14816, cached 0, calls open_group
+  control, open_group only, first turn:          prompt 7507, cached 0, calls open_group
+  the same request again:                        prompt 7507, cached 0, calls open_group
+  control, kv tools appended to tools:           prompt 11750, cached 0, calls kv_keys_list
+  the same request again:                        prompt 11750, cached 11520, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 14915, cached 0, calls d1_list
+deepseek-ai/DeepSeek-V4.1-Flash:baseten
+  deferred beside function, 24 tools, first turn:  prompt 14504, cached 0, calls open_group
+  the same request again:                        prompt 14504, cached 14336, calls open_group
+  after open, tool_reference by tool_name (kv):  prompt 14554, cached 14336, calls kv_keys_list
+  the same request again:                        prompt 14554, cached 14336, calls kv_keys_list
+  second open, tool_reference by tool_name (d1): prompt 7580, cached 0, calls none
+  tool_reference by name, as agent-probe.ts:     prompt 14554, cached 14336, calls kv_keys_list
+  defer_loading inside function, first turn:     prompt 14500, cached 0, calls open_group
+  control, open_group only, first turn:          prompt 7039, cached 0, calls open_group
+  the same request again:                        prompt 7039, cached 6912, calls open_group
+  control, kv tools appended to tools:           prompt 11425, cached 256, calls kv_keys_list
+  the same request again:                        prompt 11425, cached 11264, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 14724, cached 4608, calls d1_list
+
+Variants run once with a throwaway script, same tools and system prompt. "Deferred" is defer_loading beside function on all 24 tools. "Resident" is the same tools with no flag.
+
+deepseek-ai/DeepSeek-V4.1-Flash:baseten
+  deferred, first turn:                                   prompt 14494, cached 0, calls open_group
+  resident, first turn, sent next:                        prompt 14494, cached 14336, calls open_group
+  deferred, open kv answered with tool_reference:         prompt 14544, cached 14336, calls kv_keys_list
+  the same plus a kv_keys_list call and its result:       prompt 7501, cached 256, calls none
+  the same plus an assistant reply and a second user turn: prompt 7519, cached 7424, calls open_group
+  the same plus open d1 answered with tool_reference:     prompt 7570, cached 7424, calls none. Text: "no D1 tools were actually exposed to me — the only callable tools I have are `open_group` and `kv_keys_list`"
+  the same with open d1 answered with a string:           prompt 7578, cached 7424, calls none
+  resident, string results, through the second user turn: prompt 14659, cached 14336, calls open_group
+  deferred, string results, through the second user turn: prompt 7524, cached 256, calls open_group
+  resident, tool_reference result, through the second user turn: prompt 14652, cached 14336, calls open_group
+  deferred, tool_reference result, through the second user turn: prompt 7517, cached 0, calls open_group
+zai-org/GLM-5.3-Flash:baseten
+  deferred, first turn:                                   prompt 14810, cached 0, calls open_group
+  resident, first turn, sent next:                        prompt 14810, cached 14592, calls open_group
+  deferred, open kv answered with tool_reference:         prompt 14827, cached 14592, calls kv_keys_list
+  the same plus a kv_keys_list call and its result:       prompt 7880, cached 0, calls none
+  the same plus an assistant reply and a second user turn: prompt 7897, cached 0, calls open_group
+  the same plus open d1 answered with tool_reference:     prompt 7915, cached 0, calls none. Text: "the only tool currently exposed to me is `kv_keys_list`"
+  the same with open d1 answered with a string:           prompt 7921, cached 0, calls none
+  resident, string results, through the second user turn: prompt 14897, cached 14592, calls open_group
+  deferred, string results, through the second user turn: prompt 7910, cached 0, calls open_group
+  resident, tool_reference result, through the second user turn: prompt 14892, cached 14592, calls open_group
+  deferred, tool_reference result, through the second user turn: prompt 7905, cached 0, calls open_group
+
+npx tsx scripts/agent-probe-deferred.ts --base-url https://inference.baseten.co/v1, 2026-11-19. Baseten's own endpoint with a Baseten key. Same script, tools and system prompt as the first block.
+
+zai-org/GLM-5.3-Flash
+  deferred beside function, 24 tools, first turn:  prompt 7509, cached 0, calls open_group
+  the same request again:                        prompt 7509, cached 7424, calls open_group
+  after open, tool_reference by tool_name (kv):  prompt 11753, cached 7424, calls kv_keys_list
+  the same request again:                        prompt 11753, cached 11520, calls kv_keys_list
+  second open, tool_reference by tool_name (d1): prompt 14918, cached 11520, calls d1_list
+  tool_reference by name, as agent-probe.ts:     HTTP 400 "Failed to deserialize the JSON body into the target type: data did not match any variant of untagged enum ChatCompletionRequestToolMessageContent"
+  defer_loading inside function, first turn:     prompt 14814, cached 0, calls open_group
+  control, open_group only, first turn:          prompt 7505, cached 0, calls open_group
+  the same request again:                        prompt 7505, cached 7424, calls open_group
+  control, kv tools appended to tools:           prompt 11748, cached 0, calls kv_keys_list
+  the same request again:                        prompt 11748, cached 11520, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 14913, cached 0, calls d1_list
+deepseek-ai/DeepSeek-V4.1-Flash
+  deferred beside function, 24 tools, first turn:  prompt 7013, cached 0, calls open_group
+  the same request again:                        prompt 7013, cached 6912, calls open_group
+  after open, tool_reference by tool_name (kv):  prompt 11462, cached 6912, calls kv_keys_list
+  the same request again:                        prompt 11462, cached 11264, calls kv_keys_list
+  second open, tool_reference by tool_name (d1): prompt 14813, cached 11264, calls d1_list
+  tool_reference by name, as agent-probe.ts:     HTTP 400, the same message
+  defer_loading inside function, first turn:     prompt 14478, cached 0, calls open_group
+  control, open_group only, first turn:          prompt 7021, cached 0, calls open_group
+  the same request again:                        prompt 7021, cached 6912, calls open_group
+  control, kv tools appended to tools:           prompt 11406, cached 256, calls kv_keys_list
+  the same request again:                        prompt 11406, cached 11264, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 14702, cached 4608, calls d1_list

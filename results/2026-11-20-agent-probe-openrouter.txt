@@ -1,0 +1,70 @@
+scripts/agent-probe-deferred.ts through OpenRouter (https://openrouter.ai/api/v1/chat/completions), 2026-11-20.
+Every request carried provider: { only: ['baseten'], allow_fallbacks: false } and every response named provider BaseTen.
+Model text is cut short. "resend" is OpenRouter's documented Chat Completions shape: defer_loading inside `function`, and a group revealed by sending its tools again without the flag.
+
+## DeepSeek, loaded tool named open_group
+npx tsx scripts/agent-probe-deferred.ts --base-url https://openrouter.ai/api/v1 --key-env OPENROUTER_API_KEY --provider baseten --resend --models deepseek/deepseek-v4.1-flash
+
+deepseek/deepseek-v4.1-flash
+  deferred beside function, 24 tools, first turn:  prompt 14472, cached 0, calls open_group
+  the same request again:                        prompt 14472, cached 14336, calls open_group
+  after open, tool_reference by tool_name (kv):  prompt 14521, cached 14336, calls kv_keys_list
+  the same request again:                        prompt 14521, cached 14336, calls kv_keys_list
+  second open, tool_reference by tool_name (d1): prompt 7544, cached 0, calls none, finish stop, text "The d1-api group is open, but it doesn't expose any tools I can call — the only tools available to me are `kv_keys_list` (KV) and the group opener."
+  tool_reference by name, as agent-probe.ts:     prompt 14521, cached 14336, calls kv_keys_list
+  defer_loading inside function, first turn:     prompt 14470, cached 0, calls open_group
+  resend: flag inside function, first turn:      prompt 14474, cached 0, calls open_group
+  the same request again:                        prompt 14474, cached 14336, calls open_group
+  resend: kv tools sent without the flag:        prompt 14530, cached 14336, calls kv_keys_list
+  the same request again:                        prompt 14530, cached 14336, calls kv_keys_list
+  resend: d1 tools sent without the flag:        prompt 14696, cached 14336, calls d1_list
+  control, open_group only, first turn:          prompt 7009, cached 0, calls open_group
+  the same request again:                        prompt 7009, cached 6912, calls open_group
+  control, kv tools appended to tools:           prompt 11394, cached 0, calls kv_keys_list
+  the same request again:                        prompt 11394, cached 11264, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 14690, cached 4352, calls d1_list
+
+## GLM, loaded tool named open_group, reasoning left on
+With reasoning: { enabled: false } every request returned HTTP 400 "Reasoning is mandatory for this endpoint and cannot be disabled."
+npx tsx scripts/agent-probe-deferred.ts ... --provider baseten --resend --keep-reasoning --models z-ai/glm-5.3-flash
+
+z-ai/glm-5.3-flash
+  deferred beside function, 24 tools, first turn:  prompt 14814, cached 0, calls open_group
+  the same request again:                        prompt 14814, cached 0, calls open_group
+  after open, tool_reference by tool_name (kv):  prompt 14831, cached 14592, calls kv_keys_list
+  the same request again:                        prompt 14831, cached 14592, calls kv_keys_list
+  second open, tool_reference by tool_name (d1): prompt 7919, cached 0, calls none, finish stop, text "I opened the d1-api group, but the only tools available to me in this session are the KV keys listing tool and the group opener"
+  tool_reference by name, as agent-probe.ts:     prompt 14831, cached 0, calls kv_keys_list
+  defer_loading inside function, first turn:     prompt 14812, cached 0, calls open_group
+  resend: flag inside function, first turn:      prompt 14820, cached 0, calls open_group
+  the same request again:                        prompt 14820, cached 14592, calls open_group
+  resend: kv tools sent without the flag:        prompt 14842, cached 14592, calls kv_keys_list
+  the same request again:                        prompt 14842, cached 14592, calls kv_keys_list
+  resend: d1 tools sent without the flag:        prompt 14923, cached 14592, calls d1_list
+  control, open_group only, first turn:          prompt 7515, cached 0, calls open_group
+  the same request again:                        prompt 7515, cached 7424, calls open_group
+  control, kv tools appended to tools:           prompt 11758, cached 0, calls kv_keys_list
+  the same request again:                        prompt 11758, cached 0, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 14923, cached 0, calls d1_list
+
+## DeepSeek, loaded tool named group_search
+npx tsx scripts/agent-probe-deferred.ts ... --provider baseten --resend --open-name group_search --models deepseek/deepseek-v4.1-flash
+
+deepseek/deepseek-v4.1-flash
+  deferred beside function, 24 tools, first turn:  prompt 7015, cached 0, calls group_search
+  the same request again:                        prompt 7015, cached 6912, calls group_search
+  after open, tool_reference by tool_name (kv):  prompt 7064, cached 6912, calls group_search
+  the same request again:                        prompt 7064, cached 6912, calls group_search
+  second open, tool_reference by tool_name (d1): prompt 7546, cached 256, calls none, finish stop, text "I opened the d1-api group, but it doesn't expose a tool for listing databases"
+  tool_reference by name, as agent-probe.ts:     prompt 7064, cached 6912, calls group_search
+  defer_loading inside function, first turn:     prompt 7019, cached 0, calls group_search
+  resend: flag inside function, first turn:      prompt 7009, cached 0, calls group_search
+  the same request again:                        prompt 7009, cached 6912, calls group_search
+  resend: kv tools sent without the flag:        prompt 11394, cached 256, calls kv_keys_list
+  the same request again:                        prompt 11394, cached 11264, calls kv_keys_list
+  resend: d1 tools sent without the flag:        prompt 14690, cached 0, calls d1_list
+  control, group_search only, first turn:        prompt 7007, cached 0, calls group_search
+  the same request again:                        prompt 7007, cached 6912, calls group_search
+  control, kv tools appended to tools:           prompt 11392, cached 256, calls kv_keys_list
+  the same request again:                        prompt 11392, cached 11264, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 14688, cached 0, calls d1_list
