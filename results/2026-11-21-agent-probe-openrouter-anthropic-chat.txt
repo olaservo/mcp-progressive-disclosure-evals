@@ -1,0 +1,57 @@
+run 1 2026-11-21T16:52:57Z openrouter chat completions, provider anthropic, --open-name group_search --resend --cache-control
+anthropic/claude-haiku-5.5
+  deferred beside function, 24 tools, first turn:  prompt 8199, cached 0, calls group_search
+  the same request again:                        prompt 8199, cached 8195, calls group_search
+  after open, tool_reference by tool_name (kv):  prompt 8255, cached 8195, calls group_search
+  the same request again:                        prompt 8255, cached 8253, calls group_search
+  second open, tool_reference by tool_name (d1): prompt 8455, cached 8253, calls d1_database_list
+  tool_reference by name, as agent-probe.ts:     prompt 8255, cached 8253, calls group_search
+  defer_loading inside function, first turn:     prompt 8197, cached 0, calls group_search
+  resend: flag inside function, first turn:      prompt 8195, cached 0, calls group_search
+  the same request again:                        prompt 8195, cached 8191, calls group_search
+  resend: kv tools sent without the flag:        prompt 15201, cached 0, calls kv_keys_list
+  the same request again:                        prompt 15201, cached 15199, calls kv_keys_list
+  resend: d1 tools sent without the flag:        prompt 20153, cached 0, calls d1_list
+  control, open_group only, first turn:          prompt 8110, cached 0, calls group_search
+  the same request again:                        prompt 8110, cached 8106, calls group_search
+  control, kv tools appended to tools:           prompt 15116, cached 0, calls kv_keys_list
+  the same request again:                        prompt 15116, cached 15114, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 20161, cached 0, calls d1_list
+run 2 2026-11-21T16:56:44Z openrouter chat completions, provider anthropic, --open-name group_search --resend --cache-control
+anthropic/claude-haiku-5.5
+  deferred beside function, 24 tools, first turn:  prompt 8195, cached 0, calls group_search
+  the same request again:                        prompt 8195, cached 8191, calls group_search
+  after open, tool_reference by tool_name (kv):  prompt 8251, cached 8191, calls none
+  the same request again:                        prompt 8251, cached 8249, calls group_search
+  second open, tool_reference by tool_name (d1): prompt 8451, cached 8249, calls d1_database_list
+  tool_reference by name, as agent-probe.ts:     prompt 8251, cached 8249, calls group_search
+  defer_loading inside function, first turn:     prompt 8195, cached 0, calls group_search
+  resend: flag inside function, first turn:      prompt 8211, cached 0, calls group_search
+  the same request again:                        prompt 8211, cached 8207, calls group_search
+  resend: kv tools sent without the flag:        prompt 15217, cached 0, calls kv_keys_list
+  the same request again:                        prompt 15217, cached 15215, calls kv_keys_list
+  resend: d1 tools sent without the flag:        prompt 20169, cached 0, calls d1_list
+  control, open_group only, first turn:          prompt 8106, cached 0, calls group_search
+  the same request again:                        prompt 8106, cached 8102, calls group_search
+  control, kv tools appended to tools:           prompt 15112, cached 0, calls kv_keys_list
+  the same request again:                        prompt 15112, cached 15110, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 20157, cached 0, calls d1_list
+run 3 2026-11-21T17:00:52Z openrouter chat completions, provider anthropic, --open-name group_search --resend --cache-control
+anthropic/claude-haiku-5.5
+  deferred beside function, 24 tools, first turn:  prompt 8195, cached 0, calls group_search
+  the same request again:                        prompt 8195, cached 8191, calls group_search
+  after open, tool_reference by tool_name (kv):  prompt 8251, cached 8191, calls group_search
+  the same request again:                        prompt 8251, cached 8249, calls group_search
+  second open, tool_reference by tool_name (d1): prompt 8451, cached 8249, calls d1_database_list
+  tool_reference by name, as agent-probe.ts:     prompt 8251, cached 8249, calls group_search
+  defer_loading inside function, first turn:     prompt 8205, cached 0, calls group_search
+  resend: flag inside function, first turn:      prompt 8201, cached 0, calls group_search,group_search
+  the same request again:                        prompt 8201, cached 8197, calls group_search
+  resend: kv tools sent without the flag:        prompt 15207, cached 0, calls kv_keys_list
+  the same request again:                        prompt 15207, cached 15205, calls kv_keys_list
+  resend: d1 tools sent without the flag:        prompt 20159, cached 0, calls d1_list
+  control, open_group only, first turn:          prompt 8114, cached 0, calls group_search
+  the same request again:                        prompt 8114, cached 8110, calls group_search
+  control, kv tools appended to tools:           prompt 15120, cached 0, calls kv_keys_list
+  the same request again:                        prompt 15120, cached 15118, calls kv_keys_list
+  control, d1 tools appended to tools:           prompt 20165, cached 0, calls d1_list

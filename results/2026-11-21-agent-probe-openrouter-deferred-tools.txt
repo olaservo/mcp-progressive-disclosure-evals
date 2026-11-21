@@ -1,0 +1,5 @@
+# 2026-11-21T17:31:45Z OpenRouter Chat Completions, deferred_tools v1 with custom search (tool_id group_search, result_key tools)
+deepseek/deepseek-v4.1-flash@baseten
+  turn 1 request 1                HTTP 403 {"error":{"message":"Deferred-tool protocol is unavailable for this workspace.","code":403,"metadata":{"provider_name":null}}}
+anthropic/claude-haiku-5.5@anthropic (top-level cache_control)
+  turn 1 request 1                HTTP 403 {"error":{"message":"Deferred-tool protocol is unavailable for this workspace.","code":403,"metadata":{"provider_name":null}}}

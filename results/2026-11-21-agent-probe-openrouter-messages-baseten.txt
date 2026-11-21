@@ -1,0 +1,36 @@
+run 1 2026-11-21T17:33:00Z
+deepseek/deepseek-v4.1-flash via openrouter pinned to baseten, automatic caching (top-level cache_control), thinking disabled
+  reference first turn                    input 7013, cache write 0, cache read 0, calls group_search
+  reference the same request again        input 101, cache write 0, cache read 6912, calls group_search
+  reference after loading kv              input 11237, cache write 0, cache read 256, calls kv_keys_list
+  reference the same request again        input 229, cache write 0, cache read 11264, calls kv_keys_list
+  reference after loading d1              input 14869, cache write 0, cache read 0, calls d1_list
+  control   first turn                    input 7013, cache write 0, cache read 0, calls group_search
+  control   the same request again        input 101, cache write 0, cache read 6912, calls group_search
+  control   kv appended to tools          input 11142, cache write 0, cache read 256, calls kv_keys_list
+  control   the same request again        input 134, cache write 0, cache read 11264, calls kv_keys_list
+  control   d1 appended to tools          input 10342, cache write 0, cache read 4352, calls d1_list
+run 2 2026-11-21T17:33:43Z
+deepseek/deepseek-v4.1-flash via openrouter pinned to baseten, automatic caching (top-level cache_control), thinking disabled
+  reference first turn                    input 7017, cache write 0, cache read 0, calls group_search
+  reference the same request again        input 105, cache write 0, cache read 6912, calls group_search
+  reference after loading kv              input 11497, cache write 0, cache read 0, calls kv_keys_list
+  reference the same request again        input 233, cache write 0, cache read 11264, calls kv_keys_list
+  reference after loading d1              input 14617, cache write 0, cache read 256, calls d1_list
+  control   first turn                    input 7017, cache write 0, cache read 0, calls group_search
+  control   the same request again        input 105, cache write 0, cache read 6912, calls group_search
+  control   kv appended to tools          input 11402, cache write 0, cache read 0, calls kv_keys_list
+  control   the same request again        input 138, cache write 0, cache read 11264, calls kv_keys_list
+  control   d1 appended to tools          input 14442, cache write 0, cache read 256, calls d1_list
+run 3 2026-11-21T17:34:25Z
+deepseek/deepseek-v4.1-flash via openrouter pinned to baseten, automatic caching (top-level cache_control), thinking disabled
+  reference first turn                    input 7021, cache write 0, cache read 0, calls group_search
+  reference the same request again        input 109, cache write 0, cache read 6912, calls group_search
+  reference after loading kv              input 11245, cache write 0, cache read 256, calls kv_keys_list
+  reference the same request again        input 237, cache write 0, cache read 11264, calls kv_keys_list
+  reference after loading d1              input 10269, cache write 0, cache read 4608, calls d1_list
+  control   first turn                    input 7013, cache write 0, cache read 0, calls group_search
+  control   the same request again        input 7013, cache write 0, cache read 0, calls group_search
+  control   kv appended to tools          input 11142, cache write 0, cache read 256, calls kv_keys_list
+  control   the same request again        input 134, cache write 0, cache read 11264, calls kv_keys_list
+  control   d1 appended to tools          input 14438, cache write 0, cache read 256, calls d1_list

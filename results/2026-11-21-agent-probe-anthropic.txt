@@ -1,0 +1,102 @@
+run 1 2026-11-21T16:50:30Z
+claude-haiku-5-5 via anthropic, automatic caching (top-level cache_control), thinking disabled
+  reference first turn                    input 4, cache write 8199, cache read 0, calls open_group
+  reference the same request again        input 4, cache write 0, cache read 8199, calls open_group
+  reference after loading kv              input 2, cache write 7008, cache read 8199, calls kv_keys_list
+  reference the same request again        input 2, cache write 0, cache read 15207, calls kv_keys_list
+  reference after loading d1              input 2, cache write 5045, cache read 15207, calls d1_list
+  addition  first turn                    input 4, cache write 8189, cache read 0, calls open_group
+  addition  the same request again        input 4, cache write 0, cache read 8189, calls open_group
+  addition  after loading kv              input 2, cache write 7051, cache read 8189, calls kv_keys_list
+  addition  the same request again        input 2, cache write 0, cache read 15240, calls kv_keys_list
+  addition  after loading d1              input 2, cache write 5088, cache read 15240, calls d1_list
+  control   first turn                    input 4, cache write 8098, cache read 0, calls open_group
+  control   the same request again        input 4, cache write 0, cache read 8098, calls open_group
+  control   kv appended to tools          input 2, cache write 15106, cache read 0, calls kv_keys_list
+  control   the same request again        input 2, cache write 0, cache read 15106, calls kv_keys_list
+  control   d1 appended to tools          input 2, cache write 20151, cache read 0, calls d1_list
+run 1 2026-11-21T16:51:36Z
+anthropic/claude-haiku-5.5 via openrouter, automatic caching (top-level cache_control), thinking disabled
+  reference first turn                    input 4, cache write 8195, cache read 0, calls open_group
+  reference the same request again        input 4, cache write 0, cache read 8195, calls open_group
+  reference after loading kv              input 2, cache write 7008, cache read 8195, calls kv_keys_list
+  reference the same request again        input 2, cache write 0, cache read 15203, calls kv_keys_list
+  reference after loading d1              input 2, cache write 5045, cache read 15203, calls d1_list
+  addition  first turn                    input 4, cache write 8209, cache read 0, calls open_group
+  addition  the same request again        input 4, cache write 0, cache read 8209, calls open_group
+  addition  after loading kv              input 2, cache write 7051, cache read 8209, calls kv_keys_list
+  addition  the same request again        input 2, cache write 0, cache read 15260, calls kv_keys_list
+  addition  after loading d1              input 2, cache write 5088, cache read 15260, calls d1_list
+  control   first turn                    input 4, cache write 8102, cache read 0, calls open_group
+  control   the same request again        input 4, cache write 0, cache read 8102, calls open_group
+  control   kv appended to tools          input 2, cache write 15110, cache read 0, calls kv_keys_list
+  control   the same request again        input 2, cache write 0, cache read 15110, calls kv_keys_list
+  control   d1 appended to tools          input 2, cache write 20155, cache read 0, calls d1_list
+run 2 2026-11-21T16:54:18Z
+claude-haiku-5-5 via anthropic, automatic caching (top-level cache_control), thinking disabled
+  reference first turn                    input 4, cache write 8193, cache read 0, calls open_group
+  reference the same request again        input 4, cache write 0, cache read 8193, calls open_group
+  reference after loading kv              input 2, cache write 7008, cache read 8193, calls kv_keys_list
+  reference the same request again        input 2, cache write 0, cache read 15201, calls kv_keys_list
+  reference after loading d1              input 2, cache write 5045, cache read 15201, calls d1_list
+  addition  first turn                    input 4, cache write 8195, cache read 0, calls open_group
+  addition  the same request again        input 4, cache write 0, cache read 8195, calls open_group
+  addition  after loading kv              input 2, cache write 7051, cache read 8195, calls kv_keys_list
+  addition  the same request again        input 2, cache write 0, cache read 15246, calls kv_keys_list
+  addition  after loading d1              input 2, cache write 5088, cache read 15246, calls d1_list
+  control   first turn                    input 4, cache write 8098, cache read 0, calls open_group
+  control   the same request again        input 4, cache write 0, cache read 8098, calls open_group
+  control   kv appended to tools          input 2, cache write 15106, cache read 0, calls kv_keys_list
+  control   the same request again        input 2, cache write 0, cache read 15106, calls kv_keys_list
+  control   d1 appended to tools          input 2, cache write 20151, cache read 0, calls d1_list
+run 2 2026-11-21T16:55:29Z
+anthropic/claude-haiku-5.5 via openrouter, automatic caching (top-level cache_control), thinking disabled
+  reference first turn                    input 4, cache write 8201, cache read 0, calls open_group
+  reference the same request again        input 4, cache write 0, cache read 8201, calls open_group
+  reference after loading kv              input 2, cache write 7008, cache read 8201, calls kv_keys_list
+  reference the same request again        input 2, cache write 0, cache read 15209, calls kv_keys_list
+  reference after loading d1              input 2, cache write 5045, cache read 15209, calls d1_list
+  addition  first turn                    input 4, cache write 8195, cache read 0, calls open_group,open_group
+  addition  the same request again        input 4, cache write 0, cache read 8195, calls open_group
+  addition  after loading kv              input 2, cache write 7051, cache read 8195, calls kv_keys_list
+  addition  the same request again        input 2, cache write 0, cache read 15246, calls kv_keys_list
+  addition  after loading d1              input 2, cache write 5088, cache read 15246, calls d1_list
+  control   first turn                    input 4, cache write 8098, cache read 0, calls open_group
+  control   the same request again        input 4, cache write 0, cache read 8098, calls open_group
+  control   kv appended to tools          input 2, cache write 15106, cache read 0, calls kv_keys_list
+  control   the same request again        input 2, cache write 0, cache read 15106, calls kv_keys_list
+  control   d1 appended to tools          input 2, cache write 20151, cache read 0, calls d1_list
+run 3 2026-11-21T16:58:10Z
+claude-haiku-5-5 via anthropic, automatic caching (top-level cache_control), thinking disabled
+  reference first turn                    input 4, cache write 8191, cache read 0, calls open_group
+  reference the same request again        input 4, cache write 0, cache read 8191, calls open_group
+  reference after loading kv              input 2, cache write 7008, cache read 8191, calls kv_keys_list
+  reference the same request again        input 2, cache write 0, cache read 15199, calls kv_keys_list
+  reference after loading d1              input 2, cache write 5045, cache read 15199, calls d1_list
+  addition  first turn                    input 4, cache write 8193, cache read 0, calls open_group
+  addition  the same request again        input 4, cache write 0, cache read 8193, calls open_group
+  addition  after loading kv              input 2, cache write 7051, cache read 8193, calls kv_keys_list
+  addition  the same request again        input 2, cache write 0, cache read 15244, calls kv_keys_list
+  addition  after loading d1              input 2, cache write 5088, cache read 15244, calls d1_list
+  control   first turn                    input 4, cache write 8102, cache read 0, calls open_group
+  control   the same request again        input 4, cache write 0, cache read 8102, calls open_group
+  control   kv appended to tools          input 2, cache write 15110, cache read 0, calls kv_keys_list
+  control   the same request again        input 2, cache write 0, cache read 15110, calls kv_keys_list
+  control   d1 appended to tools          input 2, cache write 20155, cache read 0, calls d1_list
+run 3 2026-11-21T16:59:41Z
+anthropic/claude-haiku-5.5 via openrouter, automatic caching (top-level cache_control), thinking disabled
+  reference first turn                    input 4, cache write 8201, cache read 0, calls open_group
+  reference the same request again        input 4, cache write 0, cache read 8201, calls open_group
+  reference after loading kv              input 2, cache write 7008, cache read 8201, calls kv_keys_list
+  reference the same request again        input 2, cache write 0, cache read 15209, calls kv_keys_list
+  reference after loading d1              input 2, cache write 5045, cache read 15209, calls d1_list
+  addition  first turn                    input 4, cache write 8195, cache read 0, calls open_group
+  addition  the same request again        input 4, cache write 0, cache read 8195, calls open_group
+  addition  after loading kv              input 2, cache write 7051, cache read 8195, calls kv_keys_list
+  addition  the same request again        input 2, cache write 0, cache read 15246, calls kv_keys_list
+  addition  after loading d1              input 2, cache write 5088, cache read 15246, calls d1_list
+  control   first turn                    input 4, cache write 8100, cache read 0, calls open_group
+  control   the same request again        input 4, cache write 0, cache read 8100, calls open_group
+  control   kv appended to tools          input 2, cache write 15108, cache read 0, calls kv_keys_list
+  control   the same request again        input 2, cache write 0, cache read 15108, calls kv_keys_list
+  control   d1 appended to tools          input 2, cache write 20153, cache read 0, calls d1_list

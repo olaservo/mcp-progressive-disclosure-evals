@@ -10,7 +10,7 @@
 // request to one provider, --open-name renames open_group, since OpenRouter wants a loaded tool named like a search tool, and
 // --resend adds a run in OpenRouter's Chat Completions shape, with the flag inside `function` and a group revealed by sending
 // its tools again without the flag.
-// Usage: tsx scripts/agent-probe-deferred.ts [--models a,b] [--wait ms] [--env <.env path>] [--base-url <url> --key-env <NAME>] [--provider slug] [--open-name name] [--resend] [--keep-reasoning]
+// Usage: tsx scripts/agent-probe-deferred.ts [--models a,b] [--wait ms] [--env <.env path>] [--base-url <url> --key-env <NAME>] [--provider slug] [--open-name name] [--resend] [--keep-reasoning] [--cache-control]
 import { existsSync, readFileSync } from 'node:fs'
 import { createHash, randomUUID } from 'node:crypto'
 import { homedir } from 'node:os'
@@ -38,6 +38,8 @@ const provider = opt('provider')
 const openName = opt('open-name', 'open_group')!
 const resend = args.includes('--resend')
 const keepReasoning = args.includes('--keep-reasoning')
+// Top-level automatic caching, for Anthropic models, which cache only where the request asks.
+const cacheControl = args.includes('--cache-control')
 const defaults = ['zai-org/GLM-5.3-Flash:baseten', 'deepseek-ai/DeepSeek-V4.1-Flash:baseten'].map((id) => (baseUrl ? id.replace(/:.*$/, '') : id))
 const models = opt('models', defaults.join(','))!.split(',')
 
@@ -68,7 +70,7 @@ async function ask(model: string, session: string, tools: unknown[], messages: u
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json', 'user-agent': 'mcp-progressive-disclosure-evals/0.1', 'x-session-affinity': session },
-    body: JSON.stringify({ model, temperature: 0.2, max_tokens: 600, chat_template_kwargs: { enable_thinking: false }, ...(provider ? { provider: { only: [provider], allow_fallbacks: false }, ...(keepReasoning ? {} : { reasoning: { enabled: false } }) } : {}), tools, messages })
+    body: JSON.stringify({ model, temperature: 0.2, max_tokens: 600, chat_template_kwargs: { enable_thinking: false }, ...(cacheControl ? { cache_control: { type: 'ephemeral' } } : {}), ...(provider ? { provider: { only: [provider], allow_fallbacks: false }, ...(keepReasoning ? {} : { reasoning: { enabled: false } }) } : {}), tools, messages })
   })
   const text = await response.text()
   await new Promise((resolve) => setTimeout(resolve, wait))
