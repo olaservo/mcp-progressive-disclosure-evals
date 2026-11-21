@@ -2,12 +2,20 @@
 // cannot drive. Writes one JSONL row per model request with the provider's token and cache counts and the time to first token.
 // Score with agent-score.ts.
 //
-// Usage: tsx scripts/agent-run.ts --arm A|B|C [--models a,b] [--scenarios id,id] [--samples N] [--phases N] [--parallel N] [--label name] [--shared] [--only-samples 2,3] [--pad-results N] [--strict-wrapper] [--listing-in-tool] [--env <.env path>]
+// Usage: tsx scripts/agent-run.ts --arm A|B|C|D [--base-url <url> --key-env <NAME>] [--models a,b] [--scenarios id,id] [--samples N] [--phases N] [--parallel N] [--label name] [--shared] [--only-samples 2,3] [--pad-results N] [--strict-wrapper] [--listing-in-tool] [--env <.env path>]
 //
 // Arms, each on the same model, scenarios and system prompt:
 //   A  every tool schema of the flat server in `tools` from the first request
 //   B  `tools` starts as list_groups, open_group and read_skill; each open appends the group's tools for the next request
 //   C  `tools` is fixed at list_groups, open_group, read_skill and call_tool; open_group returns the group's schemas as text
+//   D  `tools` holds every group's tools from the first request with `defer_loading: true`, and open_group answers with
+//      `tool_reference` blocks, as Baseten documents (docs.baseten.co/inference/model-apis/deferred-tool-loading). The client
+//      has fetched every group before the session starts. Both models load the tools only when the references are the whole
+//      tool result (2026-11-19), so a group's instructions and listed skills follow in a user message.
+//
+// --base-url sends the requests to that endpoint with the key in --key-env, and drops the :provider suffix from the model
+// id in the request. The rows keep the id as given. Arm D worked on https://inference.baseten.co/v1 and not through the
+// Hugging Face router (results/2026-11-19-agent-probe-deferred.txt).
 //
 // Every session starts cold: its id leads the system prompt and ends the first tool's description. Both Baseten models
 // showed cache reads on tool blocks a session had never sent (2026-11-12), so the id in the system prompt alone leaves the
@@ -31,9 +39,9 @@ const encoding = getEncoding('o200k_base')
 
 const args = process.argv.slice(2)
 const opt = (name: string, fallback?: string) => (args.includes(`--${name}`) ? args[args.indexOf(`--${name}`) + 1] : fallback)
-type Arm = 'A' | 'B' | 'C'
+type Arm = 'A' | 'B' | 'C' | 'D'
 const arm = opt('arm', 'B') as Arm
-if (!['A', 'B', 'C'].includes(arm)) throw new Error(`Unknown arm ${arm}; one of A, B, C`)
+if (!['A', 'B', 'C', 'D'].includes(arm)) throw new Error(`Unknown arm ${arm}; one of A, B, C, D`)
 const models = opt('models', 'zai-org/GLM-5.3-Flash:baseten,deepseek-ai/DeepSeek-V4.1-Flash:baseten')!.split(',')
 const only = opt('scenarios')?.split(',')
 const samples = Number(opt('samples', '1'))
@@ -43,6 +51,9 @@ const parallel = Number(opt('parallel', '2'))
 const maxTurns = Number(opt('max-turns', '10'))
 const label = opt('label', `arm-${arm.toLowerCase()}`)!
 const envFile = opt('env')
+const baseUrl = opt('base-url')?.replace(/\/$/, '')
+const keyEnv = opt('key-env', 'BASETEN_API_KEY')!
+const endpoint = `${baseUrl ?? 'https://router.huggingface.co/v1'}/chat/completions`
 const shared = args.includes('--shared')
 // --only-samples re-runs the named sample numbers, for sessions that ended in an error.
 const onlySamples = opt('only-samples')?.split(',').map(Number)
@@ -66,21 +77,24 @@ if (envFile) {
   }
 }
 const hfToken = () => {
+  if (baseUrl) return process.env[keyEnv]
   if (process.env.HF_TOKEN) return process.env.HF_TOKEN
   const file = join(homedir(), '.cache', 'huggingface', 'token')
   return existsSync(file) ? readFileSync(file, 'utf8').trim() : undefined
 }
+if (!hfToken()) throw new Error(baseUrl ? `${keyEnv} is not set` : 'no Hugging Face token')
 
 type Named = { name: string; description?: string }
 type McpTool = { name: string; description?: string; inputSchema?: Record<string, unknown> }
 type GroupBody = { instructions?: string; tools?: McpTool[]; resources?: { uri: string }[]; groups?: Named[] }
 type SkillEntry = { uri: string; frontmatter?: { name: string; description?: string }; resources?: { uri: string; digest: string }[] | 'dynamic' }
-type FnTool = { type: 'function'; function: { name: string; description: string; parameters: Record<string, unknown> } }
+type FnTool = { type: 'function'; function: { name: string; description: string; parameters: Record<string, unknown> }; defer_loading?: true }
+type ToolReference = { type: 'tool_reference'; tool_name: string }
 type ToolCall = { id: string; type: 'function'; function: { name: string; arguments: string } }
 type Message =
   | { role: 'system' | 'user'; content: string }
   | { role: 'assistant'; content: string | null; tool_calls?: ToolCall[] }
-  | { role: 'tool'; tool_call_id: string; content: string }
+  | { role: 'tool'; tool_call_id: string; content: string | ToolReference[] }
 
 const firstLine = (text = '') => text.split('\n')[0]!.trim()
 const fn = (name: string, description: string, parameters: Record<string, unknown>): FnTool => ({ type: 'function', function: { name, description, parameters } })
@@ -144,8 +158,8 @@ function section(): string {
   return [
     '# Capability groups over MCP',
     'This session is connected to an MCP server that discloses its tools in groups. Specialized tools are not',
-    arm === 'B' ? 'loaded up front: each group bundles related tools that become callable only after you open the group.' : 'loaded up front: each group bundles related tools whose schemas you read by opening the group.',
-    arm === 'B' ? 'When a task matches a group below, call open_group with its name first, then use the tools it reveals.' : 'When a task matches a group below, call open_group with its name first, then call its tools through call_tool.',
+    arm !== 'C' ? 'loaded up front: each group bundles related tools that become callable only after you open the group.' : 'loaded up front: each group bundles related tools whose schemas you read by opening the group.',
+    arm !== 'C' ? 'When a task matches a group below, call open_group with its name first, then use the tools it reveals.' : 'When a task matches a group below, call open_group with its name first, then call its tools through call_tool.',
     'A group may list a skill; read_skill loads its instructions. Call list_groups to re-list at any time.',
     '',
     ...(listingInTool ? ['The groups are listed in the description of the list_groups tool.'] : ["Groups (open_group loads a group's tools and instructions):", ...groups.map((g) => `- ${g.name}: ${firstLine(g.description)}`)]),
@@ -158,10 +172,10 @@ type Reply = { content: string; toolCalls: ToolCall[]; usage: Usage; finish?: st
 
 /** One streamed chat completion. A 429 or 5xx is retried with a growing wait. */
 async function complete(model: string, messages: Message[], tools: FnTool[], seed: number, session: string): Promise<Reply> {
-  const request = JSON.stringify({ model, messages, tools, temperature: 0.2, seed, max_tokens: 4000, stream: true, stream_options: { include_usage: true }, chat_template_kwargs: { enable_thinking: false } })
+  const request = JSON.stringify({ model: baseUrl ? model.replace(/:.*$/, '') : model, messages, tools, temperature: 0.2, seed, max_tokens: 4000, stream: true, stream_options: { include_usage: true }, chat_template_kwargs: { enable_thinking: false } })
   for (let attempt = 0; ; attempt++) {
     const started = Date.now()
-    const response = await fetch('https://router.huggingface.co/v1/chat/completions', {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: { authorization: `Bearer ${hfToken()}`, 'content-type': 'application/json', 'user-agent': 'mcp-progressive-disclosure-evals/0.1', 'x-session-affinity': session },
       body: request
@@ -218,10 +232,12 @@ const textOf = (result: { content?: { type: string; text?: string }[] }) => (res
 const sha256 = (text: string) => `sha256:${createHash('sha256').update(text).digest('hex')}`
 
 type CallRow = AgentCall & { via: string; valid?: boolean; group?: string; added?: number }
-type Session = { id: string; tools: FnTool[]; opened: string[] }
+type Session = { id: string; tools: FnTool[]; opened: string[]; /** Arm D: the deferred tools a reference has loaded. */ loaded: Set<string> }
+/** Arm D adds the tools to reference and the text that cannot share their tool result. */
+type Opened = { text: string; isError: boolean; added: number; refs?: string[]; note?: string }
 
-/** groups/get as the mod answers it. Arm B appends the group's tools; arm C puts their schemas in the text. */
-function openGroup(session: Session, name: string): { text: string; isError: boolean; added: number } {
+/** groups/get as the mod answers it. Arm B appends the group's tools, arm C puts their schemas in the text, and arm D references them. */
+function openGroup(session: Session, name: string): Opened {
   const body = groupBodies.get(name)
   if (!body) return { text: `open_group '${name}' failed: no such group.`, isError: true, added: 0 }
   const tools = body.tools ?? []
@@ -233,26 +249,40 @@ function openGroup(session: Session, name: string): { text: string; isError: boo
       added++
     }
   }
+  const refs: string[] = []
+  if (arm === 'D') {
+    for (const tool of tools) {
+      if (session.loaded.has(tool.name)) continue
+      session.loaded.add(tool.name)
+      refs.push(tool.name)
+    }
+    added = refs.length
+  }
   if (!session.opened.includes(name)) session.opened.push(name)
   const out = [`Opened '${name}'.`]
-  if (body.instructions) out.push('', 'Instructions:', body.instructions)
+  const extra: string[] = body.instructions ? ['', 'Instructions:', body.instructions] : []
+  out.push(...extra)
   if (arm === 'C') out.push('', tools.length ? 'Tools (call each through call_tool):' : 'This group has no tools.', ...tools.map((tool) => JSON.stringify({ name: tool.name, description: tool.description ?? '', inputSchema: tool.inputSchema ?? { type: 'object' } })))
   else out.push('', tools.length ? `Tools now available: ${tools.map((t) => t.name).join(', ')}` : 'This group has no tools.')
   const skillDocs = (body.resources ?? []).filter((r) => r.uri.endsWith('/SKILL.md'))
-  if (skillDocs.length) out.push('', `Skills this group lists (read_skill loads one): ${skillDocs.map((r) => r.uri).join(', ')}`)
-  return { text: out.join('\n'), isError: false, added }
+  if (skillDocs.length) extra.push('', `Skills this group lists (read_skill loads one): ${skillDocs.map((r) => r.uri).join(', ')}`)
+  out.push(...extra.slice(body.instructions ? 3 : 0))
+  if (refs.length === 0) return { text: out.join('\n'), isError: false, added }
+  return { text: out.join('\n'), isError: false, added, refs, note: extra.length ? [`Group '${name}', from open_group:`, ...extra].join('\n') : undefined }
 }
 
 /** skills/get, then resources/read, refused unless the bytes match the digest the entry publishes. */
-async function readSkill(session: Session, raw: string): Promise<{ text: string; isError: boolean; added: number }> {
+async function readSkill(session: Session, raw: string): Promise<Opened> {
   const skill = raw.trim().replace(/^skill:\/\//, '').replace(/^\/+|\/+$/g, '').replace(/\/SKILL\.md$/, '')
   if (!skill) return { text: 'read_skill requires a skill name.', isError: true, added: 0 }
   const out: string[] = []
   let added = 0
+  let refs: string[] | undefined
   if (groupBodies.has(skill) && !session.opened.includes(skill)) {
     const opened = openGroup(session, skill)
     out.push(opened.text, '')
     added = opened.added
+    refs = opened.refs
   }
   const uri = `skill://${skill}/SKILL.md`
   try {
@@ -262,7 +292,7 @@ async function readSkill(session: Session, raw: string): Promise<{ text: string;
     const published = Array.isArray(entry.resources) ? entry.resources.find((r) => r.uri === uri) : undefined
     if (!body || (published && sha256(body) !== published.digest)) return { text: `read_skill: ${uri} is empty or does not match its published digest. Not loaded.`, isError: true, added }
     out.push(`${uri}:`, body)
-    return { text: out.join('\n'), isError: false, added }
+    return { text: out.join('\n'), isError: false, added, ...(refs ? { refs, note: out.join('\n') } : {}) }
   } catch (error) {
     return { text: `read_skill '${raw}' failed: ${error instanceof Error ? error.message : String(error)}`, isError: true, added }
   }
@@ -278,18 +308,18 @@ const parseArgs = (raw: string): Record<string, unknown> | undefined => {
 }
 
 /** Runs one tool call. The returned row names the server tool reached, so call_tool scores as the tool it wrapped. */
-async function execute(session: Session, call: ToolCall): Promise<{ text: string; row: CallRow }> {
+async function execute(session: Session, call: ToolCall): Promise<{ text: string; row: CallRow; refs?: string[]; note?: string }> {
   const via = call.function.name
   const input = parseArgs(call.function.arguments)
   if (!input) return { text: `${via}: the arguments are not a JSON object.`, row: { name: via, via, args: {}, isError: true } }
   if (via === 'list_groups') return { text: ['Available groups:', ...groups.map((g) => `- ${g.name}: ${firstLine(g.description)}`)].join('\n'), row: { name: via, via, args: input, isError: false } }
   if (via === 'open_group' && arm !== 'A') {
     const opened = openGroup(session, String(input.name ?? '').trim())
-    return { text: opened.text, row: { name: via, via, args: input, isError: opened.isError, group: String(input.name ?? ''), added: opened.added } }
+    return { text: opened.text, refs: opened.refs, note: opened.note, row: { name: via, via, args: input, isError: opened.isError, group: String(input.name ?? ''), added: opened.added } }
   }
   if (via === 'read_skill') {
     const read = await readSkill(session, String(input.name ?? ''))
-    return { text: read.text, row: { name: via, via, args: input, isError: read.isError, added: read.added } }
+    return { text: read.text, refs: read.refs, note: read.note, row: { name: via, via, args: input, isError: read.isError, added: read.added } }
   }
   let name = via
   let toolArgs = input
@@ -308,7 +338,7 @@ async function execute(session: Session, call: ToolCall): Promise<{ text: string
       return { text, row: { name: name || via, via, args: input, isError: true } }
     }
     toolArgs = inner
-  } else if (!session.tools.some((t) => t.function.name === via)) {
+  } else if (arm === 'D' ? !session.loaded.has(via) : !session.tools.some((t) => t.function.name === via)) {
     return { text: arm === 'A' ? `Tool ${via} not found.` : `Tool ${via} is not available. Open its group with open_group first.`, row: { name: via, via, args: input, isError: true } }
   }
   const row: CallRow = { name, via, args: toolArgs, isError: false, valid: valid(name, toolArgs) }
@@ -345,15 +375,19 @@ const toolsTokens = (tools: FnTool[]) => {
   if (!tokenCounts.has(key)) tokenCounts.set(key, encoding.encode(JSON.stringify(tools)).length)
   return tokenCounts.get(key)!
 }
-const startTools = (): FnTool[] => (arm === 'A' ? [READ_SKILL, ...flatTools.map(asFn)] : arm === 'B' ? [LIST_GROUPS, OPEN_GROUP_B, READ_SKILL] : [LIST_GROUPS, OPEN_GROUP_C, READ_SKILL, CALL_TOOL])
+/** Arm D: every group's tools once, in group order, deferred. */
+const deferredTools: FnTool[] = arm === 'D' ? [...new Map([...groupBodies.values()].flatMap((body) => body.tools ?? []).map((tool) => [tool.name, { ...asFn(tool), defer_loading: true as const }])).values()] : []
+const startTools = (): FnTool[] => (arm === 'A' ? [READ_SKILL, ...flatTools.map(asFn)] : arm === 'C' ? [LIST_GROUPS, OPEN_GROUP_C, READ_SKILL, CALL_TOOL] : [LIST_GROUPS, OPEN_GROUP_B, READ_SKILL, ...deferredTools])
+/** The tools whose schemas the request carries: all of them, or in arm D the ones not deferred or already referenced. */
+const inPrompt = (session: Session) => (arm === 'D' ? session.tools.filter((t) => !t.defer_loading || session.loaded.has(t.function.name)) : session.tools)
 const commit = (() => { try { return execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim() } catch { return undefined } })()
 if (!existsSync(out)) {
-  writeFileSync(out, JSON.stringify({ kind: 'header', arm, url, commit, models, scenarios: scenarios.map((s) => s.id), samples, phases: phaseLimit, maxTurns, sharedTools: shared, listingInTool, padResults, wrapper: arm === 'C' ? (strictWrapper ? 'strict' : 'lenient') : undefined, groups: groups.length, skills: skills.length, startTools: startTools().length, startToolsTokens: toolsTokens(startTools()), sectionTokens: encoding.encode(section()).length, settings: 'enable_thinking false, temperature 0.2, seeded, streamed' }) + '\n')
+  writeFileSync(out, JSON.stringify({ kind: 'header', arm, url, endpoint: baseUrl, commit, models, scenarios: scenarios.map((s) => s.id), samples, phases: phaseLimit, maxTurns, sharedTools: shared, listingInTool, padResults, wrapper: arm === 'C' ? (strictWrapper ? 'strict' : 'lenient') : undefined, groups: groups.length, skills: skills.length, startTools: startTools().length - deferredTools.length, deferredTools: deferredTools.length || undefined, startToolsTokens: toolsTokens(startTools().filter((t) => !t.defer_loading)), sectionTokens: encoding.encode(section()).length, settings: 'enable_thinking false, temperature 0.2, seeded, streamed' }) + '\n')
 }
-console.error(`arm ${arm} against ${url}: ${scenarios.length} scenarios x ${samples} samples x ${models.length} models -> ${out}`)
+console.error(`arm ${arm} against ${url} via ${endpoint}: ${scenarios.length} scenarios x ${samples} samples x ${models.length} models -> ${out}`)
 
 async function runSession(model: string, scenario: (typeof SCENARIOS)[number], sample: number): Promise<void> {
-  const session: Session = { id: randomUUID(), tools: startTools(), opened: [] }
+  const session: Session = { id: randomUUID(), tools: startTools(), opened: [], loaded: new Set() }
   // With the listing in the first tool, the id leads its description so the listing is not shared between sessions either.
   const listing = listingInTool ? `\n\nGroups (open_group loads a group's tools and instructions):\n${groups.map((g) => `- ${g.name}: ${firstLine(g.description)}`).join('\n')}` : ''
   const first = session.tools[0]!.function
@@ -372,17 +406,19 @@ async function runSession(model: string, scenario: (typeof SCENARIOS)[number], s
       const phaseCalls: AgentCall[] = []
       for (let turn = 1; turn <= maxTurns; turn++) {
         const reply = await complete(model, messages, session.tools, sample, session.id)
-        const toolsSent = session.tools.length
-        const toolsSentTokens = toolsTokens(session.tools)
+        const toolsSent = inPrompt(session).length
+        const toolsSentTokens = toolsTokens(inPrompt(session))
         messages.push({ role: 'assistant', content: reply.content || null, ...(reply.toolCalls.length ? { tool_calls: reply.toolCalls } : {}) })
         const rows: CallRow[] = []
         const sentAfterOpen = afterOpen
         const sentAfterAdded = added
         afterOpen = false
         added = 0
+        const notes: string[] = []
         for (const call of reply.toolCalls) {
-          const { text, row } = await execute(session, call)
-          messages.push({ role: 'tool', tool_call_id: call.id, content: text })
+          const { text, row, refs, note } = await execute(session, call)
+          messages.push({ role: 'tool', tool_call_id: call.id, content: refs?.length ? refs.map((name) => ({ type: 'tool_reference', tool_name: name })) : text })
+          if (note) notes.push(note)
           rows.push(row)
           if (!HELPERS.has(row.name)) phaseCalls.push(row)
           if ((row.name === 'open_group' || row.name === 'read_skill') && !row.isError) {
@@ -390,6 +426,7 @@ async function runSession(model: string, scenario: (typeof SCENARIOS)[number], s
             added += row.added ?? 0
           }
         }
+        if (notes.length) messages.push({ role: 'user', content: notes.join('\n\n') })
         appendFileSync(out, JSON.stringify({ kind: 'request', ...base, phase: p + 1, turn, index: ++index, afterOpen: sentAfterOpen, toolsAdded: sentAfterAdded, tools: toolsSent, toolsTokens: toolsSentTokens, promptTokens: reply.usage.prompt_tokens, cachedTokens: reply.usage.prompt_tokens_details?.cached_tokens ?? 0, completionTokens: reply.usage.completion_tokens, ttftMs: reply.ttftMs, totalMs: reply.totalMs, retries: reply.retries, finish: reply.finish, calls: rows, text: reply.content }) + '\n')
         if (reply.toolCalls.length === 0) break
       }

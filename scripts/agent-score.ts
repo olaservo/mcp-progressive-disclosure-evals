@@ -27,11 +27,12 @@ rubricOptions.asCommitted = process.argv.includes('--as-committed')
 const files = process.argv.slice(2).filter((arg) => !arg.startsWith('--'))
 if (files.length === 0) throw new Error('pass one or more results/*-agent-*.jsonl files')
 // A file run with --shared, where sessions share one tool block, scores as its own arm, and so do runs with padded results,
-// arm C with the lenient call_tool wrapper, and runs against a server other than the two deployed subset Workers.
+// arm C with the lenient call_tool wrapper, runs against a server other than the two deployed subset Workers, and runs
+// sent to a provider's own endpoint (--base-url).
 const rows = files.flatMap((file) => {
   const parsed = readFileSync(file, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Row)
-  const header = parsed.find((r) => r.kind === 'header') as { sharedTools?: boolean; listingInTool?: boolean; padResults?: number; wrapper?: string; groups?: number } | undefined
-  const suffix = `${header?.sharedTools ? ' shared' : ''}${header?.wrapper === 'lenient' ? ' lenient' : ''}${header?.listingInTool ? ' listing in tool' : ''}${header?.padResults ? ` pad ${header.padResults}` : ''}${(header?.groups ?? 0) > 60 ? ' full catalog' : ''}`
+  const header = parsed.find((r) => r.kind === 'header') as { sharedTools?: boolean; listingInTool?: boolean; padResults?: number; wrapper?: string; groups?: number; endpoint?: string } | undefined
+  const suffix = `${header?.sharedTools ? ' shared' : ''}${header?.wrapper === 'lenient' ? ' lenient' : ''}${header?.listingInTool ? ' listing in tool' : ''}${header?.padResults ? ` pad ${header.padResults}` : ''}${(header?.groups ?? 0) > 60 ? ' full catalog' : ''}${header?.endpoint ? ' direct' : ''}`
   return suffix ? parsed.map((r) => ('arm' in r ? { ...r, arm: `${r.arm}${suffix}` } : r)) : parsed
 })
 const requests = rows.filter((r): r is Request => r.kind === 'request')
@@ -84,7 +85,7 @@ const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.l
 const pct = (n: number, d: number) => (d ? `${Math.round((100 * n) / d)}%` : '-')
 const k = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(Math.round(n)))
 const short = (model: string) => model.replace(/^.*\//, '').replace(/:.*$/, '').replace(/^claude-/, '')
-const ARM_ORDER = ['A', 'B', 'C', 'A shared', 'B shared', 'C shared', 'ref-groups-rec', 'ref-flat-toolsearch']
+const ARM_ORDER = ['A', 'B', 'C', 'D', 'A direct', 'B direct', 'C direct', 'D direct', 'A shared', 'B shared', 'C shared', 'ref-groups-rec', 'ref-flat-toolsearch']
 const cells = [...new Set(sessions.map((s) => `${s.arm}|${s.model}`))].sort((a, b) => {
   const [aa, am] = a.split('|') as [string, string]
   const [ba, bm] = b.split('|') as [string, string]
