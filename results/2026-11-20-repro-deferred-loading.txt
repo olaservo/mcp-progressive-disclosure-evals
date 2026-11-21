@@ -1,0 +1,36 @@
+Baseten direct
+  0. first turn, kv_keys_list not deferred             prompt 7424, cached 0, called group_search
+  1. first turn, kv_keys_list deferred                 prompt 3859, cached 0, called group_search
+  2. the same request again                            prompt 3859, cached 3840, called group_search
+  3. after a tool result of tool_reference             prompt 7486, cached 3840, called kv_keys_list
+  4. after re-sending the tool without the flag        prompt 7481, cached 0, called kv_keys_list
+OpenRouter, pinned to Baseten
+  0. first turn, kv_keys_list not deferred             prompt 7422, cached 0, called group_search
+  1. first turn, kv_keys_list deferred                 prompt 3859, cached 0, called group_search
+  2. the same request again                            prompt 3859, cached 3840, called group_search
+  3. after a tool result of tool_reference             prompt 3909, cached 3840, called group_search
+  4. after re-sending the tool without the flag        prompt 7481, cached 256, called kv_keys_list
+Baseten direct
+  0. first turn, kv_keys_list not deferred             prompt 7421, cached 0, called group_search
+  1. first turn, kv_keys_list deferred                 prompt 3857, cached 0, called group_search
+  2. the same request again                            prompt 3857, cached 3840, called group_search
+  3. after a tool result of tool_reference             prompt 7484, cached 3840, called kv_keys_list
+  4. after re-sending the tool without the flag        prompt 7479, cached 256, called kv_keys_list
+OpenRouter, pinned to Baseten
+  0. first turn, kv_keys_list not deferred             prompt 7425, cached 0, called group_search
+  1. first turn, kv_keys_list deferred                 prompt 3861, cached 0, called group_search
+  2. the same request again                            prompt 3861, cached 0, called group_search
+  3. after a tool result of tool_reference             prompt 3911, cached 3840, called group_search
+  4. after re-sending the tool without the flag        prompt 7483, cached 256, called kv_keys_list
+Baseten direct
+  0. first turn, kv_keys_list not deferred             prompt 7423, cached 0, called group_search
+  1. first turn, kv_keys_list deferred                 prompt 3863, cached 0, called group_search
+  2. the same request again                            prompt 3863, cached 3840, called group_search
+  3. after a tool result of tool_reference             prompt 7490, cached 3840, called kv_keys_list
+  4. after re-sending the tool without the flag        prompt 7485, cached 256, called kv_keys_list
+OpenRouter, pinned to Baseten
+  0. first turn, kv_keys_list not deferred             prompt 7424, cached 0, called group_search
+  1. first turn, kv_keys_list deferred                 prompt 3859, cached 0, called group_search
+  2. the same request again                            prompt 3859, cached 3840, called group_search
+  3. after a tool result of tool_reference             prompt 3909, cached 3840, called group_search
+  4. after re-sending the tool without the flag        prompt 7481, cached 256, called kv_keys_list
