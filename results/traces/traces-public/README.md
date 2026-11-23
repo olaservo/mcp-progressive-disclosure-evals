@@ -18,7 +18,7 @@ The server is a dry run of the Cloudflare API: every tool returns the HTTP reque
 
 - `<condition>/<model>--<task>.jsonl`: one session each, in Claude Code's session format reduced to its `user` and `assistant` rows. Tool calls are `tool_use` blocks named `mcp__groups__<tool>` (the mod) or `mcp__cf__<tool>` (the MCP server); results are `tool_result` blocks. Each assistant row carries the provider's usage, so token and cache numbers can be recomputed.
 - `index.jsonl`: one row per session with the condition, model, task id, turns, wall time, cost and final answer.
-- `summary.md`: the scored table and every call each session made, as `scripts/trace-score.ts` prints it. `npm run trace:score -- --label traces-public` regenerates it.
+- `summary.md`: the scored table and every call each session made, as `scripts/trace-score.ts` prints it. `npm run trace:score -- --label traces-public` re-scores the sessions. The file here is in the scorer's 2026-11-08 format, and the current scorer prints the same values in more columns.
 
 ## Results
 

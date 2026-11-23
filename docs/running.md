@@ -1,5 +1,7 @@
 # Running the servers and the trials
 
+This page is reference detail, written to be searched more than read through. It was checked against the scripts on 2026-11-23.
+
 ## Sources
 
 - Tools: 237 forge-generated tools from 10 products (turnstile, durableObjects, emailSending, emailRouting, workers, d1, kv, r2, queues, containers) of [cloudflare/mcp](https://github.com/cloudflare/mcp) at `4938f2f3`. The full server has 3,036 tools in 1,030 toolsets across 136 products. Cloudflare serves them behind Code Mode by default, three tools (`docs`, `search`, `execute`) at about 1,100 tokens, and exposes them as direct tools only with `?codemode=false`, which its README documents as an escape hatch for composing with another code-mode system. The `flat` variant here is that direct-tool mode. Cloudflare's own README table puts the full-schema direct list at 1,170,523 tokens for 2,594 tools, which agrees with the 1,378,777 measured here for 3,036. Groups against Code Mode itself is not measured.
@@ -117,13 +119,14 @@ Headless runs launched from inside a Claude Code session need `--allowedTools "m
 
 ## The open-model agent run
 
-`scripts/agent-tasks.ts` holds five scenarios of six phases with a rubric each. A phase is one user turn that needs one or two tools from one group, and phase five returns to a group an earlier phase used. `scripts/agent-run.ts` drives a model on the Hugging Face router through them with its own loop, under one of three client designs:
+`scripts/agent-tasks.ts` holds five scenarios of six phases with a rubric each. A phase is one user turn that needs one or two tools from one group, and phase five returns to a group an earlier phase used. `scripts/agent-run.ts` drives a model on the Hugging Face router through them with its own loop, under one of four client designs:
 
 | Arm | What the client does |
 | :-- | :-- |
 | `A` | Puts every tool schema of the flat Worker in `tools` from the first request. |
 | `B` | Starts `tools` as `list_groups`, `open_group` and `read_skill` against the `opt2-rec` Worker, and appends a group's tools when it opens. Opened groups stay registered. |
 | `C` | Keeps `tools` fixed at `list_groups`, `open_group`, `read_skill` and `call_tool(name, arguments)`. `open_group` returns the group's schemas as tool-result text. `call_tool` takes a tool name nested inside `arguments`; `--strict-wrapper` is the loop as it was for the first runs. |
+| `D` | Puts every tool in `tools` with `defer_loading` from the first request. `open_group` answers with `tool_reference` blocks keyed by `tool_name`, which load the group's schemas. This is Baseten's documented shape, and it ran on Baseten's own endpoint with `--base-url` and `--key-env`. |
 
 Each session's id leads its system prompt and ends its first tool's description, so no session reads a prefix another one cached. `--shared` leaves the id out of the tools, so sessions with the same tool list share its cached block. Requests are streamed, with thinking off, temperature 0.2 and the sample number as the seed. Each request is one JSONL row with the provider's `prompt_tokens` and `cached_tokens`, the time to first token, and every tool call with whether its arguments pass the tool's input schema (ajv) and whether the server rejected it. `scripts/agent-ref.ts` runs the same phases through headless Claude Code, one process per scenario with `--input-format stream-json`, and writes the same rows. `scripts/agent-score.ts` scores any of these files and re-derives completion from the recorded calls.
 
@@ -138,7 +141,9 @@ npm run agent:score -- results/2026-11-13-agent-full-*.jsonl results/2026-11-13-
 npm run agent:score -- results/2026-11-13-agent-chain30-*.jsonl    # the 30-turn summary
 npm run agent:run -- --arm A --shared --scenarios uploads --phases 1 --label chain30-a-shared-warm    # one session to cache the shared tool block, then the --shared chained runs
 npm run agent:score -- $(ls results/2026-11-1[345]-agent-chain30-*.jsonl | grep -v warm)    # the 30-turn summary with the 2026-11-14 sessions
-npm run agent:probe      # whether the endpoint honours the chat templates' own mid-session tool paths
+npm run agent:probe      # the chat templates' own mid-session tool paths, through the router. Baseten rejects this request shape; see the deferred probe below
+npx tsx scripts/agent-probe-deferred.ts --base-url https://inference.baseten.co/v1    # Baseten's defer_loading and tool_reference shape, on its own endpoint; without --base-url, through the router
+npm run agent:run -- --arm D --base-url https://inference.baseten.co/v1 --key-env BASETEN_API_KEY --models deepseek-ai/DeepSeek-V4.1-Flash:baseten --samples 3 --label direct-d    # arm D on Baseten direct
 npm run agent:probe-order    # where the endpoint puts tools relative to the system prompt, from its cache counts
 ```
 
