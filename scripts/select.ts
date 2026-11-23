@@ -1,8 +1,9 @@
 // Asks models which group, skill or tool they would load for a task, given only what a client sees before groups/get.
 // Every mode shows the server's skills/list index, since a Skills-extension client would show it too.
-// Usage: tsx scripts/select.ts --url <mcp url> [--mode groups|flat|flat-schemas] [--tasks v1|v2|v3] [--models a,b,c] [--seeds N] [--limit N] [--env <.env path>] [--label name] [--list-all-skills]
+// Usage: tsx scripts/select.ts --url <mcp url> [--mode groups|flat|flat-schemas] [--tasks v1|v2|v3] [--models a,b,c] [--seeds N] [--limit N] [--env <.env path>] [--label name] [--list-all-skills] [--dedup-grouped-skills]
 // --list-all-skills reads skills/list on a second client that declares only the Skills extension, so a server that leaves
 // grouped skills out for a groups client still shows every skill.
+// --dedup-grouped-skills drops from the prompt any skill that shares a group's name, as a host that lists each workflow once would.
 // Model ids route by prefix: claude-* through the Anthropic SDK, gpt-* through the OpenAI SDK, kimi-* through the OpenAI SDK
 // against api.moonshot.ai, gemini-* through the Google GenAI SDK, decisions:<model> through the OpenAI Decisions API and
 // jev-* through TypeSafe's System One API (both classifiers, groups mode only), and anything else through the Hugging Face
@@ -39,6 +40,7 @@ const replay = opt('replay')
 const retry = opt('retry')
 const parallel = args.includes('--parallel')
 const listAllSkills = args.includes('--list-all-skills')
+const dedupGroupedSkills = args.includes('--dedup-grouped-skills')
 
 // Keys come from --env or the environment. Values are never printed.
 if (envFile) {
@@ -180,6 +182,7 @@ async function catalog(): Promise<{ text: string; instruction: string; groups: N
     // SEP-2640 entries carry `frontmatter`; Option 3's renamed groups under the same identifier do not, and drop out.
     const entries = listAllSkills ? await skillsOnlyListing() : ((await client.request({ method: 'skills/list', params: {} }, Loose)) as { skills?: Entry[] }).skills ?? []
     skills = entries.flatMap((entry) => (entry.frontmatter ? [{ name: entry.frontmatter.name, description: entry.frontmatter.description }] : []))
+    if (dedupGroupedSkills) skills = skills.filter((skill) => !groups.some((group) => group.name === skill.name))
     if (skills.length > 0) lines.push('', 'Skills (instructions that load on demand with skills/get and resources/read):', ...skills.map((skill) => `- ${skill.name}: ${firstLine(skill.description)}`))
   }
   await client.close()
@@ -405,7 +408,7 @@ function score(answer: Answer, expected: string[]): { correct: boolean; rightNam
   return { correct: hits(keyed) || skillOk || noneOk, rightName: hits(answer.group) || hits(answer.tool) || skillOk || noneOk }
 }
 
-interface Header { mode: string; taskSet?: string; url: string; tools: number; groups: number; groupNames?: string[]; skills?: number; listAllSkills?: boolean; promptTokens: number; tasks: number; seeds: number; reasoning?: Record<string, string> }
+interface Header { mode: string; taskSet?: string; url: string; tools: number; groups: number; groupNames?: string[]; skills?: number; listAllSkills?: boolean; dedupGroupedSkills?: boolean; promptTokens: number; tasks: number; seeds: number; reasoning?: Record<string, string> }
 
 const shortName = (model: string) => model.replace(/^.*\//, '').replace(/:.*$/, '')
 /** The workflow groups, which share their skill's name. Every other group is a product group. */
@@ -415,7 +418,7 @@ const pickOf = (answer: Answer) => (answer.group ? `group:${answer.group}` : ans
 
 function summary(header: Header, trials: Trial[], out: string): void {
   const modelsSeen = [...new Set(trials.map((t) => t.model))]
-  console.log(`\n${header.mode} mode, task set ${header.taskSet ?? 'v1'}, ${header.url}. ${header.tools} top-level tools, ${header.groups} groups, ${header.skills ?? 0} skills listed${header.listAllSkills ? ' (skills/list read as a Skills-only client)' : ''}, ${header.promptTokens} prompt tokens (o200k_base) before the task. ${header.tasks} tasks x ${header.seeds} samples.\n`)
+  console.log(`\n${header.mode} mode, task set ${header.taskSet ?? 'v1'}, ${header.url}. ${header.tools} top-level tools, ${header.groups} groups, ${header.skills ?? 0} skills listed${header.listAllSkills ? ' (skills/list read as a Skills-only client)' : ''}${header.dedupGroupedSkills ? ' (skills that share a group name left out of the prompt)' : ''}, ${header.promptTokens} prompt tokens (o200k_base) before the task. ${header.tasks} tasks x ${header.seeds} samples.\n`)
   console.log('| Model | Reasoning | Correct | Right name, either key | Picked a group | Picked a skill | Skill only, tool task | None | Unparsed or error | Avg input tokens | Cache read |')
   console.log('| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |')
   // A skill picked for a task whose answer is a group or tool: it loads instructions without the tools the task needs.
@@ -516,7 +519,7 @@ if (retry) {
 } else {
   const { text, instruction, groups, skills, tools } = await catalog()
   const promptTokens = encoding.encode(`${SYSTEM}\n${text}\n${instruction}`).length
-  const header: Header = { mode, taskSet, url, tools: tools.length, groups: groups.length, groupNames: mode === 'groups' ? groups.map((group) => group.name) : undefined, skills: skills.length, listAllSkills: listAllSkills || undefined, promptTokens, tasks: tasks.length, seeds, reasoning: Object.fromEntries(models.map((model) => [model, reasoning(model)])) }
+  const header: Header = { mode, taskSet, url, tools: tools.length, groups: groups.length, groupNames: mode === 'groups' ? groups.map((group) => group.name) : undefined, skills: skills.length, listAllSkills: listAllSkills || undefined, dedupGroupedSkills: dedupGroupedSkills || undefined, promptTokens, tasks: tasks.length, seeds, reasoning: Object.fromEntries(models.map((model) => [model, reasoning(model)])) }
   console.error(`${mode} mode, task set ${taskSet}, against ${url}: ${tools.length} top-level tools, ${groups.length} groups, ${skills.length} skills, ${promptTokens} prompt tokens before the task`)
   if (process.env.SELECT_DUMP_PROMPT) console.error(`--- prompt ---\n${text}\n${instruction}\n--- end ---`)
 
