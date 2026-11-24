@@ -1,0 +1,121 @@
+
+| Arm | Model | Trials | Every required step | Required steps | Stated | Unsaid | Single-product tasks | Cross-product tasks | Steps with a tool loaded | Unsaid steps with a tool loaded | Stopped at the request limit |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: |
+| search | claude-opus-5-5 | 54 | 47 | 201 of 210 | 129 of 135 | 72 of 75 | 101 of 102 | 100 of 108 | 206 of 210 | 74 of 75 | 0 |
+| groups | claude-opus-5-5 | 54 | 54 | 210 of 210 | 135 of 135 | 75 of 75 | 102 of 102 | 108 of 108 | 210 of 210 | 75 of 75 | 0 |
+
+| Arm | Model | Searches or opens | Tools loaded | Loaded and never called | Calls to a tool no step accepts | Requests | Median input tokens | Median output tokens |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: |
+| search | claude-opus-5-5 | 4.9 | 20.1 | 16.0 | 0.4 | 4.4 | 90046 | 1517 |
+| groups | claude-opus-5-5 | 2.3 | 42.2 | 38.0 | 0.2 | 4.9 | 287834 | 1166 |
+
+| Task | Kind | Arm | Model | Required steps done | Missed | Searches or opens |
+| :-- | :-- | :-- | :-- | --: | :-- | :-- |
+| script-config | single | search | claude-opus-5-5 #1 | 3 of 3 |  | worker script secret put ; worker custom domain attach ; worker cron schedules update ; list zones ; zones list get zone by name |
+| retire-subdomain | single | search | claude-opus-5-5 #2 | 5 of 5 |  | email sending subdomain ; list zones ; zones list get zone by name ; list sending subdomains ; zones_list zone name filter account ; emailSending_subdomains_list |
+| retire-subdomain | single | search | claude-opus-5-5 #3 | 5 of 5 |  | email sending subdomain ; list zones ; zones list get zone by name ; list sending subdomains ; zones_list GET /zones ; emailSending_subdomains_list |
+| retire-subdomain | single | search | claude-opus-5-5 #1 | 5 of 5 |  | email sending subdomain ; list zones ; zones list get zone by name ; list email sending subdomains ; zones_list name filter ; email sending subdomains list zone ; List sending subdomains GET /zones/{zone_id}/email/sending/subdomains |
+| script-config | single | search | claude-opus-5-5 #2 | 3 of 3 |  | worker script secret put ; worker custom domain attach ; worker cron schedules update ; list zones ; zones list get zone details by name ; list zones account filter name |
+| script-config | single | search | claude-opus-5-5 #3 | 3 of 3 |  | worker script secret put ; worker custom domain attach ; worker cron schedules update ; list zones ; zones list get zone by name |
+| leaking-container | cross | search | claude-opus-5-5 #1 | 4 of 4 |  | container application list ; durable objects namespace list objects ; worker script bindings settings ; list containers applications GET ; list durable objects namespaces ; get worker script settings bindings ; containers applications list all ; durableObjects namespaces list ; workers scripts settings get ; GET /accounts/{account_id}/containers/applications ; GET /accounts/{account_id}/workers/durable_objects/namespaces ; GET workers scripts settings bindings fetch script |
+| leaking-container | cross | search | claude-opus-5-5 #2 | 4 of 4 |  | container application list get ; durable objects namespace list objects ; worker script bindings settings ; list containers applications account ; list durable objects namespaces ; get worker script settings bindings ; containers_applications_list GET /containers/applications ; durableObjects_namespaces_list GET durable_objects/namespaces ; workers scripts settings get GET /workers/scripts/{script_name}/settings ; get worker script version bindings settings scriptAndVersionSettings get ; GET script settings bindings worker workers_scripts_scriptAndVersionSettings_get |
+| leaking-container | cross | search | claude-opus-5-5 #3 | 4 of 4 |  | container application list ; durable object namespace list objects ; worker script bindings settings ; list containers applications GET ; list durable object namespaces ; get script settings bindings ; containers applications list all applications account ; durableObjects namespaces list ; containers_applications_list containers_applications_get ; Returns the Durable Object namespaces owned by an account |
+| forwarding-setup | cross | search | claude-opus-5-5 #1 | 4 of 4 |  | email routing destination address rule zone ; enable email routing dns zone list zones ; POST email routing dns enable; list zones by name ; list zones ; zones get list filter name account |
+| forwarding-setup | cross | search | claude-opus-5-5 #2 | 4 of 4 |  | email routing destination address rule zone ; enable email routing dns; list zones by name ; POST email routing dns enable zone ; list zones |
+| forwarding-setup | cross | search | claude-opus-5-5 #3 | 4 of 4 |  | email routing destination address rule zone ; list zones; enable email routing dns ; zones list by name ; enable email routing POST dns |
+| branch-appliance | single | search | claude-opus-5-5 #2 | 4 of 4 |  | magic wan connector device events snapshot ; update magic wan connector ; PATCH connector interrupt window hour of day duration edit |
+| share-ruleset | cross | search | claude-opus-5-5 #1 | 1 of 3 | find the other account (unsaid); create the share | resource sharing create share recipients ; list account rulesets ; list accounts ; accounts list name filter |
+| branch-appliance | single | search | claude-opus-5-5 #1 | 4 of 4 |  | magic wan connector device events snapshot ; update magic wan connector ; edit connector interrupt window PATCH PUT |
+| branch-appliance | single | search | claude-opus-5-5 #3 | 4 of 4 |  | magic wan connector device events snapshot ; update magic wan connector interrupt window ; edit connector PATCH interrupt_window_hour_of_day |
+| org-invite | cross | search | claude-opus-5-5 #1 | 3 of 3 |  | organization members invite roles audit logs ; list organizations create organization member roles |
+| org-invite | cross | search | claude-opus-5-5 #2 | 3 of 3 |  | organization invite member role audit logs ; list organizations create organization member roles |
+| share-ruleset | cross | search | claude-opus-5-5 #2 | 3 of 3 |  | resource sharing create share recipients ; list rulesets account ; list accounts ; list accounts user has access to name ; accounts_list GET /accounts |
+| share-ruleset | cross | search | claude-opus-5-5 #3 | 1 of 3 | find the other account (unsaid); create the share | resource sharing create share recipients rulesets list accounts ; list account rulesets; list accounts ; list accounts organization ; accounts list name ; GET /accounts list accounts user has access to |
+| org-invite | cross | search | claude-opus-5-5 #3 | 3 of 3 |  | organization member invite roles audit logs ; list organizations create organization member roles |
+| tenant-binding | cross | search | claude-opus-5-5 #2 | 4 of 4 |  | dispatch namespace script bindings settings secret ; list KV namespaces ; list Workers KV namespaces in account ; kv_namespaces_list |
+| tenant-binding | cross | search | claude-opus-5-5 #1 | 4 of 4 |  | dispatch namespace script bindings settings secret ; list KV namespaces ; list Workers KV namespaces in account ; patch settings dispatch namespace script bindings ; kv namespaces list title ; update settings script dispatch namespace PATCH ; workersForPlatforms_dispatchNamespaces_scripts_settings_edit patch script settings multipart ; patch script-level settings Workers for Platforms dispatch namespace bindings keep_bindings ; workersForPlatforms_dispatchNamespaces_scripts_settings_edit |
+| tenant-binding | cross | search | claude-opus-5-5 #3 | 3 of 4 | add the secret | dispatch namespace script settings bindings ; list KV namespaces ; dispatch namespace script secret put ; patch settings script dispatch namespace ; kv namespaces list account ; update script settings bindings PATCH workers for platforms ; list namespaces workers kv title ; add secret to script workers for platforms PUT secrets |
+| alert-webhook | single | search | claude-opus-5-5 #1 | 4 of 4 |  | alerting webhook destination policy silence ; list notification policies alerting ; alerting_policies_list get policy details |
+| alert-webhook | single | search | claude-opus-5-5 #2 | 4 of 4 |  | alerting webhook destination create ; alerting policy list update silence ; list notification policies ; alerting_policies_list get policies account |
+| failed-deploy | single | search | claude-opus-5-5 #1 | 4 of 4 |  | pages project deployments list logs rollback custom domain ; pages deployments list rollback ; list Pages project deployments |
+| failed-deploy | single | search | claude-opus-5-5 #2 | 4 of 4 |  | pages project deployments list logs rollback domain ; pages project add custom domain ; pages domains create POST add domain to project |
+| alert-webhook | single | search | claude-opus-5-5 #3 | 4 of 4 |  | alerting webhook destination create ; alerting policy list update silence ; list notification policies alerting ; alerting_policies_list get policies |
+| failed-deploy | single | search | claude-opus-5-5 #3 | 4 of 4 |  | pages project deployments list logs rollback domain ; pages project add custom domain ; add domain to pages project POST domains |
+| scan-and-block | cross | search | claude-opus-5-5 #1 | 3 of 4 | start the scan | url scanner create scan ; firewall access rule zone create block IP ; list zones by name ; urlscanner v2 scan create single url and get scan result |
+| scan-and-block | cross | search | claude-opus-5-5 #2 | 3 of 4 | start the scan | url scanner create scan ; firewall access rule zone create block IP ; list zones by name ; urlscanner v2 scan create get result ; urlScanner scans get result by scan id |
+| scan-and-block | cross | search | claude-opus-5-5 #3 | 4 of 4 |  | url scanner create scan ; firewall access rule zone create ; urlScanner scan create get result ; list zones by name ; urlscanner v2 scan url submit single ; zones list GET /zones ; zones_list list zones filter name domain |
+| flag-binding | cross | search | claude-opus-5-5 #1 | 4 of 4 |  | feature flag app create flag ; workers script settings bindings update ; flagship apps list create flag ; get worker script settings bindings ; List Flagship apps in account ; Creates a flag in an app with variations ; workers scripts settings get ; Get metadata and config such as bindings or usage model worker script |
+| flag-binding | cross | search | claude-opus-5-5 #2 | 4 of 4 |  | feature flag app create flag ; worker script settings bindings update ; flagship list apps create flag ; get worker script settings bindings ; flagship_apps_list flagship_apps_flags_create ; get worker script settings non-dispatch workers_scripts_settings_get ; get script and version settings bindings worker script ; workers_legacy_scripts_scriptAndVersionSettings_get |
+| traffic-monitoring | single | search | claude-opus-5-5 #1 | 4 of 4 |  | magic network monitoring rules configuration ; network monitoring config router ips edit get |
+| flag-binding | cross | search | claude-opus-5-5 #3 | 4 of 4 |  | feature flag app create flag ; worker script settings bindings update ; flagship apps list ; flagship create flag POST flags ; get worker script settings bindings ; flagship flags create variations ; workers scripts settings get account script ; Get Worker script settings bindings usage model GET /workers/scripts/{script_name}/settings |
+| traffic-monitoring | single | search | claude-opus-5-5 #2 | 4 of 4 |  | magic network monitoring rules configuration ; network monitoring config router ips edit get |
+| wipe-cache-store | single | search | claude-opus-5-5 #2 | 5 of 5 |  | cache reserve clear ; tiered caching smart topology ; list zones by name |
+| wipe-cache-store | single | search | claude-opus-5-5 #1 | 5 of 5 |  | cache reserve clear ; regional tiered cache smart topology ; list zones by name |
+| traffic-monitoring | single | search | claude-opus-5-5 #3 | 3 of 4 | read the configuration (unsaid) | magic network monitoring rules configuration ; network monitoring config router_ips edit ; list network monitoring account configuration get ; magicNetworkMonitoring configs list full |
+| wipe-cache-store | single | search | claude-opus-5-5 #3 | 5 of 5 |  | cache reserve clear ; regional tiered cache smart topology zone list ; list zones by name ; zones list get zone details name filter |
+| record-to-tunnel | cross | search | claude-opus-5-5 #2 | 4 of 4 |  | dns records list zones tunnels ; list zones; list cloudflare tunnels; update dns record ; zones_list ; cfd_tunnel list cloudflared tunnels ; dns_records_edit overwrite update DNS record PATCH ; overwrite DNS record PUT /zones/{zone_id}/dns_records/{dns_record_id} |
+| record-to-tunnel | cross | search | claude-opus-5-5 #1 | 4 of 4 |  | dns records list update zone tunnel ; list zones ; list cloudflare tunnels cfd_tunnel ; overwrite update DNS record PUT dns_records ; zones_get list zones by name account ; dns_records_edit patch DNS record ; zones list GET /zones filter name |
+| record-to-tunnel | cross | search | claude-opus-5-5 #3 | 4 of 4 |  | DNS records list update delete create zones tunnels list ; list zones; overwrite or patch DNS record ; zones list get zone by name ; dns_records edit update record PUT PATCH ; Overwrite DNS Record zones dns_records dns_record_id ; List Zones GET /zones ; zones_list zone name filter account |
+| abuse-block | cross | search | claude-opus-5-5 #1 | 3 of 3 |  | abuse reports list ; zone IP access rules create block ; list zones by name |
+| abuse-block | cross | search | claude-opus-5-5 #2 | 3 of 3 |  | abuse reports list ; zone IP access rules create ; list zones by name |
+| abuse-block | cross | search | claude-opus-5-5 #3 | 3 of 3 |  | abuse reports list ; zone IP access rules create ; list zones by name |
+| tag-trigger | single | search | claude-opus-5-5 #1 | 5 of 5 |  | zaraz workflow trigger publish ; list zones ; zones get list by name ; GET /zones list zones account domain name |
+| tag-trigger | single | search | claude-opus-5-5 #2 | 5 of 5 |  | zaraz workflow trigger publish ; list zones ; zones get list name filter |
+| tag-trigger | single | search | claude-opus-5-5 #3 | 5 of 5 |  | zaraz workflow trigger publish ; list zones ; zones get list by name ; GET /zones list zones account ; zones_list zone details domain name |
+| vector-index | cross | search | claude-opus-5-5 #1 | 2 of 3 | add the binding | vectorize index create insert vectors worker script binding ; create vectorize index dimensions metric ; patch worker script settings bindings ; workers_scripts_settings_edit script-and-version settings ; PATCH /accounts/{account_id}/workers/scripts/{script_name}/settings |
+| vector-index | cross | search | claude-opus-5-5 #2 | 3 of 3 |  | vectorize index create insert vectors ; worker script bindings settings update ; vectorize create index dimensions metric ; get worker script settings bindings |
+| vector-index | cross | search | claude-opus-5-5 #3 | 3 of 3 |  | vectorize index create insert vectors ; worker script bindings settings update ; vectorize create index dimensions metric ; get worker script settings bindings |
+| retire-subdomain | single | groups | claude-opus-5-5 #1 | 5 of 5 |  | email-sending-api ; zones-core |
+| script-config | single | groups | claude-opus-5-5 #1 | 3 of 3 |  | workers-secrets ; workers-domains ; workers-core ; zones-core |
+| retire-subdomain | single | groups | claude-opus-5-5 #2 | 5 of 5 |  | email-sending-api ; zones-core |
+| retire-subdomain | single | groups | claude-opus-5-5 #3 | 5 of 5 |  | email-sending-api ; zones-core |
+| script-config | single | groups | claude-opus-5-5 #2 | 3 of 3 |  | workers-secrets ; workers-domains ; workers-core ; zones-core |
+| script-config | single | groups | claude-opus-5-5 #3 | 3 of 3 |  | workers-secrets ; workers-domains ; workers-core ; zones-core |
+| leaking-container | cross | groups | claude-opus-5-5 #1 | 4 of 4 |  | containers-api ; durable-objects-api ; workers-legacy |
+| leaking-container | cross | groups | claude-opus-5-5 #2 | 4 of 4 |  | containers-api ; durable-objects-api ; workers-legacy |
+| forwarding-setup | cross | groups | claude-opus-5-5 #1 | 4 of 4 |  | email-routing-api ; zones-core |
+| forwarding-setup | cross | groups | claude-opus-5-5 #3 | 4 of 4 |  | email-routing-api ; zones-core |
+| leaking-container | cross | groups | claude-opus-5-5 #3 | 4 of 4 |  | containers-api ; durable-objects-api ; workers-legacy |
+| forwarding-setup | cross | groups | claude-opus-5-5 #2 | 4 of 4 |  | email-routing-api ; zones-core |
+| branch-appliance | single | groups | claude-opus-5-5 #1 | 4 of 4 |  | connectors-api ; connector-telemetry-events-api ; connector-telemetry-snapshots-api |
+| share-ruleset | cross | groups | claude-opus-5-5 #1 | 3 of 3 |  | rulesets-core ; accounts-core ; resource-sharing-api |
+| branch-appliance | single | groups | claude-opus-5-5 #3 | 4 of 4 |  | connectors-api ; connector-telemetry-events-api ; connector-telemetry-snapshots-api |
+| branch-appliance | single | groups | claude-opus-5-5 #2 | 4 of 4 |  | connectors-api ; connector-telemetry-events-api ; connector-telemetry-snapshots-api |
+| share-ruleset | cross | groups | claude-opus-5-5 #2 | 3 of 3 |  | rulesets-core ; resource-sharing-api ; accounts-core |
+| share-ruleset | cross | groups | claude-opus-5-5 #3 | 3 of 3 |  | rulesets-core ; accounts-core ; resource-sharing-api |
+| org-invite | cross | groups | claude-opus-5-5 #1 | 3 of 3 |  | organization-api ; organizations-api |
+| org-invite | cross | groups | claude-opus-5-5 #2 | 3 of 3 |  | organization-api ; organizations-api |
+| org-invite | cross | groups | claude-opus-5-5 #3 | 3 of 3 |  | organization-api ; organizations-api |
+| tenant-binding | cross | groups | claude-opus-5-5 #1 | 4 of 4 |  | workers-for-platforms-dispatch-namespaces ; kv-api |
+| tenant-binding | cross | groups | claude-opus-5-5 #2 | 4 of 4 |  | workers-for-platforms-dispatch-namespaces ; kv-api |
+| alert-webhook | single | groups | claude-opus-5-5 #1 | 4 of 4 |  | alerting-api |
+| tenant-binding | cross | groups | claude-opus-5-5 #3 | 4 of 4 |  | workers-for-platforms-dispatch-namespaces ; kv-api |
+| alert-webhook | single | groups | claude-opus-5-5 #2 | 4 of 4 |  | alerting-api |
+| failed-deploy | single | groups | claude-opus-5-5 #1 | 4 of 4 |  | pages-api |
+| alert-webhook | single | groups | claude-opus-5-5 #3 | 4 of 4 |  | alerting-api |
+| failed-deploy | single | groups | claude-opus-5-5 #2 | 4 of 4 |  | pages-api |
+| failed-deploy | single | groups | claude-opus-5-5 #3 | 4 of 4 |  | pages-api |
+| scan-and-block | cross | groups | claude-opus-5-5 #2 | 4 of 4 |  | url-scanner-api ; firewall-api ; zones-core |
+| scan-and-block | cross | groups | claude-opus-5-5 #1 | 4 of 4 |  | url-scanner-api ; firewall-api ; zones-core |
+| scan-and-block | cross | groups | claude-opus-5-5 #3 | 4 of 4 |  | url-scanner-api ; firewall-api ; zones-core |
+| flag-binding | cross | groups | claude-opus-5-5 #1 | 4 of 4 |  | flagship-api ; workers-legacy |
+| flag-binding | cross | groups | claude-opus-5-5 #2 | 4 of 4 |  | flagship-api ; workers-legacy |
+| traffic-monitoring | single | groups | claude-opus-5-5 #1 | 4 of 4 |  | magic-network-monitoring-api |
+| traffic-monitoring | single | groups | claude-opus-5-5 #2 | 4 of 4 |  | magic-network-monitoring-api |
+| flag-binding | cross | groups | claude-opus-5-5 #3 | 4 of 4 |  | flagship-api ; workers-legacy |
+| traffic-monitoring | single | groups | claude-opus-5-5 #3 | 4 of 4 |  | magic-network-monitoring-api |
+| wipe-cache-store | single | groups | claude-opus-5-5 #1 | 5 of 5 |  | zones-core ; cache-api |
+| wipe-cache-store | single | groups | claude-opus-5-5 #3 | 5 of 5 |  | zones-core ; cache-api |
+| wipe-cache-store | single | groups | claude-opus-5-5 #2 | 5 of 5 |  | zones-core ; cache-api |
+| record-to-tunnel | cross | groups | claude-opus-5-5 #1 | 4 of 4 |  | tunnel-api ; dns-records ; zones-core |
+| record-to-tunnel | cross | groups | claude-opus-5-5 #2 | 4 of 4 |  | tunnels-api ; dns-records ; zones-core |
+| abuse-block | cross | groups | claude-opus-5-5 #1 | 3 of 3 |  | abuse-reports-api ; firewall-api ; zones-core |
+| abuse-block | cross | groups | claude-opus-5-5 #2 | 3 of 3 |  | abuse-reports-api ; firewall-api ; zones-core |
+| record-to-tunnel | cross | groups | claude-opus-5-5 #3 | 4 of 4 |  | tunnels-api ; dns-records ; zones-core |
+| abuse-block | cross | groups | claude-opus-5-5 #3 | 3 of 3 |  | abuse-reports-api ; firewall-api ; zones-core |
+| tag-trigger | single | groups | claude-opus-5-5 #2 | 5 of 5 |  | zaraz-api ; zones-core |
+| tag-trigger | single | groups | claude-opus-5-5 #1 | 5 of 5 |  | zaraz-api ; zones-core |
+| tag-trigger | single | groups | claude-opus-5-5 #3 | 5 of 5 |  | zaraz-api ; zones-core |
+| vector-index | cross | groups | claude-opus-5-5 #1 | 3 of 3 |  | vectorize-api ; workers-legacy |
+| vector-index | cross | groups | claude-opus-5-5 #2 | 3 of 3 |  | vectorize-api ; workers-legacy |
+| vector-index | cross | groups | claude-opus-5-5 #3 | 3 of 3 |  | vectorize-api ; workers-legacy |
