@@ -644,6 +644,37 @@ Haiku 5.5 at effort low, three samples per task, 54 trials per arm, no errors, n
 - Four steps were loaded and not called in any trial of either arm: the rollback, replacing the DNS record, and blocking the address on two tasks. In those trials the model said the made-up results lacked what the step needed: a scan report with no address, a deployment list whose one item was not a deployment, a get that returned another ID than the list.
 - The search arm used 13.2 million input tokens and the groups arm 19.2 million, of which 10.2 and 16.8 million were cache reads.
 
+### Second run, with a result written for each task
+
+The key was revised after the first run. Each task now has a `world` in `scripts/workflow-answers.ts`: the result returned for each tool the task is expected to touch, with the same ID in a list and a get and the fields a later step needs. Three steps changed, by one rule read from the tools' schemas: a lookup is required when a later tool's path takes an ID the task does not give.
+
+- The tools after a named-resource lookup take IDs (`subdomain_id`, `deployment_id`, `policy_id`, `dns_record_id`, `connector_id`, `organization_id`, `app_id`, `rule_id`), so those lookups stay required.
+- Zone lookups are required on the seven tasks with a zone-scoped tool. The run gives no zone ID.
+- The two abuse report steps are one, since the get takes the public report ID.
+- The read before the vector index binding is optional, since that task does not ask to keep the bindings.
+
+The key has 70 required steps, 25 unsaid. Haiku 5.5, three samples, 54 trials per arm, no errors, none stopped at the request limit.
+
+| | Search | Groups |
+| :-- | --: | --: |
+| Required steps called | 178 of 210 | 207 of 210 |
+| Trials with every required step called | 33 of 54 | 51 of 54 |
+| Stated steps called | 118 of 135 | 132 of 135 |
+| Unsaid steps called | 60 of 75 | 75 of 75 |
+| Steps with a fitting tool loaded, tasks inside one product | 94 of 102 | 102 of 102 |
+| Steps with a fitting tool loaded, tasks across products | 92 of 108 | 107 of 108 |
+| Searches or opens per trial | 4.0 | 2.4 |
+| Tools loaded per trial | 25.6 | 43.2 |
+| Tools loaded and never called | 21.6 | 38.7 |
+| Requests per trial | 4.4 | 5.8 |
+| Median input tokens per trial | 133,230 | 335,988 |
+
+- The four steps that neither arm called in the first run were called in every trial of both arms, except the rollback in one search trial.
+- By task, search called fewer required steps than groups on 11 tasks, the same number on 6 and more on 1.
+- Three unsaid lookups had no fitting tool loaded in any search trial: the old sending subdomain, the other account, and the script that owns the namespace. The alert policy lookup had none in two of three. In those trials the model called the next tool with an ID it had not looked up.
+- The groups arm missed three steps in 54 trials.
+- The search arm used 14.5 million input tokens and the groups arm 18.7 million, of which 11.4 and 15.9 million were cache reads.
+
 ## Limits
 
 ### Every run
@@ -730,9 +761,10 @@ Haiku 5.5 at effort low, three samples per task, 54 trials per arm, no errors, n
 ### Workflow tasks
 
 - One model, one vendor's search, one catalog. Samples of a task mostly agree, so the sample is 18 tasks.
-- The made-up results stop some trials. A list returns the resources the key says exist, whatever was listed, and a get returns a new ID. "Called" counts are lowered by this in both arms. "Loaded" counts are not.
-- The key takes a lookup of a named resource as a required step. On the subdomain task the search arm skipped the lookup in three trials and still called the delete in two, with the name. Whether the API takes a name there was not checked, so some unsaid steps may not be needed.
-- The key was written by one person. Zone lookups are optional on every task. One writer step was left out because no tool lists organization roles.
+- In the first run the made-up results stopped some trials. A list returned the resources the key said exist, whatever was listed, and a get returned a new ID. Its "called" counts are lowered by this in both arms. Its "loaded" counts are not.
+- In both runs a made-up result accepts any ID. A call made with an ID that was never looked up gets a success, where the API would return an error. The second run shows search skipping lookups the task did not mention. It does not show whether the model would search for the lookup after an error.
+- The key was written by one person and revised after the first run's results were seen. The second run's `world` results were written by the same person, from the tool names and descriptions and not from the API's response schemas.
+- One writer step was left out because no tool lists organization roles.
 - Three tasks have no unsaid required step, and Gemini's tasks tend to name each step. Two tasks across products cross only by a zone lookup, and one task inside a product spans four name prefixes.
 - The writer chose the other products of a cross-product task, so that choice is not seeded. It is in `results/tasks-workflow/raw.jsonl` with each reply.
 - Groups are built per product, and the tasks are drawn per product. The cross-product tasks are there for that reason.
@@ -766,6 +798,6 @@ Haiku 5.5 at effort low, three samples per task, 54 trials per arm, no errors, n
 - `2026-11-20-agent-direct-*.jsonl`: DeepSeek arms A, B, C and D on Baseten's own endpoint, with `-shared` for the shared tool block. `2026-11-20-agent-chain30-d-direct*.jsonl`: arm D's 30-turn sessions, with the sessions that ended in HTTP 429 and their re-runs. `2026-11-20-agent-summary-direct.md`, `-direct-shared.md` and `-chain30-d-direct.md` are `npm run agent:score` over them. `2026-11-20-agent-smoke-d-direct.jsonl` is the check made first.
 - `2026-11-23-select2-subset-groups-s5.jsonl` and `-dedup-s5.jsonl`: the open models on the subset with every skill listed and with each workflow listed once. `2026-11-24-select2-subset-groups-hosted-s5.jsonl` and `-dedup-hosted-s5.jsonl`: Opus, Gemini 3.8 Flash and Kimi on the subset. `2026-11-24-select2-full-groups-s5.jsonl` and `-dedup-s5.jsonl`: those three and DeepSeek on the full catalog. `--replay` prints each summary.
 - `2026-11-24-search-v3-full.jsonl`: the tool search run on the held-out tasks, one row per trial with the queries, the tools returned and the tools called. `npx tsx scripts/search-run.ts --replay` prints its tables. `2026-11-24-search-replay-v3-full.txt` is `scripts/search-replay.ts` over it.
-- `tasks-workflow/`: the workflow tasks and every writer reply. `2026-11-24-workflow-haiku-search.jsonl` and `-groups.jsonl`: their run on Haiku, one row per trial with the searches or opens, the tools loaded and the tools called. `2026-11-24-workflow-haiku.txt` is `scripts/workflow-run.ts --replay` over both.
+- `tasks-workflow/`: the workflow tasks and every writer reply. `2026-11-24-workflow-haiku-search.jsonl` and `-groups.jsonl`: their run on Haiku, one row per trial with the searches or opens, the tools loaded and the tools called. `2026-11-24-workflow-haiku.txt` is `scripts/workflow-run.ts --replay` over both, printed with the first key. The `-v2` files are the second run. `scripts/workflow-tasks.json` now holds the revised key, so `--replay` over the first run's files scores them with it.
 
 Re-runs that reproduced an earlier file were not kept, and the 2026-11-02 file from the build against the earlier drafts was removed. This repository starts from a single commit; the private predecessor repository holds the earlier history.

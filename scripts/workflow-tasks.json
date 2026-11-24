@@ -6,11 +6,8 @@
     "writer": "claude-fable-5-2",
     "task": "On our acmeshop.io zone, retire the old sending subdomain news.acmeshop.io and set up mail.acmeshop.io as its replacement for outbound mail. Then give me the DNS records the new subdomain needs so I can check them.",
     "prefixes": [
+      "zones",
       "emailSending"
-    ],
-    "exists": [
-      "acmeshop.io",
-      "news.acmeshop.io"
     ],
     "steps": [
       {
@@ -19,8 +16,7 @@
           "zones_list",
           "zones_get"
         ],
-        "stated": false,
-        "optional": true
+        "stated": false
       },
       {
         "does": "find the old sending subdomain",
@@ -51,6 +47,65 @@
         "stated": true
       }
     ],
+    "world": {
+      "zones_list": [
+        {
+          "id": "6b1e0c4f9a2d4e7f8c3b5a1d0e9f2c47",
+          "name": "acmeshop.io",
+          "status": "active",
+          "type": "full"
+        }
+      ],
+      "zones_get": {
+        "id": "6b1e0c4f9a2d4e7f8c3b5a1d0e9f2c47",
+        "name": "acmeshop.io",
+        "status": "active",
+        "type": "full"
+      },
+      "emailSending_subdomains_list": [
+        {
+          "tag": "a41c7e90b2d34f6588e1c0d97a3b5f12",
+          "name": "news.acmeshop.io",
+          "enabled": true,
+          "created": "2026-03-04T10:00:00Z"
+        }
+      ],
+      "emailSending_subdomains_get": {
+        "tag": "a41c7e90b2d34f6588e1c0d97a3b5f12",
+        "name": "news.acmeshop.io",
+        "enabled": true
+      },
+      "emailSending_subdomains_delete": {
+        "tag": "a41c7e90b2d34f6588e1c0d97a3b5f12"
+      },
+      "emailSending_subdomains_create": {
+        "tag": "c93d2b70e1f84a6a9d2e7b4c5f6a8e01",
+        "name": "mail.acmeshop.io",
+        "enabled": true,
+        "created": "2026-11-24T10:00:00Z"
+      },
+      "emailSending_subdomains_dns": [
+        {
+          "type": "MX",
+          "name": "cf-bounce.mail.acmeshop.io",
+          "content": "route1.mx.cloudflare.net",
+          "priority": 10,
+          "ttl": 1
+        },
+        {
+          "type": "TXT",
+          "name": "cf-bounce.mail.acmeshop.io",
+          "content": "v=spf1 include:_spf.mx.cloudflare.net ~all",
+          "ttl": 1
+        },
+        {
+          "type": "TXT",
+          "name": "cf2024-1._domainkey.mail.acmeshop.io",
+          "content": "v=DKIM1; h=sha256; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA",
+          "ttl": 1
+        }
+      ]
+    },
     "writerSteps": [
       {
         "does": "List sending subdomains to find news.acmeshop.io",
@@ -79,15 +134,12 @@
     "prefixes": [
       "workers"
     ],
-    "exists": [
-      "data-processor",
-      "example.com"
-    ],
     "steps": [
       {
         "does": "read the script",
         "tools": [
           "workers_legacy_scripts_settings_get",
+          "workers_legacy_scripts_scriptAndVersionSettings_get",
           "workers_get",
           "workers_list"
         ],
@@ -117,6 +169,63 @@
         "stated": true
       }
     ],
+    "world": {
+      "zones_list": [
+        {
+          "id": "2d7f1a9c4e6b4f0a8c5d3e1b9a7f6c20",
+          "name": "example.com",
+          "status": "active",
+          "type": "full"
+        }
+      ],
+      "zones_get": {
+        "id": "2d7f1a9c4e6b4f0a8c5d3e1b9a7f6c20",
+        "name": "example.com",
+        "status": "active",
+        "type": "full"
+      },
+      "workers_list": [
+        {
+          "id": "data-processor",
+          "name": "data-processor",
+          "created_on": "2026-08-11T09:02:00Z"
+        }
+      ],
+      "workers_get": {
+        "id": "data-processor",
+        "name": "data-processor",
+        "created_on": "2026-08-11T09:02:00Z"
+      },
+      "workers_legacy_scripts_settings_get": {
+        "bindings": [
+          {
+            "type": "plain_text",
+            "name": "ENVIRONMENT",
+            "text": "production"
+          }
+        ],
+        "logpush": false,
+        "tail_consumers": []
+      },
+      "workers_legacy_scripts_scriptAndVersionSettings_get": {
+        "bindings": [
+          {
+            "type": "plain_text",
+            "name": "ENVIRONMENT",
+            "text": "production"
+          }
+        ],
+        "compatibility_date": "2026-06-01",
+        "usage_model": "standard"
+      },
+      "workers_scripts_schedules_get": {
+        "schedules": [
+          {
+            "cron": "*/30 * * * *"
+          }
+        ]
+      }
+    },
     "writerSteps": [
       {
         "does": "Get configuration details for script data-processor",
@@ -147,9 +256,6 @@
       "durableObjects",
       "workers"
     ],
-    "exists": [
-      "pdf-renderer"
-    ],
     "steps": [
       {
         "does": "find the container app",
@@ -177,11 +283,264 @@
         "does": "read the script's bindings",
         "tools": [
           "workers_legacy_scripts_settings_get",
+          "workers_legacy_scripts_scriptAndVersionSettings_get",
           "workers_get"
         ],
         "stated": true
       }
     ],
+    "world": {
+      "workers_list": [
+        {
+          "id": "pdf-renderer-worker",
+          "name": "pdf-renderer-worker",
+          "created_on": "2026-08-11T09:02:00Z"
+        }
+      ],
+      "workers_get": {
+        "id": "pdf-renderer-worker",
+        "name": "pdf-renderer-worker",
+        "created_on": "2026-08-11T09:02:00Z"
+      },
+      "workers_legacy_scripts_settings_get": {
+        "bindings": [
+          {
+            "type": "durable_object_namespace",
+            "name": "RENDERER",
+            "class_name": "PdfRenderer",
+            "namespace_id": "5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79"
+          },
+          {
+            "type": "r2_bucket",
+            "name": "OUTPUT",
+            "bucket_name": "rendered-pdfs"
+          }
+        ],
+        "logpush": false,
+        "tail_consumers": []
+      },
+      "workers_legacy_scripts_scriptAndVersionSettings_get": {
+        "bindings": [
+          {
+            "type": "durable_object_namespace",
+            "name": "RENDERER",
+            "class_name": "PdfRenderer",
+            "namespace_id": "5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79"
+          },
+          {
+            "type": "r2_bucket",
+            "name": "OUTPUT",
+            "bucket_name": "rendered-pdfs"
+          }
+        ],
+        "compatibility_date": "2026-06-01",
+        "usage_model": "standard"
+      },
+      "containers_applications": [
+        {
+          "id": "e7a1c3b5-9d2f-4e6a-8c0b-1d3f5a7c9e2b",
+          "name": "pdf-renderer",
+          "instances": 37,
+          "max_instances": 40,
+          "configuration": {
+            "image": "registry.cloudflare.com/4f1c2a9e/pdf-renderer:1.8.2",
+            "instance_type": "basic"
+          },
+          "durable_objects": {
+            "namespace_id": "5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79"
+          }
+        }
+      ],
+      "containers_applications_get": {
+        "id": "e7a1c3b5-9d2f-4e6a-8c0b-1d3f5a7c9e2b",
+        "name": "pdf-renderer",
+        "instances": 37,
+        "max_instances": 40,
+        "configuration": {
+          "image": "registry.cloudflare.com/4f1c2a9e/pdf-renderer:1.8.2",
+          "instance_type": "basic"
+        },
+        "durable_objects": {
+          "namespace_id": "5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79"
+        }
+      },
+      "durableObjects_namespaces_list": [
+        {
+          "id": "5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79",
+          "name": "pdf-renderer-worker_PdfRenderer",
+          "script": "pdf-renderer-worker",
+          "class": "PdfRenderer",
+          "use_sqlite": true,
+          "use_containers": true
+        }
+      ],
+      "durableObjects_namespaces_objects_list": [
+        {
+          "id": "0001c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0002c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0003c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0004c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0005c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0006c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0007c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0008c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0009c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "000ac0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "000bc0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "000cc0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "000dc0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "000ec0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "000fc0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0010c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0011c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0012c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0013c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0014c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0015c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0016c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0017c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0018c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0019c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "001ac0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "001bc0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "001cc0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "001dc0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "001ec0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "001fc0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0020c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0021c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0022c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0023c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0024c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0025c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0026c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0027c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0028c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        },
+        {
+          "id": "0029c0ffee5f0e3c1a7b9d4e2f8a6c4b0d1e3f5a79000000000000000000",
+          "hasStoredData": true
+        }
+      ]
+    },
     "writerSteps": [
       {
         "product": "Cloudflare containers",
@@ -212,10 +571,8 @@
     "writer": "gemini-3.6-flash",
     "task": "Please set up email forwarding for our domain standard-corp.com so that messages sent to support@standard-corp.com are delivered to dev-team@externaldomain.com. You will need to register dev-team@externaldomain.com as a destination address on the account, ensure email forwarding is turned on for the domain, and create the rule to forward incoming support mail to that address.",
     "prefixes": [
+      "zones",
       "emailRouting"
-    ],
-    "exists": [
-      "standard-corp.com"
     ],
     "steps": [
       {
@@ -224,8 +581,7 @@
           "zones_list",
           "zones_get"
         ],
-        "stated": false,
-        "optional": true
+        "stated": false
       },
       {
         "does": "register the destination address",
@@ -250,6 +606,41 @@
         "stated": true
       }
     ],
+    "world": {
+      "zones_list": [
+        {
+          "id": "8c2a4e6f0b1d4c3e9a7f5d3b1c0e2a46",
+          "name": "standard-corp.com",
+          "status": "active",
+          "type": "full"
+        }
+      ],
+      "zones_get": {
+        "id": "8c2a4e6f0b1d4c3e9a7f5d3b1c0e2a46",
+        "name": "standard-corp.com",
+        "status": "active",
+        "type": "full"
+      },
+      "emailRouting_settings_get": {
+        "id": "75610dab9e69410a82cf7e400a09ecec",
+        "name": "standard-corp.com",
+        "enabled": false,
+        "status": "unconfigured"
+      },
+      "emailRouting_enable": {
+        "id": "75610dab9e69410a82cf7e400a09ecec",
+        "name": "standard-corp.com",
+        "enabled": true,
+        "status": "ready"
+      },
+      "emailRouting_addresses_list": [],
+      "emailRouting_addresses_create": {
+        "id": "ea95132c15732412d22c1476fa83f27a",
+        "email": "dev-team@externaldomain.com",
+        "verified": null,
+        "created": "2026-11-24T10:00:00Z"
+      }
+    },
     "writerSteps": [
       {
         "product": "Zones",
@@ -285,9 +676,6 @@
       "connectorTelemetrySnapshots",
       "connectorInterrupts"
     ],
-    "exists": [
-      "7KX2-MC-00418"
-    ],
     "steps": [
       {
         "does": "find the appliance by serial number",
@@ -320,6 +708,89 @@
         "stated": true
       }
     ],
+    "world": {
+      "connectors_list": [
+        {
+          "id": "3d9b7f15c2a84e60b1d4f8a6c0e2b579",
+          "activated": true,
+          "interrupt_window_duration_hours": 1,
+          "interrupt_window_hour_of_day": 1,
+          "notes": "Lisbon branch",
+          "timezone": "Europe/Lisbon",
+          "device": {
+            "id": "9a1c3e5b7d0f4a2c8e6b4d2f0a1c3e58",
+            "serial_number": "7KX2-MC-00418"
+          }
+        }
+      ],
+      "connectors_get": {
+        "id": "3d9b7f15c2a84e60b1d4f8a6c0e2b579",
+        "activated": true,
+        "interrupt_window_duration_hours": 1,
+        "interrupt_window_hour_of_day": 1,
+        "notes": "Lisbon branch",
+        "timezone": "Europe/Lisbon",
+        "device": {
+          "id": "9a1c3e5b7d0f4a2c8e6b4d2f0a1c3e58",
+          "serial_number": "7KX2-MC-00418"
+        }
+      },
+      "connectorTelemetryEvents_list": {
+        "count": 3,
+        "items": [
+          {
+            "a": 1763935200,
+            "k": "StartRotateCryptKey",
+            "n": 0,
+            "t": 1763935200
+          },
+          {
+            "a": 1763938920,
+            "k": "Reboot",
+            "n": 0,
+            "t": 1763938920
+          },
+          {
+            "a": 1763942400,
+            "k": "StartUpgrade",
+            "n": 0,
+            "t": 1763942400
+          }
+        ]
+      },
+      "connectorTelemetryEvents_get": {
+        "e": {
+          "k": "Reboot"
+        },
+        "n": 0,
+        "t": 1763938920,
+        "v": "0.0.2"
+      },
+      "connectorTelemetrySnapshots_list": {
+        "count": 1,
+        "items": [
+          {
+            "a": 1763971200,
+            "t": 1763971200
+          }
+        ]
+      },
+      "connectorTelemetrySnapshots_get": {
+        "count_reclaim_failures": 0,
+        "cpu_count": 4,
+        "cpu_load_average_1m": 3.8,
+        "memory_available_kb": 180432,
+        "memory_total_kb": 8048128,
+        "uptime_seconds": 31400,
+        "tunnels": [
+          {
+            "health_state": "down",
+            "interface_name": "ipsec1"
+          }
+        ],
+        "v": "2026.10.1"
+      }
+    },
     "writerSteps": [
       {
         "does": "List connectors to find the one with that serial number",
@@ -351,10 +822,6 @@
       "organization",
       "resourceSharing"
     ],
-    "exists": [
-      "corp-baseline-blocks",
-      "Acme Staging"
-    ],
     "steps": [
       {
         "does": "find the ruleset",
@@ -379,6 +846,47 @@
         "stated": true
       }
     ],
+    "world": {
+      "rulesets_list": [
+        {
+          "id": "2f2feab2026849078ba485f918791bdc",
+          "name": "default",
+          "kind": "zone",
+          "phase": "http_request_firewall_custom",
+          "version": "4"
+        },
+        {
+          "id": "b7c1e9a3d5f04b2a86c4e0d2f1a3b5c7",
+          "name": "corp-baseline-blocks",
+          "kind": "custom",
+          "phase": "http_request_firewall_custom",
+          "version": "12"
+        }
+      ],
+      "accounts_list": [
+        {
+          "id": "4f1c2a9e7b3d4c5e8a6f0b1d2c3e4f5a",
+          "name": "Acme Production",
+          "type": "enterprise"
+        },
+        {
+          "id": "d0a2c4e6f8b14d3c9e7a5f3b1d0c2e48",
+          "name": "Acme Staging",
+          "type": "enterprise"
+        }
+      ],
+      "organization_account_list": [
+        {
+          "id": "4f1c2a9e7b3d4c5e8a6f0b1d2c3e4f5a",
+          "name": "Acme Production"
+        },
+        {
+          "id": "d0a2c4e6f8b14d3c9e7a5f3b1d0c2e48",
+          "name": "Acme Staging"
+        }
+      ],
+      "resourceSharing_list": []
+    },
     "writerSteps": [
       {
         "product": "Rulesets",
@@ -407,10 +915,6 @@
       "organization",
       "organizations"
     ],
-    "exists": [
-      "Acme Ops",
-      "Infrastructure Admin"
-    ],
     "steps": [
       {
         "does": "find the organization",
@@ -435,6 +939,55 @@
         "stated": true
       }
     ],
+    "world": {
+      "organization_list": [
+        {
+          "id": "a7b9c1d3e5f74a6c8e0b2d4f6a8c0e13",
+          "name": "Acme Ops",
+          "create_time": "2025-02-03T08:00:00Z"
+        }
+      ],
+      "organization_get": {
+        "id": "a7b9c1d3e5f74a6c8e0b2d4f6a8c0e13",
+        "name": "Acme Ops",
+        "create_time": "2025-02-03T08:00:00Z"
+      },
+      "organization_member_list": [
+        {
+          "id": "f1e3d5c7b9a04f2e8d6c4b2a0f1e3d59",
+          "status": "active",
+          "user": {
+            "email": "cto@acme.org"
+          }
+        }
+      ],
+      "organization_member_create": {
+        "id": "c5d7e9f1a3b54c6e8a0c2e4f6b8d0a27",
+        "status": "pending",
+        "user": {
+          "email": "ops-lead@acme.org"
+        },
+        "create_time": "2026-11-24T10:00:00Z"
+      },
+      "organizations_logs_audit": [
+        {
+          "id": "f174be97-19b1-40d6-954d-70cd5fbd52db",
+          "action": {
+            "type": "create",
+            "result": "success",
+            "time": "2026-11-24T10:00:01Z"
+          },
+          "actor": {
+            "email": "admin@acme.org",
+            "type": "user"
+          },
+          "resource": {
+            "type": "organization.member",
+            "id": "c5d7e9f1a3b54c6e8a0c2e4f6b8d0a27"
+          }
+        }
+      ]
+    },
     "writerSteps": [
       {
         "product": "Organization",
@@ -467,11 +1020,6 @@
     "prefixes": [
       "kv",
       "workersForPlatforms"
-    ],
-    "exists": [
-      "acme-store",
-      "production-tenants",
-      "shared-config"
     ],
     "steps": [
       {
@@ -506,6 +1054,53 @@
         "stated": true
       }
     ],
+    "world": {
+      "kv_namespaces_list": [
+        {
+          "id": "0f2ac74b498b48028cb68387c421e279",
+          "title": "sessions",
+          "supports_url_encoding": true
+        },
+        {
+          "id": "7c9e1b3d5f704a2e8c6a4e2f0b1d3c58",
+          "title": "shared-config",
+          "supports_url_encoding": true
+        }
+      ],
+      "workersForPlatforms_dispatchNamespaces_scripts_bindings_get": [
+        {
+          "type": "plain_text",
+          "name": "TENANT",
+          "text": "acme-store"
+        },
+        {
+          "type": "r2_bucket",
+          "name": "ASSETS",
+          "bucket_name": "acme-store-assets"
+        }
+      ],
+      "workersForPlatforms_dispatchNamespaces_scripts_settings_get": {
+        "bindings": [
+          {
+            "type": "plain_text",
+            "name": "TENANT",
+            "text": "acme-store"
+          },
+          {
+            "type": "r2_bucket",
+            "name": "ASSETS",
+            "bucket_name": "acme-store-assets"
+          }
+        ],
+        "compatibility_date": "2026-06-01"
+      },
+      "workersForPlatforms_dispatchNamespaces_scripts_get": {
+        "id": "acme-store",
+        "dispatch_namespace": "production-tenants",
+        "created_on": "2026-05-19T12:00:00Z"
+      },
+      "workersForPlatforms_dispatchNamespaces_scripts_secrets_list": []
+    },
     "writerSteps": [
       {
         "product": "Workers KV",
@@ -538,9 +1133,6 @@
     "prefixes": [
       "alerting"
     ],
-    "exists": [
-      "Production Error Spike"
-    ],
     "steps": [
       {
         "does": "create the webhook destination",
@@ -571,6 +1163,54 @@
         "stated": true
       }
     ],
+    "world": {
+      "alerting_destinations_webhooks_list": [],
+      "alerting_destinations_webhooks_create": {
+        "id": "b115d5ec15c641ee8b7692c449b5227b"
+      },
+      "alerting_policies_list": [
+        {
+          "id": "0da2b59ef118439d8097bdfb215203c9",
+          "name": "Production Error Spike",
+          "enabled": true,
+          "alert_type": "http_alert_origin_error",
+          "mechanisms": {
+            "email": [
+              {
+                "id": "oncall@acme.org"
+              }
+            ]
+          },
+          "filters": {
+            "zones": [
+              "2d7f1a9c4e6b4f0a8c5d3e1b9a7f6c20"
+            ]
+          }
+        }
+      ],
+      "alerting_policies_get": {
+        "id": "0da2b59ef118439d8097bdfb215203c9",
+        "name": "Production Error Spike",
+        "enabled": true,
+        "alert_type": "http_alert_origin_error",
+        "mechanisms": {
+          "email": [
+            {
+              "id": "oncall@acme.org"
+            }
+          ]
+        },
+        "filters": {
+          "zones": [
+            "2d7f1a9c4e6b4f0a8c5d3e1b9a7f6c20"
+          ]
+        }
+      },
+      "alerting_policies_update": {
+        "id": "0da2b59ef118439d8097bdfb215203c9"
+      },
+      "alerting_silences_list": []
+    },
     "writerSteps": [
       {
         "does": "Create a new webhook alert destination",
@@ -598,9 +1238,6 @@
     "task": "The latest production deploy of our static site project \"marketing-site\" failed. Pull its build log so I can see what went wrong, and roll production back to the last successful deployment before it. Then attach promo.acme-corp.com to the project as a custom domain.",
     "prefixes": [
       "pages"
-    ],
-    "exists": [
-      "marketing-site"
     ],
     "steps": [
       {
@@ -632,6 +1269,112 @@
         "stated": true
       }
     ],
+    "world": {
+      "pages_list": [
+        {
+          "id": "7b162ea7-7367-4d67-bcde-1160995d5ad0",
+          "name": "marketing-site",
+          "production_branch": "main",
+          "subdomain": "marketing-site.pages.dev"
+        }
+      ],
+      "pages_get": {
+        "id": "7b162ea7-7367-4d67-bcde-1160995d5ad0",
+        "name": "marketing-site",
+        "production_branch": "main",
+        "subdomain": "marketing-site.pages.dev",
+        "domains": [
+          "marketing-site.pages.dev"
+        ]
+      },
+      "pages_deployments_list": [
+        {
+          "id": "f64788e9-fccd-4d4a-a28a-cb84f88f6c11",
+          "environment": "production",
+          "created_on": "2026-11-24T08:41:00Z",
+          "latest_stage": {
+            "name": "build",
+            "status": "failure"
+          },
+          "deployment_trigger": {
+            "metadata": {
+              "branch": "main",
+              "commit_message": "Update pricing table"
+            }
+          }
+        },
+        {
+          "id": "0a3c5e7b-9d1f-4b2d-8e6a-4c2e0f1a3b5d",
+          "environment": "production",
+          "created_on": "2026-11-21T15:02:00Z",
+          "latest_stage": {
+            "name": "deploy",
+            "status": "success"
+          },
+          "deployment_trigger": {
+            "metadata": {
+              "branch": "main",
+              "commit_message": "Add holiday banner"
+            }
+          }
+        },
+        {
+          "id": "5d7f9b1c-3e0a-4c6e-9a8b-6d4f2b0c1e3a",
+          "environment": "production",
+          "created_on": "2026-11-18T11:30:00Z",
+          "latest_stage": {
+            "name": "deploy",
+            "status": "success"
+          },
+          "deployment_trigger": {
+            "metadata": {
+              "branch": "main",
+              "commit_message": "Fix footer links"
+            }
+          }
+        }
+      ],
+      "pages_deployments_get": {
+        "id": "f64788e9-fccd-4d4a-a28a-cb84f88f6c11",
+        "environment": "production",
+        "created_on": "2026-11-24T08:41:00Z",
+        "latest_stage": {
+          "name": "build",
+          "status": "failure"
+        }
+      },
+      "pages_deployments_history_logs_get": {
+        "total": 4,
+        "includes_container_logs": true,
+        "data": [
+          {
+            "ts": "2026-11-24T08:41:12Z",
+            "line": "Installing dependencies"
+          },
+          {
+            "ts": "2026-11-24T08:42:03Z",
+            "line": "Executing user command: npm run build"
+          },
+          {
+            "ts": "2026-11-24T08:42:19Z",
+            "line": "Error: Cannot find module './components/PricingTable'"
+          },
+          {
+            "ts": "2026-11-24T08:42:20Z",
+            "line": "Failed: build command exited with code: 1"
+          }
+        ]
+      },
+      "pages_deployments_rollback": {
+        "id": "0a3c5e7b-9d1f-4b2d-8e6a-4c2e0f1a3b5d",
+        "environment": "production",
+        "latest_stage": {
+          "name": "deploy",
+          "status": "success"
+        }
+      },
+      "pages_domains_list": []
+    },
     "writerSteps": [
       {
         "does": "List the project's production deployments",
@@ -659,11 +1402,9 @@
     "task": "Run a public web scan for https://test.example-corp.com/welcome, retrieve the full scan report using the scan ID, and create a domain firewall rule on example-corp.com to block incoming requests from the IP address detected during the scan.",
     "prefixes": [
       "urlScanner",
+      "zones",
       "firewall",
       "rulesets"
-    ],
-    "exists": [
-      "example-corp.com"
     ],
     "steps": [
       {
@@ -686,8 +1427,7 @@
           "zones_list",
           "zones_get"
         ],
-        "stated": false,
-        "optional": true
+        "stated": false
       },
       {
         "does": "block the address on the zone",
@@ -699,6 +1439,66 @@
         "stated": true
       }
     ],
+    "world": {
+      "zones_list": [
+        {
+          "id": "1e3a5c7f9b0d4e2a8c6f4b2d0a1c3e57",
+          "name": "example-corp.com",
+          "status": "active",
+          "type": "full"
+        }
+      ],
+      "zones_get": {
+        "id": "1e3a5c7f9b0d4e2a8c6f4b2d0a1c3e57",
+        "name": "example-corp.com",
+        "status": "active",
+        "type": "full"
+      },
+      "urlScanner_scans_create": {
+        "uuid": "095be615-a8ad-4c33-8e9c-c7612fbf6c9f",
+        "api": "https://api.cloudflare.com/client/v4/accounts/4f1c2a9e7b3d4c5e8a6f0b1d2c3e4f5a/urlscanner/v2/result/095be615-a8ad-4c33-8e9c-c7612fbf6c9f",
+        "url": "https://test.example-corp.com/welcome",
+        "visibility": "public",
+        "message": "Submission successful"
+      },
+      "urlScanner_scans_get": {
+        "task": {
+          "uuid": "095be615-a8ad-4c33-8e9c-c7612fbf6c9f",
+          "url": "https://test.example-corp.com/welcome",
+          "status": "finished",
+          "visibility": "public"
+        },
+        "page": {
+          "url": "https://test.example-corp.com/welcome",
+          "domain": "test.example-corp.com",
+          "ip": "203.0.113.77",
+          "asn": "AS64500",
+          "country": "NL",
+          "status": "200"
+        },
+        "verdicts": {
+          "overall": {
+            "malicious": false
+          }
+        },
+        "stats": {
+          "requests": 23
+        }
+      },
+      "urlScanner_scans_list": [
+        {
+          "task": {
+            "uuid": "095be615-a8ad-4c33-8e9c-c7612fbf6c9f",
+            "url": "https://test.example-corp.com/welcome",
+            "time": "2026-11-24T10:00:00Z"
+          },
+          "page": {
+            "ip": "203.0.113.77"
+          }
+        }
+      ],
+      "firewall_accessRules_list": []
+    },
     "writerSteps": [
       {
         "product": "urlScanner",
@@ -732,10 +1532,6 @@
       "flagship",
       "workers"
     ],
-    "exists": [
-      "storefront",
-      "checkout-api"
-    ],
     "steps": [
       {
         "does": "find the flag app",
@@ -755,6 +1551,7 @@
         "does": "read the script's bindings",
         "tools": [
           "workers_legacy_scripts_settings_get",
+          "workers_legacy_scripts_scriptAndVersionSettings_get",
           "workers_get"
         ],
         "stated": false
@@ -771,6 +1568,63 @@
         "stated": true
       }
     ],
+    "world": {
+      "workers_list": [
+        {
+          "id": "checkout-api",
+          "name": "checkout-api",
+          "created_on": "2026-08-11T09:02:00Z"
+        }
+      ],
+      "workers_get": {
+        "id": "checkout-api",
+        "name": "checkout-api",
+        "created_on": "2026-08-11T09:02:00Z"
+      },
+      "workers_legacy_scripts_settings_get": {
+        "bindings": [
+          {
+            "type": "kv_namespace",
+            "name": "CART_CACHE",
+            "namespace_id": "0f2ac74b498b48028cb68387c421e279"
+          },
+          {
+            "type": "secret_text",
+            "name": "STRIPE_KEY"
+          }
+        ],
+        "logpush": false,
+        "tail_consumers": []
+      },
+      "workers_legacy_scripts_scriptAndVersionSettings_get": {
+        "bindings": [
+          {
+            "type": "kv_namespace",
+            "name": "CART_CACHE",
+            "namespace_id": "0f2ac74b498b48028cb68387c421e279"
+          },
+          {
+            "type": "secret_text",
+            "name": "STRIPE_KEY"
+          }
+        ],
+        "compatibility_date": "2026-06-01",
+        "usage_model": "standard"
+      },
+      "flagship_apps_list": [
+        {
+          "id": "6e8a0c2e-4f6b-4d0a-8c1e-3a5c7e9b1d3f",
+          "name": "storefront",
+          "created_at": "2026-07-02T09:00:00Z"
+        }
+      ],
+      "flagship_apps_get": {
+        "id": "6e8a0c2e-4f6b-4d0a-8c1e-3a5c7e9b1d3f",
+        "name": "storefront",
+        "created_at": "2026-07-02T09:00:00Z"
+      },
+      "flagship_apps_flags_list": []
+    },
     "writerSteps": [
       {
         "product": "Flagship",
@@ -802,9 +1656,6 @@
     "task": "Update our network traffic monitoring setup by changing the bandwidth threshold of the rule named 'High Traffic Warning' to 500000 and adding '192.0.2.1' to the router IPs in our account monitoring configuration.",
     "prefixes": [
       "magicNetworkMonitoring"
-    ],
-    "exists": [
-      "High Traffic Warning"
     ],
     "steps": [
       {
@@ -839,6 +1690,58 @@
         "stated": true
       }
     ],
+    "world": {
+      "magicNetworkMonitoring_rules_list": [
+        {
+          "id": "2890e6fa406311ed9b5a23f70f6fb8cf",
+          "name": "High Traffic Warning",
+          "bandwidth_threshold": 250000,
+          "duration": "1m",
+          "prefixes": [
+            "203.0.113.0/24"
+          ],
+          "automatic_advertisement": false
+        },
+        {
+          "id": "9c1e3a5b7d2f4e6a8b0c2d4e6f8a0b1c",
+          "name": "Volumetric Critical",
+          "packet_threshold": 80000,
+          "duration": "1m",
+          "prefixes": [
+            "203.0.113.0/24"
+          ],
+          "automatic_advertisement": true
+        }
+      ],
+      "magicNetworkMonitoring_rules_get": {
+        "id": "2890e6fa406311ed9b5a23f70f6fb8cf",
+        "name": "High Traffic Warning",
+        "bandwidth_threshold": 250000,
+        "duration": "1m",
+        "prefixes": [
+          "203.0.113.0/24"
+        ],
+        "automatic_advertisement": false
+      },
+      "magicNetworkMonitoring_configs_get": {
+        "name": "acme-flow-monitoring",
+        "default_sampling": 1,
+        "router_ips": [
+          "198.51.100.7",
+          "198.51.100.8"
+        ],
+        "warp_devices": []
+      },
+      "magicNetworkMonitoring_configs_full_get": {
+        "name": "acme-flow-monitoring",
+        "default_sampling": 1,
+        "router_ips": [
+          "198.51.100.7",
+          "198.51.100.8"
+        ],
+        "warp_devices": []
+      }
+    },
     "writerSteps": [
       {
         "does": "List network monitoring rules to find the rule ID",
@@ -865,11 +1768,8 @@
     "writer": "claude-fable-5-2",
     "task": "For the zone shop.example.com, wipe everything currently held in the long-term persistent store for cached assets and confirm the wipe has actually started. While you're at it, turn on automatic selection of the single best upper-tier data center for origin fetches.",
     "prefixes": [
+      "zones",
       "cache"
-    ],
-    "exists": [
-      "shop.example.com",
-      "example.com"
     ],
     "steps": [
       {
@@ -878,8 +1778,7 @@
           "zones_list",
           "zones_get"
         ],
-        "stated": false,
-        "optional": true
+        "stated": false
       },
       {
         "does": "turn the store off, which a wipe needs",
@@ -911,6 +1810,49 @@
         "stated": true
       }
     ],
+    "world": {
+      "zones_list": [
+        {
+          "id": "9f0b2d4c6e8a4b1c7d5f3a1e0c2b4d68",
+          "name": "shop.example.com",
+          "status": "active",
+          "type": "full"
+        }
+      ],
+      "zones_get": {
+        "id": "9f0b2d4c6e8a4b1c7d5f3a1e0c2b4d68",
+        "name": "shop.example.com",
+        "status": "active",
+        "type": "full"
+      },
+      "cache_settings_reserve_get": {
+        "id": "cache_reserve",
+        "value": "on",
+        "editable": true,
+        "modified_on": "2026-09-01T12:00:00Z"
+      },
+      "cache_settings_reserve_edit": {
+        "id": "cache_reserve",
+        "value": "off",
+        "editable": true,
+        "modified_on": "2026-11-24T10:00:00Z"
+      },
+      "cache_settings_reserve_clear": {
+        "id": "cache_reserve_clear",
+        "state": "In-progress",
+        "start_ts": "2026-11-24T10:00:05Z"
+      },
+      "cache_settings_reserve_status": {
+        "id": "cache_reserve_clear",
+        "state": "In-progress",
+        "start_ts": "2026-11-24T10:00:05Z"
+      },
+      "cache_settings_smartTieredCache_get": {
+        "id": "tiered_cache_smart_topology_enable",
+        "value": "off",
+        "editable": true
+      }
+    },
     "writerSteps": [
       {
         "does": "Turn off the persistent cache store setting, which must be off before a wipe",
@@ -937,14 +1879,10 @@
     "writer": "claude-fable-5-2",
     "task": "inventory.acmeparts.com still has an A record pointing at our old origin IP. Switch that hostname over so it resolves to our existing tunnel named warehouse-edge instead, proxied, and leave a comment on the record saying \"moved to tunnel for warehouse rollout\".",
     "prefixes": [
+      "zones",
       "tunnels",
       "tunnel",
       "dns"
-    ],
-    "exists": [
-      "acmeparts.com",
-      "inventory.acmeparts.com",
-      "warehouse-edge"
     ],
     "steps": [
       {
@@ -953,8 +1891,7 @@
           "zones_list",
           "zones_get"
         ],
-        "stated": false,
-        "optional": true
+        "stated": false
       },
       {
         "does": "find the tunnel",
@@ -980,6 +1917,66 @@
         "stated": true
       }
     ],
+    "world": {
+      "zones_list": [
+        {
+          "id": "3ace13f51486a04ebf4f7ad4258c0e1e",
+          "name": "acmeparts.com",
+          "status": "active",
+          "type": "full"
+        }
+      ],
+      "zones_get": {
+        "id": "3ace13f51486a04ebf4f7ad4258c0e1e",
+        "name": "acmeparts.com",
+        "status": "active",
+        "type": "full"
+      },
+      "tunnels_list": [
+        {
+          "id": "c1744f8b-faa1-48a4-9e5c-02ac921467fa",
+          "name": "warehouse-edge",
+          "status": "healthy",
+          "tun_type": "cfd_tunnel",
+          "created_at": "2026-04-12T07:30:00Z"
+        }
+      ],
+      "tunnel_list": [
+        {
+          "id": "c1744f8b-faa1-48a4-9e5c-02ac921467fa",
+          "name": "warehouse-edge",
+          "status": "healthy",
+          "tun_type": "cfd_tunnel",
+          "created_at": "2026-04-12T07:30:00Z"
+        }
+      ],
+      "tunnels_get": {
+        "id": "c1744f8b-faa1-48a4-9e5c-02ac921467fa",
+        "name": "warehouse-edge",
+        "status": "healthy",
+        "tun_type": "cfd_tunnel"
+      },
+      "dns_records_list": [
+        {
+          "id": "89c0c7a1e3b54d2f9a6c8e0b2d4f6a13",
+          "type": "A",
+          "name": "inventory.acmeparts.com",
+          "content": "198.51.100.24",
+          "proxied": false,
+          "ttl": 300,
+          "comment": ""
+        }
+      ],
+      "dns_records_get": {
+        "id": "89c0c7a1e3b54d2f9a6c8e0b2d4f6a13",
+        "type": "A",
+        "name": "inventory.acmeparts.com",
+        "content": "198.51.100.24",
+        "proxied": false,
+        "ttl": 300,
+        "comment": ""
+      }
+    },
     "writerSteps": [
       {
         "product": "Zones",
@@ -1011,34 +2008,24 @@
     "task": "Check the recent abuse reports for ticket reference AB-94821 to extract the offending IP address. Then, create a block rule for that IP in the access rules of the example.com zone.",
     "prefixes": [
       "abuseReports",
+      "zones",
       "firewall",
       "rulesets"
     ],
-    "exists": [
-      "example.com",
-      "AB-94821"
-    ],
     "steps": [
+      {
+        "does": "find the report and its address",
+        "tools": [
+          "abuseReports_list",
+          "abuseReports_get"
+        ],
+        "stated": true
+      },
       {
         "does": "look up the zone by name",
         "tools": [
           "zones_list",
           "zones_get"
-        ],
-        "stated": false,
-        "optional": true
-      },
-      {
-        "does": "find the report",
-        "tools": [
-          "abuseReports_list"
-        ],
-        "stated": true
-      },
-      {
-        "does": "read the report for the address",
-        "tools": [
-          "abuseReports_get"
         ],
         "stated": false
       },
@@ -1052,6 +2039,54 @@
         "stated": true
       }
     ],
+    "world": {
+      "zones_list": [
+        {
+          "id": "2d7f1a9c4e6b4f0a8c5d3e1b9a7f6c20",
+          "name": "example.com",
+          "status": "active",
+          "type": "full"
+        }
+      ],
+      "zones_get": {
+        "id": "2d7f1a9c4e6b4f0a8c5d3e1b9a7f6c20",
+        "name": "example.com",
+        "status": "active",
+        "type": "full"
+      },
+      "abuseReports_list": {
+        "reports": [
+          {
+            "id": "AB-94821",
+            "cdate": "2026-11-22T14:05:00Z",
+            "domain": "example.com",
+            "type": "DDOS",
+            "status": "active",
+            "mitigation_summary": {
+              "active_mitigations": 0
+            }
+          }
+        ]
+      },
+      "abuseReports_get": {
+        "id": "AB-94821",
+        "cdate": "2026-11-22T14:05:00Z",
+        "domain": "example.com",
+        "type": "DDOS",
+        "status": "active",
+        "justification": "Sustained request flood against login.example.com",
+        "source_ips": [
+          "203.0.113.54"
+        ],
+        "urls": [
+          "https://login.example.com/"
+        ]
+      },
+      "abuseReports_mitigations_list": {
+        "mitigations": []
+      },
+      "firewall_accessRules_list": []
+    },
     "writerSteps": [
       {
         "product": "Zones",
@@ -1082,10 +2117,8 @@
     "writer": "gemini-3.6-flash",
     "task": "Verify that workflow mode is enabled for example.com, then add a new trigger named 'Checkout Click' that fires when `#checkout-btn` is clicked, and publish the configuration update to production.",
     "prefixes": [
+      "zones",
       "zaraz"
-    ],
-    "exists": [
-      "example.com"
     ],
     "steps": [
       {
@@ -1094,8 +2127,7 @@
           "zones_list",
           "zones_get"
         ],
-        "stated": false,
-        "optional": true
+        "stated": false
       },
       {
         "does": "check workflow mode",
@@ -1126,6 +2158,62 @@
         "stated": true
       }
     ],
+    "world": {
+      "zones_list": [
+        {
+          "id": "2d7f1a9c4e6b4f0a8c5d3e1b9a7f6c20",
+          "name": "example.com",
+          "status": "active",
+          "type": "full"
+        }
+      ],
+      "zones_get": {
+        "id": "2d7f1a9c4e6b4f0a8c5d3e1b9a7f6c20",
+        "name": "example.com",
+        "status": "active",
+        "type": "full"
+      },
+      "zaraz_workflow_get": "preview",
+      "zaraz_config_get": {
+        "zarazVersion": 43,
+        "debugKey": "my-debug-key",
+        "dataLayer": true,
+        "tools": {},
+        "variables": {},
+        "settings": {
+          "autoInjectScript": true
+        },
+        "triggers": {
+          "pageview": {
+            "name": "Pageview",
+            "description": "All page views",
+            "loadRules": [
+              {
+                "match": "{{ client.__zarazTrack }}",
+                "op": "EQUALS",
+                "value": "Pageview"
+              }
+            ],
+            "excludeRules": [],
+            "system": "pageload"
+          }
+        }
+      },
+      "zaraz_default_get": {
+        "zarazVersion": 43,
+        "tools": {},
+        "triggers": {},
+        "variables": {},
+        "settings": {}
+      },
+      "zaraz_history_list": [
+        {
+          "id": 43,
+          "createdAt": "2026-10-30T09:00:00Z",
+          "description": "Add pageview trigger"
+        }
+      ]
+    },
     "writerSteps": [
       {
         "does": "Get workflow status",
@@ -1155,9 +2243,6 @@
       "vectorize",
       "workers"
     ],
-    "exists": [
-      "search-service"
-    ],
     "steps": [
       {
         "does": "create the index",
@@ -1170,9 +2255,11 @@
         "does": "read the script's bindings",
         "tools": [
           "workers_legacy_scripts_settings_get",
+          "workers_legacy_scripts_scriptAndVersionSettings_get",
           "workers_get"
         ],
-        "stated": false
+        "stated": false,
+        "optional": true
       },
       {
         "does": "add the binding",
@@ -1194,6 +2281,55 @@
         "stated": true
       }
     ],
+    "world": {
+      "workers_list": [
+        {
+          "id": "search-service",
+          "name": "search-service",
+          "created_on": "2026-08-11T09:02:00Z"
+        }
+      ],
+      "workers_get": {
+        "id": "search-service",
+        "name": "search-service",
+        "created_on": "2026-08-11T09:02:00Z"
+      },
+      "workers_legacy_scripts_settings_get": {
+        "bindings": [
+          {
+            "type": "ai",
+            "name": "AI"
+          }
+        ],
+        "logpush": false,
+        "tail_consumers": []
+      },
+      "workers_legacy_scripts_scriptAndVersionSettings_get": {
+        "bindings": [
+          {
+            "type": "ai",
+            "name": "AI"
+          }
+        ],
+        "compatibility_date": "2026-06-01",
+        "usage_model": "standard"
+      },
+      "vectorize_list": [],
+      "vectorize_create": {
+        "name": "catalog-embeddings",
+        "config": {
+          "dimensions": 768,
+          "metric": "cosine"
+        },
+        "created_on": "2026-11-24T10:00:00Z"
+      },
+      "vectorize_insert": {
+        "mutationId": "0000aeb4-b6f2-4a3c-9d1e-7f5b3c1a9e02"
+      },
+      "vectorize_upsert": {
+        "mutationId": "0000aeb4-b6f2-4a3c-9d1e-7f5b3c1a9e02"
+      }
+    },
     "writerSteps": [
       {
         "product": "Vectorize",

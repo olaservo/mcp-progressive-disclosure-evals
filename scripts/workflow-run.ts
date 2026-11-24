@@ -3,8 +3,9 @@
 //   search  the BM25 tool search tool finds and loads tools, as in search-run.ts. The model sees nothing about the tools first.
 //   groups  the rewritten server's group listing is in the system prompt, and a client tool `open_group` answers with
 //           `tool_reference` blocks for the group's tools.
-// Nothing is executed. A call to a catalog tool gets a made-up result: a list returns one item, with an ID, for each
-// resource the key says already exists, whatever kind of thing was listed. Anything else returns an ID and the request body. A trial runs until the model stops or
+// Nothing is executed. A call to a catalog tool gets a made-up result. The key's `world` gives the result for the tools
+// a task is expected to touch, with the IDs and fields later steps need. Any other list returns nothing, and any other
+// call returns the request body under the ID it was addressed to. A trial runs until the model stops or
 // --max-requests is reached.
 // Scored per step of the answer key: a step is done when a tool that fits it was called, and reachable when such a tool was
 // loaded. The made-up results can stall a model, which lowers the first and not the second. The summary also gives searches
@@ -42,7 +43,7 @@ const maxRequests = Number(opt('max-requests', '14'))
 const label = opt('label', arm)!
 
 type Step = { does: string; tools: string[]; stated: boolean; optional?: true }
-type Task = { id: string; product: string; kind: 'single' | 'cross'; writer: string; task: string; exists: string[]; steps: Step[] }
+type Task = { id: string; product: string; kind: 'single' | 'cross'; writer: string; task: string; world: Record<string, unknown>; steps: Step[] }
 type Trial = {
   cacheRead?: number
   arm: string
@@ -76,12 +77,15 @@ const SYSTEM = [
 
 const id = (text: string) => createHash('sha256').update(text).digest('hex').slice(0, 32)
 function madeUp(task: Task, name: string, input: unknown): string {
-  if (/_list$|_list[A-Z]|List/.test(name)) {
-    const items = task.exists.map((item) => ({ id: id(item), name: item, hostname: item, status: 'active', created_on: '2026-10-02T09:14:00Z' }))
-    return JSON.stringify({ success: true, errors: [], result: items, result_info: { page: 1, per_page: 50, count: items.length, total_count: items.length } })
-  }
-  const body = (input as { body?: unknown } | undefined)?.body
-  return JSON.stringify({ success: true, errors: [], result: { id: id(name + JSON.stringify(input)), ...(body && typeof body === 'object' ? body : {}), status: 'active', modified_on: '2026-11-24T10:00:00Z' } })
+  const wrap = (result: unknown) => JSON.stringify({ success: true, errors: [], messages: [], result, ...(Array.isArray(result) ? { result_info: { page: 1, per_page: 50, count: result.length, total_count: result.length } } : {}) })
+  // The longest prefix in the task's world that the tool name starts with.
+  const key = Object.keys(task.world).filter((prefix) => name.startsWith(prefix)).sort((x, y) => y.length - x.length)[0]
+  if (key !== undefined) return wrap(task.world[key])
+  if (/_list$|_list[A-Z]/.test(name)) return wrap([])
+  const { path, body } = (input ?? {}) as { path?: Record<string, unknown>; body?: unknown }
+  // The last path parameter that is not the account or zone is the resource the call was addressed to.
+  const addressed = Object.entries(path ?? {}).filter(([param]) => param !== 'account_id' && param !== 'zone_id').map(([, value]) => value).pop()
+  return wrap({ id: typeof addressed === 'string' ? addressed : id(name + JSON.stringify(input)), ...(body && typeof body === 'object' && !Array.isArray(body) ? body : {}), modified_on: '2026-11-24T10:00:00Z' })
 }
 
 const mean = (values: number[]) => (values.length ? (values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1) : '')
