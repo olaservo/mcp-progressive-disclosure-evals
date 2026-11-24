@@ -4,7 +4,7 @@ groups mode, task set v2, http://localhost:8787/opt2/mcp. 0 top-level tools, 139
 | Model | Reasoning | Correct | Right name, either key | Picked a group | Picked a skill | Skill only, tool task | None | Unparsed or error | Avg input tokens | Cache read |
 | :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |
 | claude-opus-5-5 | effort low | 20/20 | 20/20 | 14 | 6 | 5 | 0 | 0 | 105 | 116603 |
-| claude-sonnet-5-5 | effort low | 19/20 | 19/20 | 16 | 3 | 2 | 0 | 1 | 105 | 116603 |
+| claude-sonnet-5-5 | effort low | 19/20 | 19/20 | 17 | 3 | 2 | 0 | 0 | 105 | 116603 |
 | claude-haiku-5-5 | effort low | 19/20 | 19/20 | 17 | 3 | 2 | 0 | 0 | 105 | 116603 |
 | gpt-6-astra | reasoning_effort low | 20/20 | 20/20 | 19 | 1 | 0 | 0 | 0 | 3884 | 0 |
 | gpt-6.1-sol | reasoning_effort low | 20/20 | 20/20 | 19 | 1 | 0 | 0 | 0 | 3884 | 0 |
@@ -36,7 +36,7 @@ Picks by task:
 | Run our edge function every night at 02:00. | workers-api / skill:wrangler | workers-api | skill:wrangler | skill:wrangler | workers-api | workers-api | workers-api | workers-api | workers-api | workers-api |
 | Run our Docker image at the edge and show the running instances. | containers-api | containers-api | containers-api | containers-api | containers-api | containers-api | containers-api | containers-api | containers-api | containers-api |
 | What is the recommended structure for an edge function's fetch handler? | none / skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices | skill:workers-best-practices |
-| Rotate the account API token our deployment pipeline uses. | accounts-api / user-api | accounts-api | MISS unparsed | MISS group:iam-api | accounts-api | accounts-api | accounts-api | accounts-api | accounts-api | accounts-api |
+| Rotate the account API token our deployment pipeline uses. | accounts-api / user-api | accounts-api | MISS group:iam-api | MISS group:iam-api | accounts-api | accounts-api | accounts-api | accounts-api | accounts-api | accounts-api |
 
 Tasks that accept either the skill group or the API group, correct answers only:
 - claude-opus-5-5: skill group 3, API group 3
@@ -51,7 +51,7 @@ Tasks that accept either the skill group or the API group, correct answers only:
 
 Misses (right name under the wrong key is marked *):
 - claude-sonnet-5-5:
-  - "Rotate the account API token our deployment pipeline uses." -> unparsed (expected accounts-api | user-api)
+  - "Rotate the account API token our deployment pipeline uses." -> group:iam-api (expected accounts-api | user-api)
 - claude-haiku-5-5:
   - "Rotate the account API token our deployment pipeline uses." -> group:iam-api (expected accounts-api | user-api)
 - gpt-6-luna:

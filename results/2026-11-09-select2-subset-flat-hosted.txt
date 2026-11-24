@@ -5,7 +5,7 @@ flat mode, task set v2, https://pd-groups-flat.olahungerford.workers.dev/mcp. 23
 | :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |
 | claude-opus-5-5 | effort low | 20/20 | 20/20 | 0 | 5 | 4 | 1 | 0 | 90 | 222148 |
 | claude-sonnet-5-5 | effort low | 20/20 | 20/20 | 0 | 5 | 4 | 1 | 0 | 90 | 222148 |
-| claude-haiku-5-5 | effort low | 18/20 | 18/20 | 0 | 7 | 6 | 1 | 1 | 90 | 222148 |
+| claude-haiku-5-5 | effort low | 19/20 | 19/20 | 0 | 7 | 6 | 1 | 0 | 90 | 222148 |
 | gpt-6-astra | reasoning_effort low | 20/20 | 20/20 | 0 | 6 | 5 | 1 | 0 | 6920 | 0 |
 | gpt-6.1-sol | reasoning_effort low | 18/20 | 18/20 | 0 | 8 | 7 | 1 | 0 | 6920 | 0 |
 | gpt-6.1-terra | reasoning_effort none | 17/20 | 17/20 | 0 | 7 | 6 | 1 | 0 | 6920 | 0 |
@@ -18,7 +18,7 @@ Picks by task:
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
 | Add a bot check to our signup form and verify the challenge result on the server before accepting the submission. | turnstile_ / skill:turnstile-spin | skill:turnstile-spin | skill:turnstile-spin | skill:turnstile-spin | skill:turnstile-spin | skill:turnstile-spin | skill:turnstile-spin | skill:turnstile-spin | skill:turnstile-spin |
 | The server-side secret that validates our signup form's bot challenge was committed to a public repo. Rotate it. | turnstile_widgets_rotateSecret / skill:turnstile-spin | tool:turnstile_widgets_rotateSecret | tool:turnstile_widgets_rotateSecret | tool:turnstile_widgets_rotateSecret | tool:turnstile_widgets_rotateSecret | tool:turnstile_widgets_rotateSecret | MISS tool:turnstile_widgets_list | MISS tool:turnstile_widgets_list | tool:turnstile_widgets_rotateSecret |
-| Forward everything sent to billing@ at our domain to a Gmail inbox. | emailRouting_ / skill:cloudflare-email-service | tool:emailRouting_addresses_create | tool:emailRouting_addresses_list | MISS unparsed | skill:cloudflare-email-service | skill:cloudflare-email-service | skill:cloudflare-email-service | tool:emailRouting_rules_create | skill:cloudflare-email-service |
+| Forward everything sent to billing@ at our domain to a Gmail inbox. | emailRouting_ / skill:cloudflare-email-service | tool:emailRouting_addresses_create | tool:emailRouting_addresses_list | tool:emailRouting_rules_listAccount | skill:cloudflare-email-service | skill:cloudflare-email-service | skill:cloudflare-email-service | tool:emailRouting_rules_create | skill:cloudflare-email-service |
 | Set up a sender address so our edge function can email order receipts after checkout. | emailSending_ / skill:cloudflare-email-service | skill:cloudflare-email-service | skill:cloudflare-email-service | skill:cloudflare-email-service | skill:cloudflare-email-service | skill:cloudflare-email-service | skill:cloudflare-email-service | skill:cloudflare-email-service | skill:cloudflare-email-service |
 | Check whether the DNS records for our outbound mail subdomain have verified, and fix them if not. | emailSending_subdomains_dns / skill:cloudflare-email-service | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status | tool:emailSending_subdomains_dns_status |
 | Build a per-chat-room state holder that serializes writes and wakes itself once an hour. | durableObjects_ / skill:durable-objects | skill:durable-objects | skill:durable-objects | skill:durable-objects | skill:durable-objects | skill:durable-objects | skill:durable-objects | skill:durable-objects | skill:durable-objects |
@@ -39,7 +39,6 @@ Picks by task:
 
 Misses (right name under the wrong key is marked *):
 - claude-haiku-5-5:
-  - "Forward everything sent to billing@ at our domain to a Gmail inbox." -> unparsed (expected emailRouting_ | skill:cloudflare-email-service)
   - "Process image-resize jobs in the background, retrying any job that fails." -> skill:workers-best-practices (expected queues_)
 - gpt-6.1-sol:
   - "Process image-resize jobs in the background, retrying any job that fails." -> skill:workers-best-practices (expected queues_)

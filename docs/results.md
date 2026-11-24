@@ -238,7 +238,7 @@ Baseten's DeepSeek V4.1 Flash answered 503 or 429 to most calls on 2026-11-09. I
 | As-generated, 13 groups (subset) | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 19/20 | 19/20 | 20/20 | 20/20 | 19/20 | 20/20 |
 | Rewritten, 22 groups (subset) | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 19/20 |
 | Rewritten, all 5 skills (subset) | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 20/20 | 19/20 |
-| 237 tool names, flat | 20/20 | 20/20 | 18/20 | 20/20 | 18/20 | 17/20 | 19/20 | 20/20 | 20/20 | 20/20 | | |
+| 237 tool names, flat | 20/20 | 20/20 | 19/20 | 20/20 | 18/20 | 17/20 | 19/20 | 20/20 | 20/20 | 20/20 | | |
 | As-generated, 139 groups (full catalog) | 20/20 | 19/20 | 19/20 | 20/20 | 20/20 | 20/20 | 19/20 | 19/20 | 17/20 | 19/20 | 20/20 | 16/20 |
 | Rewritten, 271 groups (full catalog) | 20/20 | 20/20 | 19/20 | 20/20 | 20/20 | 20/20 | 19/20 | 20/20 | 20/20 | 20/20 | over 255 choices | too long |
 | 3,036 tool names, flat | 20/20 | 19/20 | 18/20 | 20/20 | 20/20 | 18/20 | 19/20 | 20/20 | 18/20 | 20/20 | | |
@@ -314,7 +314,7 @@ Correct picks out of 20. The two flat columns are explained below the table.
 | Gemma 4 26B | 19 | 16 | 15 | 17 |
 | Opus 5.5 | 20 | 19 | 15 | 19 |
 | Sonnet 5.5 | 20 | 19 | 18 | 20 |
-| Haiku 5.5 | 20 | 18, one answer unparsed | 18 | 19 |
+| Haiku 5.5 | 20 | 19 | 18 | 19 |
 | GPT-6 Astra | 20 | 19 | 13 | 19 |
 | GPT-6.1 Sol | 20 | 18 | 13 | 19 |
 | GPT-6.1 Terra | 20 | 18 | 11 | 18 |
@@ -327,7 +327,7 @@ Correct picks out of 20. The two flat columns are explained below the table.
 
 - On the rewritten build the open models scored 17 to 19 and the hosted models 18 to 20, close to their round-two scores on the v2 tasks. The largest group of misses is one task: 5 of 12 on the private connection (`workers-vpc-api` 3, `network-api` 2). Two went to `connector-telemetry-snapshots-api` for the appliance events and two were on the LLM proxy. Three tasks were missed once each.
 - On the as-generated build the open models scored 3 to 18, and five of them lost 3 to 14 tasks against the rewritten build. The hosted models scored 16 to 20. EU processing was missed 14 times across models and classifiers (`zones-api` 7, `dls-api` 5). Its tools sit in `addressing-api`, whose templated description names only the product. This repeats round one's finding on templated descriptions on tasks nobody tuned for, with a wider gap.
-- Haiku's unparsed answer on the as-generated build gave `queues-api`, the accepted group, twice with a sentence between, which the parser rejects. Read as its first object it scores 19.
+- One Haiku answer on the as-generated build gave `queues-api`, the accepted group, twice with a sentence between. The parser of the time rejected it, and this table showed 18 until 2026-11-23, when the answer was parsed again.
 - Flat, strict: the prompt asks for the tool a model would call first, and the committed answers list only the tools that do the job. A lookup first therefore scored a miss: `zones_list` on 37 picks, mostly for tasks that name a domain, and `d1_list` on 6 picks before a query. `scripts/v3-rescore.ts` applies a first-call rule decided after the results. It also accepts any tool of a needed tool's product, as v2's product prefixes did, and `zones_list` or `zones_get` when a needed tool's path takes `{zone_id}` (9 tasks, read from the catalog). Under it the hosted models score 18 to 20 flat, against 18 to 20 on the rewritten build. Groups did not measurably change what the hosted models picked. The open models do not move except Gemma, 15 to 17. The committed scoring and `--replay` are unchanged.
 - The custom-pages task names a zone, but this catalog's custom-pages tools are account-level, so its 7 `zones_list` picks stay misses under the first-call rule.
 - Writers: on the rewritten build the Claude models scored 60 of 60 and the Gemini models 40 of 40, across both writers' tasks. On the as-generated build the Claude models scored 41 of 42 on Fable's tasks and 15 of 18 on Gemini's, and the Gemini models 12 of 12 on Gemini's and 26 of 28 on Fable's. Each family scored higher on its own writer's tasks, by 1 to 3 tasks, which this set is too small to separate from chance. Three of those misses are `dls-api` on the EU-processing task. The rewritten build is at ceiling and shows nothing either way. On flat names under strict scoring the Gemini models scored 10 of 12 on Gemini's tasks and 16 of 28 on Fable's, and the Claude models 16 of 18 and 35 of 42.
@@ -573,7 +573,7 @@ Each cell is the count with every skill listed, then with each workflow listed o
 - The scoring accepts the same-named skill on these tasks, so the correct column does not count it as a miss. On a real client it loads the skill's instructions without the product's tools.
 - The skill-only answers left with each workflow listed once are `workers-best-practices` and `wrangler`.
 - Qwen3.6, GLM-5.3 Flash and Qwen 3.5 9B were run on the subset and are in the two 2026-11-23 files. They returned an empty answer at the 200-token cap on 94, 45 and 38 of 100 trials with every skill listed. The request turns thinking off with `chat_template_kwargs`, and on 2026-11-08 the same models answered in about ten tokens through the same router. Their rows are not in the table.
-- Seven Opus answers on the full catalog, all on the token-rotation task, were first stored as unparsed. Each wrote a URL template such as `accounts/{id}/tokens` before its JSON, and the parser read from the first brace. The parser now falls back to the last flat object, and `--retry` parses stored answers again. Six of the seven were correct. Three rows in earlier files have the same shape, one each in `2026-11-09-select2-full-groups-hosted`, `2026-11-09-select2-subset-flat-hosted` and `2026-11-10-select3-full-groups-hosted`. Those files and the tables made from them are as they were.
+- Seven Opus answers on the full catalog, all on the token-rotation task, were first stored as unparsed. Each wrote a URL template such as `accounts/{id}/tokens` before its JSON, and the parser read from the first brace. The parser now falls back to the last flat object, and `--retry` parses stored answers again. Six of the seven were correct. Three rows in earlier files had the same shape and were parsed again with `--reparse` on 2026-11-23. Haiku's flat-names cell in the second round went from 18 to 19, and its as-generated cell on the held-out set from 18 to 19. Sonnet's answer on the full catalog in `2026-11-09-select2-full-groups-hosted` was `iam-api`, still a miss, so its 19 stands.
 
 ### Tool search probe on the Messages API
 

@@ -59,6 +59,7 @@ Each Worker answers 429 to a client past 120 requests a minute (the Workers Rate
 - `--tasks v1` is the 14 product-named tasks, `--tasks v2` the 20 that describe the job without naming the product, `--tasks v3` the 20 held-out tasks from `scripts/select-v3.json`. v3 is scored on the full catalog only.
 - `--mode` is `groups`, `flat` (tool names and first lines) or `flat-schemas` (the whole `tools/list` result). Every mode also shows the server's `skills/list` index, and a `{"skill":"<name>"}` answer is accepted where the matching workflow group is, plus `workers-best-practices` for the fetch-handler question and `wrangler` for the deploy and schedule tasks.
 - `SELECT_DUMP_PROMPT=1` prints the catalog text the model sees.
+- `--reparse results/<file>.jsonl` parses again the answers a run stored as unparsed and rewrites the file, without calling a model.
 - `--replay results/<file>.jsonl` rebuilds a summary from committed raw answers without calling a model. Hosted model answers can change over time; the raw answers are committed for that reason.
 - `--list-all-skills` reads `skills/list` on a second client that declares only the Skills extension, so `opt2-rec` shows every skill (the "rewritten, duplicated" arm).
 - `--parallel` runs every model of a run at once, each through its tasks in order.

@@ -39,6 +39,8 @@ const replay = opt('replay')
 // --retry <jsonl> asks again only the trials of a finished run that ended in an error, against the run's own server and mode.
 // It also parses again any answer stored as unparsed. Pass the run's own --dedup-grouped-skills and --list-all-skills flags.
 const retry = opt('retry')
+// --reparse <jsonl> parses again the answers a finished run stored as unparsed, rewrites the file and prints the summary. It calls no model or server.
+const reparse = opt('reparse')
 const parallel = args.includes('--parallel')
 const listAllSkills = args.includes('--list-all-skills')
 const dedupGroupedSkills = args.includes('--dedup-grouped-skills')
@@ -517,6 +519,24 @@ if (retry) {
   }
   console.error(`${redone} errored trials asked again, ${reparsed} unparsed answers parsed again`)
   summary(header, trials, retry)
+} else if (reparse) {
+  const lines = readFileSync(reparse, 'utf8').split('\n').filter(Boolean)
+  const header = JSON.parse(lines[0]!) as Header
+  mode = header.mode as Mode
+  taskSet = (header.taskSet ?? 'v1') as 'v1' | 'v2' | 'v3'
+  const trials = lines.slice(1).map((line) => JSON.parse(line) as Trial)
+  let reparsed = 0
+  for (const [i, t] of trials.entries()) {
+    if (t.answer.raw.startsWith('error:') || pickOf(t.answer) !== 'unparsed') continue
+    const again = { ...t.answer, ...parse(t.answer.raw) }
+    if (pickOf(again) === 'unparsed') continue
+    trials[i] = { ...t, answer: again, pick: pickOf(again), ...score(again, t.expected) }
+    reparsed++
+    process.stderr.write(`${t.model} #${t.seed} ${trials[i]!.correct ? 'ok  ' : 'MISS'} ${trials[i]!.pick} <- ${t.task.slice(0, 50)}\n`)
+  }
+  if (reparsed) writeFileSync(reparse, [header, ...trials].map((x) => JSON.stringify(x)).join('\n') + '\n')
+  console.error(`${reparsed} unparsed answers parsed again`)
+  summary(header, trials, reparse)
 } else if (replay) {
   const lines = readFileSync(replay, 'utf8').split('\n').filter(Boolean)
   const header = JSON.parse(lines[0]!) as Header
