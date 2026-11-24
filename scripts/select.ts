@@ -37,6 +37,7 @@ const envFile = opt('env')
 // --replay <jsonl> re-prints the summary from a finished run without calling any model.
 const replay = opt('replay')
 // --retry <jsonl> asks again only the trials of a finished run that ended in an error, against the run's own server and mode.
+// It also parses again any answer stored as unparsed. Pass the run's own --dedup-grouped-skills and --list-all-skills flags.
 const retry = opt('retry')
 const parallel = args.includes('--parallel')
 const listAllSkills = args.includes('--list-all-skills')
@@ -209,14 +210,19 @@ type Answer = { raw: string; group?: string; tool?: string; skill?: string; none
 
 function parse(raw: string): Answer {
   const text = raw.replace(/```(?:json)?/g, '').trim()
-  const match = /\{[\s\S]*\}/.exec(text)
-  try {
-    const value = JSON.parse(match?.[0] ?? text) as Record<string, unknown>
-    const str = (key: string) => (typeof value[key] === 'string' ? (value[key] as string) : undefined)
-    return { raw, group: str('group'), tool: str('tool'), skill: str('skill'), none: value.none === true }
-  } catch {
-    return { raw }
+  // The second candidate is the last flat object, for an answer whose prose has braces of its own, such as a URL template.
+  const candidates = [/\{[\s\S]*\}/.exec(text)?.[0] ?? text, text.match(/\{[^{}]*\}/g)?.at(-1)]
+  for (const candidate of candidates) {
+    if (candidate === undefined) continue
+    try {
+      const value = JSON.parse(candidate) as Record<string, unknown>
+      const str = (key: string) => (typeof value[key] === 'string' ? (value[key] as string) : undefined)
+      return { raw, group: str('group'), tool: str('tool'), skill: str('skill'), none: value.none === true }
+    } catch {
+      // try the next candidate
+    }
   }
+  return { raw }
 }
 
 async function askHf(model: string, catalogText: string, task: string, instruction: string, seed: number): Promise<Answer> {
@@ -482,11 +488,22 @@ if (retry) {
   mode = header.mode as Mode
   taskSet = (header.taskSet ?? 'v1') as 'v1' | 'v2' | 'v3'
   if (header.url !== url) throw new Error(`--retry: pass --url ${header.url}, the run's server`)
+  if ((header.dedupGroupedSkills ?? false) !== dedupGroupedSkills) throw new Error(`--retry: the run ${header.dedupGroupedSkills ? 'used' : 'did not use'} --dedup-grouped-skills`)
   const { text, instruction, groups, skills } = await catalog()
   const trials = lines.slice(1).map((line) => JSON.parse(line) as Trial)
   let redone = 0
+  let reparsed = 0
   for (const [i, t] of trials.entries()) {
-    if (!t.answer.raw.startsWith('error:')) continue
+    if (!t.answer.raw.startsWith('error:')) {
+      // An answer stored unparsed is parsed again, in case the parser has since learned its shape.
+      const again = { ...t.answer, ...parse(t.answer.raw) }
+      if (pickOf(t.answer) === 'unparsed' && pickOf(again) !== 'unparsed') {
+        trials[i] = { ...t, answer: again, pick: pickOf(again), ...score(again, t.expected) }
+        reparsed++
+        writeFileSync(retry, [header, ...trials].map((x) => JSON.stringify(x)).join('\n') + '\n')
+      }
+      continue
+    }
     let answer: Answer
     try {
       answer = await ask(t.model, text, groups, skills, t.task, instruction, t.seed)
@@ -498,7 +515,7 @@ if (retry) {
     process.stderr.write(`${t.model} #${t.seed} ${trials[i]!.correct ? 'ok  ' : 'MISS'} ${trials[i]!.pick} <- ${t.task.slice(0, 50)}\n`)
     writeFileSync(retry, [header, ...trials].map((x) => JSON.stringify(x)).join('\n') + '\n')
   }
-  console.error(`${redone} errored trials asked again`)
+  console.error(`${redone} errored trials asked again, ${reparsed} unparsed answers parsed again`)
   summary(header, trials, retry)
 } else if (replay) {
   const lines = readFileSync(replay, 'utf8').split('\n').filter(Boolean)

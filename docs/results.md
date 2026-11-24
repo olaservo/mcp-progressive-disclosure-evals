@@ -551,6 +551,39 @@ The open-model runs above took it that the Baseten endpoints could not load tool
 - Arm D in 30-turn sessions, six per cell, completed 178 of 180 phases with both result sizes and cost 0.091 USD with dry-run results and 0.155 with padded ones. No request after an open re-read over half, in 118 and 121 such requests (`results/2026-11-20-agent-summary-chain30-d-direct.md`). Through the router on 2026-11-14, arm B cost 0.133 and 0.394 and arm C 0.104 and 0.150. Those cells differ from arm D's in endpoint and date.
 - GLM-5.3 Flash was not run in arm D. Both its smoke sessions ended in HTTP 429.
 
+## Listing each workflow once, 2026-11-23
+
+Option 2 lists a workflow as a group and again as a skill of the same name. This run asks what a host changes by showing it once. `--dedup-grouped-skills` drops from the prompt every skill that shares a group's name, which leaves `workers-best-practices` and `wrangler` in the skill index. The server is the as-generated `opt2`, unchanged. The tasks are the v2 set, five samples each, so 100 trials per cell.
+
+Each cell is the count with every skill listed, then with each workflow listed once. "Skill only" is the script's column: a skill picked for a task whose answer is a group or tool. "Same-named skill" is the part of that column where the skill shares a group's name and the task accepts an API group.
+
+| Catalog | Model | Correct | Skill only | Same-named skill |
+| :-- | :-- | :-- | :-- | :-- |
+| Subset, 13 groups | Opus 5.5 | 100, 100 | 19, 5 | 9, 0 |
+| Subset | Gemini 3.8 Flash | 100, 99 | 12, 6 | 4, 0 |
+| Subset | Kimi K3.1 Pro | 99, 100 | 8, 5 | 0, 0 |
+| Subset | DeepSeek V4.1 Flash | 95, 99 of 99 | 29, 8 | 14, 0 |
+| Full, 139 groups | Opus 5.5 | 99, 100 | 24, 5 | 14, 0 |
+| Full | Gemini 3.8 Flash | 88, 89 | 39, 8 | 25, 0 |
+| Full | Kimi K3.1 Pro | 94, 97 | 18, 8 | 6, 0 |
+| Full | DeepSeek V4.1 Flash | 95, 97 | 31, 10 | 16, 0 |
+
+- The last column's second number is zero because those skills are not in the prompt. The run shows where the answers went. Twenty-nine pairs of model and task had a same-named skill answer. With the workflow listed once, 134 of their 145 answers were the group of the same name and 144 were accepted. The other one is Kimi on the image-resize task on the full catalog, which picked the `durable-objects` group.
+- The correct count stayed level or rose in seven of the eight cells. Gemini on the subset lost one: the nightly-schedule task went to `workers-best-practices` once.
+- The scoring accepts the same-named skill on these tasks, so the correct column does not count it as a miss. On a real client it loads the skill's instructions without the product's tools.
+- The skill-only answers left with each workflow listed once are `workers-best-practices` and `wrangler`.
+- Qwen3.6, GLM-5.3 Flash and Qwen 3.5 9B were run on the subset and are in the two 2026-11-23 files. They returned an empty answer at the 200-token cap on 94, 45 and 38 of 100 trials with every skill listed. The request turns thinking off with `chat_template_kwargs`, and on 2026-11-08 the same models answered in about ten tokens through the same router. Their rows are not in the table.
+- Seven Opus answers on the full catalog, all on the token-rotation task, were first stored as unparsed. Each wrote a URL template such as `accounts/{id}/tokens` before its JSON, and the parser read from the first brace. The parser now falls back to the last flat object, and `--retry` parses stored answers again. Six of the seven were correct. Three rows in earlier files have the same shape, one each in `2026-11-09-select2-full-groups-hosted`, `2026-11-09-select2-subset-flat-hosted` and `2026-11-10-select3-full-groups-hosted`. Those files and the tables made from them are as they were.
+
+### Tool search probe on the Messages API
+
+`scripts/agent-probe-toolsearch.ts` lists every tool on a flat server and sends them all to the Messages API with `defer_loading`, beside the BM25 tool search tool. It was run on Haiku 5.5 against the full catalog, three runs of two requests.
+
+- The API accepted 3,036 deferred tools in a 5.5 MiB request. Six requests took 7.4 to 9.1 seconds and billed 6.4k to 18.3k input tokens each, with no HTTP 400 or 429.
+- The task was to remove every `session:` key from the key-value store. Every request searched for key-value terms, and the search returned `kv_` tools in the two requests whose results were printed.
+- The model called no tool. In the two requests whose text was printed, it asked for the account and namespace IDs.
+- The requests set no cache breakpoint, so the probe says nothing about caching.
+
 ## Limits
 
 ### Every run
@@ -611,6 +644,14 @@ The open-model runs above took it that the Baseten endpoints could not load tool
 - The router's behaviour is as observed on 2026-11-19.
 - The run files record `73d4f67` in their headers. Arm D was committed at `433defe`, so they ran from the working tree that became it.
 
+### Listing each workflow once
+
+- One server, the as-generated `opt2`, and one task set. The rewritten build was not run.
+- The full-catalog arms ran against a local dev server on the full build. Their files record its address.
+- DeepSeek's trials that ended in HTTP 429 were asked again with the same seed until none were left on the full catalog. One is left on the subset with each workflow listed once.
+- The same-named skill count was made by a one-off script that is not in the repository. The other two columns are printed by `--replay`.
+- The files are dated 2026-11-24 where the run crossed midnight UTC.
+
 ### Follow-up runs
 
 - The chained sessions are two per cell, one per order, on GLM and for cold arm A with dry-run results. The other DeepSeek cells are six after 2026-11-14. The padding is filler of a fixed size, a stand-in for real response bodies and not a measurement of them. The full catalog was served by a local dev server. Arm C in these runs uses the tolerant wrapper.
@@ -636,5 +677,6 @@ The open-model runs above took it that the Baseten endpoints could not load tool
 - `2026-11-14-agent-chain30-*.jsonl` and `2026-11-15-agent-chain30-*.jsonl`: samples 2 and 3 of the DeepSeek chained cells, and arm A with a shared tool block in `a-shared` and `a-shared-pad`, with its warm-up sessions in `a-shared-warm`. They hold the sessions that ended in a provider error and their re-runs. `2026-11-14-agent-summary-chains.md` is `npm run agent:score` over these and the 2026-11-13 chained files. Both chain summaries list, for each pair of sessions, the phase at which arm B passes arm A.
 - `2026-11-19-agent-probe-deferred.txt` and `2026-11-20-repro-deferred-loading.txt`: the deferred loading probe through the router and on Baseten direct, and the one-tool reproduction. `2026-11-20-agent-probe-*.txt` and `2026-11-21-agent-probe-*.txt`: the same probe through OpenRouter, and the OpenAI Responses, Gemini and Anthropic probes.
 - `2026-11-20-agent-direct-*.jsonl`: DeepSeek arms A, B, C and D on Baseten's own endpoint, with `-shared` for the shared tool block. `2026-11-20-agent-chain30-d-direct*.jsonl`: arm D's 30-turn sessions, with the sessions that ended in HTTP 429 and their re-runs. `2026-11-20-agent-summary-direct.md`, `-direct-shared.md` and `-chain30-d-direct.md` are `npm run agent:score` over them. `2026-11-20-agent-smoke-d-direct.jsonl` is the check made first.
+- `2026-11-23-select2-subset-groups-s5.jsonl` and `-dedup-s5.jsonl`: the open models on the subset with every skill listed and with each workflow listed once. `2026-11-24-select2-subset-groups-hosted-s5.jsonl` and `-dedup-hosted-s5.jsonl`: Opus, Gemini 3.8 Flash and Kimi on the subset. `2026-11-24-select2-full-groups-s5.jsonl` and `-dedup-s5.jsonl`: those three and DeepSeek on the full catalog. `--replay` prints each summary.
 
 Re-runs that reproduced an earlier file were not kept, and the 2026-11-02 file from the build against the earlier drafts was removed. This repository starts from a single commit; the private predecessor repository holds the earlier history.
