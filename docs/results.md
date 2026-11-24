@@ -584,6 +584,21 @@ Each cell is the count with every skill listed, then with each workflow listed o
 - The model called no tool. In the two requests whose text was printed, it asked for the account and namespace IDs.
 - The requests set no cache breakpoint, so the probe says nothing about caching.
 
+## Tool search on the held-out tasks, 2026-11-23
+
+A first run of the flat catalog behind a vendor's tool search, on the Messages API. `scripts/search-run.ts` sends all 3,036 tools with `defer_loading` beside the BM25 tool search tool and gives the model one held-out task. The system prompt gives an account ID and a zone ID, both invented, and tells the model not to ask for identifiers. A trial ends at the model's first call to a catalog tool, or when it stops without one. Nothing is executed. Haiku 5.5 and Opus 5.5 at effort low, three samples per task, 120 trials, no errors.
+
+| Model | Search returned a tool for the task | Called one | Called another tool | Called nothing | Median input tokens |
+| :-- | --: | --: | --: | --: | --: |
+| Haiku 5.5 | 57 of 60 | 53 | 4 | 3 | 16,933 |
+| Opus 5.5 | 60 of 60 | 57 | 3 | 0 | 8,478 |
+
+- Six of the seven calls to another tool are `d1_get` before `d1_query` on the task that names a database, a lookup first. The seventh is Haiku's `connectors_list` on the appliance task.
+- Haiku called nothing three times and said no tool existed: twice on the edge IP ranges task and once on the LLM proxy task. On the IP ranges task its first sample did get `ips_list` back, with queries close to those of the two that did not, and Opus's queries returned it every time.
+- `scripts/search-overlap.ts` ranks the catalog against each task with a local BM25 and the task text as the query, with no model. Nine of the 20 tasks have a needed tool in the top 10, and eight have their best match below rank 50. On those eight the API's search returned a needed tool in 47 of 48 trials. The models wrote queries with product words the task does not use: "web3" for the IPFS gateway, "tunnel" and "cloudflared" for the private connection, "page rules" for the URL overrides, "spectrum application" for the game server.
+- A trial made 1.8 searches on average and at most 5.
+- On the same tasks in the selection trial of 2026-11-10, one sample each, Haiku and Opus picked an accepted group on 19 of 20 on the as-generated build and 20 of 20 on the rewritten one.
+
 ## Limits
 
 ### Every run
@@ -652,6 +667,15 @@ Each cell is the count with every skill listed, then with each workflow listed o
 - The same-named skill count was made by a one-off script that is not in the repository. The other two columns are printed by `--replay`.
 - The files are dated 2026-11-24 where the run crossed midnight UTC.
 
+### Tool search on the held-out tasks
+
+- Two models from one vendor, on that vendor's search. No open model and no other vendor's search was run.
+- The catalog is Cloudflare's, and the models put its product names into their queries. The run does not show how search does on a catalog whose names a model has not seen.
+- The groups numbers beside it are a different measure: one sample, and a pick of a group with no call. No groups arm was run on the Messages API.
+- A lookup first counts as a call to another tool here. The first-call rule in `scripts/v3-rescore.ts` is not applied.
+- The local ranking is a proxy. It indexes names and descriptions, and the API's search also indexes argument names and descriptions.
+- The file is dated 2026-11-24, the UTC date.
+
 ### Follow-up runs
 
 - The chained sessions are two per cell, one per order, on GLM and for cold arm A with dry-run results. The other DeepSeek cells are six after 2026-11-14. The padding is filler of a fixed size, a stand-in for real response bodies and not a measurement of them. The full catalog was served by a local dev server. Arm C in these runs uses the tolerant wrapper.
@@ -678,5 +702,6 @@ Each cell is the count with every skill listed, then with each workflow listed o
 - `2026-11-19-agent-probe-deferred.txt` and `2026-11-20-repro-deferred-loading.txt`: the deferred loading probe through the router and on Baseten direct, and the one-tool reproduction. `2026-11-20-agent-probe-*.txt` and `2026-11-21-agent-probe-*.txt`: the same probe through OpenRouter, and the OpenAI Responses, Gemini and Anthropic probes.
 - `2026-11-20-agent-direct-*.jsonl`: DeepSeek arms A, B, C and D on Baseten's own endpoint, with `-shared` for the shared tool block. `2026-11-20-agent-chain30-d-direct*.jsonl`: arm D's 30-turn sessions, with the sessions that ended in HTTP 429 and their re-runs. `2026-11-20-agent-summary-direct.md`, `-direct-shared.md` and `-chain30-d-direct.md` are `npm run agent:score` over them. `2026-11-20-agent-smoke-d-direct.jsonl` is the check made first.
 - `2026-11-23-select2-subset-groups-s5.jsonl` and `-dedup-s5.jsonl`: the open models on the subset with every skill listed and with each workflow listed once. `2026-11-24-select2-subset-groups-hosted-s5.jsonl` and `-dedup-hosted-s5.jsonl`: Opus, Gemini 3.8 Flash and Kimi on the subset. `2026-11-24-select2-full-groups-s5.jsonl` and `-dedup-s5.jsonl`: those three and DeepSeek on the full catalog. `--replay` prints each summary.
+- `2026-11-24-search-v3-full.jsonl`: the tool search run on the held-out tasks, one row per trial with the queries, the tools returned and the tools called. `npx tsx scripts/search-run.ts --replay` prints its tables.
 
 Re-runs that reproduced an earlier file were not kept, and the 2026-11-02 file from the build against the earlier drafts was removed. This repository starts from a single commit; the private predecessor repository holds the earlier history.

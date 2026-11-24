@@ -147,6 +147,8 @@ npm run agent:score -- $(ls results/2026-11-1[345]-agent-chain30-*.jsonl | grep 
 npm run agent:probe      # the chat templates' own mid-session tool paths, through the router. Baseten rejects this request shape; see the deferred probe below
 npx tsx scripts/agent-probe-deferred.ts --base-url https://inference.baseten.co/v1    # Baseten's defer_loading and tool_reference shape, on its own endpoint; without --base-url, through the router
 npm run select -- --env path/to/.env --tasks v2 --dedup-grouped-skills --seeds 5 --label subset-groups-dedup-s5    # each workflow listed once
+npx tsx scripts/search-run.ts --env path/to/.env --models claude-haiku-5-5,claude-opus-5-5 --samples 3 --label v3-full    # the held-out tasks through the Messages API's tool search, full catalog
+npx tsx scripts/search-overlap.ts    # a local BM25 ranking of the catalog against each held-out task, no model
 npx tsx scripts/agent-probe-toolsearch.ts --env path/to/.env --url https://pd-groups-flat-full.olahungerford.workers.dev/mcp    # the whole catalog deferred behind the Messages API's tool search
 npm run agent:run -- --arm D --base-url https://inference.baseten.co/v1 --key-env BASETEN_API_KEY --models deepseek-ai/DeepSeek-V4.1-Flash:baseten --samples 3 --label direct-d    # arm D on Baseten direct
 npm run agent:probe-order    # where the endpoint puts tools relative to the system prompt, from its cache counts
