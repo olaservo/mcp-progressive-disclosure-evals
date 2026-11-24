@@ -2,7 +2,13 @@
 // group descriptions. Each writer sees only a product name from cloudflare/mcp's forge catalog: no group listing, no tool names,
 // no tool descriptions. Products are drawn in a seeded order; each writer gets 3 of the 10 subset products and 7 others.
 // Accepted answers come from scripts/v3-answers.ts afterwards, from the catalog's tool names, before any model is scored.
-// Usage: tsx scripts/write-tasks.ts [--env <.env path>] [--replace <product,product>]
+// --set workflow writes a second set, results/tasks-workflow/: jobs that take three or four calls. Each writer's tasks
+// alternate between two kinds. A `single` job stays in the drawn product. A `cross` job needs the drawn product and one or
+// two others the writer picks, since groups are built per product and a job inside one product fits one group. The task
+// states the outcome and leaves at least one needed step unsaid, so an agent has to work out a step it was not told.
+// Each task comes with the writer's list of steps, marked as stated or not, from which the accepted tools are chosen afterwards.
+// --dry prints the prompts and the draw order and calls no model.
+// Usage: tsx scripts/write-tasks.ts [--env <.env path>] [--replace <product,product>] [--set workflow] [--dry]
 import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync, appendFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import Anthropic from '@anthropic-ai/sdk'
@@ -17,15 +23,25 @@ if (envFile) {
   }
 }
 
-const SEED = 20261109
+const workflow = args.includes('--set') && args[args.indexOf('--set') + 1] === 'workflow'
+const dry = args.includes('--dry')
+const SEED = workflow ? 20261124 : 20261109
 const WRITERS = ['claude-fable-5-2', 'gemini-3.6-flash'] as const
-const PER_WRITER = { subset: 3, other: 7 }
+const PER_WRITER = workflow ? { subset: 2, other: 8 } : { subset: 3, other: 7 }
 const SUBSET = ['turnstile', 'durableObjects', 'emailRouting', 'emailSending', 'kv', 'r2', 'queues', 'd1', 'workers', 'containers']
 const FORGE = join(import.meta.dirname, '..', '.upstream', 'cloudflare-mcp', 'src', 'generated', 'forge-mcp')
-const OUT_DIR = join(import.meta.dirname, '..', 'results', 'tasks-v3')
+const OUT_DIR = join(import.meta.dirname, '..', 'results', workflow ? 'tasks-workflow' : 'tasks-v3')
 if (!existsSync(FORGE)) throw new Error('run npm run vendor first, which fetches cloudflare/mcp into .upstream/')
 
-const products = readdirSync(FORGE).filter((name) => name !== '_' && statSync(join(FORGE, name)).isDirectory()).sort()
+// A product with few tools has no job of three operations. The writer cannot see the count, so the draw leaves those out.
+const MIN_TOOLS = workflow ? 6 : 0
+const toolCount = (product: string) =>
+  (readdirSync(join(FORGE, product), { recursive: true }) as string[])
+    .filter((file) => /(^|[\\/])tools\.ts$/.test(file))
+    .reduce((sum, file) => sum + (readFileSync(join(FORGE, product, file), 'utf8').match(/^ {4}name: "/gm)?.length ?? 0), 0)
+const products = readdirSync(FORGE)
+  .filter((name) => name !== '_' && statSync(join(FORGE, name)).isDirectory() && (MIN_TOOLS === 0 || toolCount(name) >= MIN_TOOLS))
+  .sort()
 
 // mulberry32, so the draw order is reproducible from SEED.
 function shuffle<T>(items: T[], seed: number): T[] {
@@ -47,7 +63,36 @@ function shuffle<T>(items: T[], seed: number): T[] {
 
 const label = (product: string) => product.replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase()
 
-const SYSTEM = [
+type Kind = 'single' | 'cross'
+const WORKFLOW_RULES: Record<Kind, string[]> = {
+  single: [
+    '- The job must take three or four API calls to this product, each to a different operation. A later call must depend on what an earlier one did or returned. A read that looks something up counts as a call.',
+    '- The calls must touch at least two different kinds of resource in this product. Listing, reading and updating one resource is not enough.',
+    '- The whole job must need only this product, not another product of the same platform.'
+  ],
+  cross: [
+    '- The job must take three or four API calls, each to a different operation, spread over this product and one or two other products of the same platform that are commonly used with it. At least one call must go to this product and at least one to another. A later call must depend on what an earlier one did or returned. A read that looks something up counts as a call.',
+    '- Pick the other products yourself. The job must be one a developer would really bring as a single request.'
+  ]
+}
+const workflowSystem = (kind: Kind) =>
+  [
+    'You write test tasks for an evaluation of how AI agents find the right tools on a large cloud platform API.',
+    'You are given one product of the Cloudflare API. Write one task a developer might give an agent that has API access to their Cloudflare account, where the job needs this product.',
+    'Rules:',
+    ...WORKFLOW_RULES[kind],
+    '- One to three sentences, in the words a developer would use. Say what they want to end up with. Do not list or number the steps.',
+    '- At least one of the calls must be a step the task does not mention and the job cannot be done without, such as creating something that has to exist first or looking up a resource the task refers to by name.',
+    '- Refer to existing resources by name, never by ID.',
+    '- Do not name any product, Cloudflare, or any API, endpoint or tool. Describe the job, not the products.',
+    '- The job must be done by reading or changing resources in the account through the API, not by writing application code.',
+    '- Use concrete but invented details (names, domains, numbers) where they help.',
+    '- If you do not know this product well enough to write a realistic task, or it has no such job, reply with exactly SKIP.',
+    kind === 'single'
+      ? 'Otherwise reply with JSON only: {"task": "<the task>", "feature": "<the product feature the task needs, a few words>", "steps": [{"does": "<one API operation the job needs, a few words>", "stated": <true if the task mentions this step, false if not>}]} with the steps in order.'
+      : 'Otherwise reply with JSON only: {"task": "<the task>", "feature": "<the product feature the task needs, a few words>", "products": ["<each other product the job needs, by its usual name>"], "steps": [{"product": "<the product this operation belongs to>", "does": "<one API operation the job needs, a few words>", "stated": <true if the task mentions this step, false if not>}]} with the steps in order.'
+  ].join('\n')
+const V3_SYSTEM = [
   'You write test tasks for an evaluation of how AI agents find the right tools on a large cloud platform API.',
   'You are given one product of the Cloudflare API. Write one task a developer might give an agent that has API access to their Cloudflare account, where the job needs this product.',
   'Rules:',
@@ -58,35 +103,44 @@ const SYSTEM = [
   '- If you do not know this product well enough to write a realistic task, reply with exactly SKIP.',
   'Otherwise reply with JSON only: {"task": "<the task>", "feature": "<the product feature the task needs, a few words>"}'
 ].join('\n')
+const SYSTEM = V3_SYSTEM
 const prompt = (product: string) => `Product: Cloudflare ${label(product)} (API directory "${product}")`
 
 let anthropic: Anthropic | undefined
 let gemini: GoogleGenAI | undefined
-async function ask(writer: (typeof WRITERS)[number], product: string): Promise<string> {
+async function ask(writer: (typeof WRITERS)[number], product: string, system: string): Promise<string> {
   if (writer.startsWith('claude-')) {
     anthropic ??= new Anthropic()
-    const response = await anthropic.messages.create({ model: writer, max_tokens: 4000, system: SYSTEM, messages: [{ role: 'user', content: prompt(product) }] })
+    const response = await anthropic.messages.create({ model: writer, max_tokens: 4000, system, messages: [{ role: 'user', content: prompt(product) }] })
     return response.content.filter((block) => block.type === 'text').map((block) => block.text).join('').trim()
   }
   gemini ??= new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
-  const response = await gemini.models.generateContent({ model: writer, contents: prompt(product), config: { systemInstruction: SYSTEM } })
+  const response = await gemini.models.generateContent({ model: writer, contents: prompt(product), config: { systemInstruction: system } })
   return (response.text ?? '').trim()
 }
 
-const parse = (reply: string): { task: string; feature: string } | undefined => {
+type Step = { does: string; stated: boolean; product?: string }
+const parse = (reply: string, kind?: Kind): { task: string; feature: string; steps?: Step[]; products?: string[] } | undefined => {
   if (/^SKIP\b/.test(reply)) return undefined
   const json = /\{[\s\S]*\}/.exec(reply)?.[0]
   if (!json) throw new Error(`unparseable reply: ${reply.slice(0, 200)}`)
-  const value = JSON.parse(json) as { task?: unknown; feature?: unknown }
+  const value = JSON.parse(json) as { task?: unknown; feature?: unknown; steps?: unknown; products?: unknown }
   if (typeof value.task !== 'string' || typeof value.feature !== 'string') throw new Error(`missing fields: ${json.slice(0, 200)}`)
-  return { task: value.task, feature: value.feature }
+  if (!kind) return { task: value.task, feature: value.feature }
+  const steps = value.steps as Step[]
+  if (!Array.isArray(steps) || steps.length < 3 || !steps.every((step) => typeof step?.does === 'string' && typeof step.stated === 'boolean')) throw new Error(`fewer than three steps: ${json.slice(0, 200)}`)
+  if (steps.every((step) => step.stated)) throw new Error(`every step is stated: ${json.slice(0, 200)}`)
+  if (kind === 'single') return { task: value.task, feature: value.feature, steps }
+  const products = value.products
+  if (!Array.isArray(products) || products.length === 0 || !products.every((item) => typeof item === 'string') || !steps.every((step) => typeof step.product === 'string')) throw new Error(`no other product: ${json.slice(0, 200)}`)
+  return { task: value.task, feature: value.feature, products: products as string[], steps }
 }
 
 mkdirSync(OUT_DIR, { recursive: true })
 const RAW = join(OUT_DIR, 'raw.jsonl')
 const TASKS = join(OUT_DIR, 'tasks.json')
 
-type Written = { writer: string; product: string; stratum: 'subset' | 'other'; task: string; feature: string; redraw?: boolean }
+type Written = { writer: string; product: string; stratum: 'subset' | 'other'; task: string; feature: string; kind?: Kind; products?: string[]; steps?: Step[]; redraw?: boolean }
 const queues = {
   subset: shuffle(products.filter((p) => SUBSET.includes(p)), SEED),
   other: shuffle(products.filter((p) => !SUBSET.includes(p)), SEED + 1)
@@ -96,7 +150,14 @@ const queues = {
 // stratum, under two added rules. Used once, on 2026-11-09, for tasks that spanned products, missed their product or
 // repeated its name.
 const replace = args.includes('--replace') ? args[args.indexOf('--replace') + 1]!.split(',') : undefined
+if (dry) {
+  console.log(workflow ? `--- single\n${workflowSystem('single')}\n\n--- cross\n${workflowSystem('cross')}` : SYSTEM)
+  for (const stratum of ['subset', 'other'] as const) console.log(`\n${stratum}, ${PER_WRITER[stratum]} per writer, draw order: ${queues[stratum].slice(0, 24).join(' ')}`)
+  console.log(`\nFirst prompt: ${prompt(queues.subset[0]!)}`)
+  process.exit(0)
+}
 if (replace) {
+  if (workflow) throw new Error('--replace is for the v3 set')
   const REDRAW_RULES = [
     '- The whole job must need only this product, not another product of the same platform.',
     "- Do not use any word from the product's name or its API directory name."
@@ -125,11 +186,11 @@ if (replace) {
     }
   }
   writeFileSync(TASKS, JSON.stringify(out, null, 2) + '\n')
-  console.error(`${out.length} tasks in results/tasks-v3/tasks.json`)
+  console.error(`${out.length} tasks in ${TASKS}`)
   process.exit(0)
 }
 
-writeFileSync(RAW, JSON.stringify({ seed: SEED, writers: WRITERS, system: SYSTEM, products: products.length, date: new Date().toISOString() }) + '\n')
+writeFileSync(RAW, JSON.stringify({ seed: SEED, writers: WRITERS, system: workflow ? { single: workflowSystem('single'), cross: workflowSystem('cross') } : SYSTEM, products: products.length, date: new Date().toISOString() }) + '\n')
 const written: Written[] = []
 for (const stratum of ['subset', 'other'] as const) {
   const queue = queues[stratum]
@@ -141,14 +202,16 @@ for (const stratum of ['subset', 'other'] as const) {
     if (need[writer] === 0) continue
     const product = queue.shift()
     if (!product) throw new Error(`ran out of ${stratum} products`)
-    const reply = await ask(writer, product)
-    appendFileSync(RAW, JSON.stringify({ writer, product, stratum, prompt: prompt(product), reply }) + '\n')
-    const parsed = parse(reply)
-    console.error(`${writer} ${product}: ${parsed ? parsed.task : 'SKIP'}`)
+    // A writer's workflow tasks alternate kind. A skipped product leaves the kind for the next draw.
+    const kind: Kind | undefined = workflow ? (written.filter((task) => task.writer === writer).length % 2 === 0 ? 'single' : 'cross') : undefined
+    const reply = await ask(writer, product, kind ? workflowSystem(kind) : SYSTEM)
+    appendFileSync(RAW, JSON.stringify({ writer, product, stratum, ...(kind && { kind }), prompt: prompt(product), reply }) + '\n')
+    const parsed = parse(reply, kind)
+    console.error(`${writer} ${product}${kind ? ` ${kind}` : ''}: ${parsed ? parsed.task : 'SKIP'}`)
     if (!parsed) continue
-    written.push({ writer, product, stratum, ...parsed })
+    written.push({ writer, product, stratum, ...(kind && { kind }), ...parsed })
     need[writer]!--
   }
 }
 writeFileSync(TASKS, JSON.stringify(written, null, 2) + '\n')
-console.error(`${written.length} tasks in results/tasks-v3/tasks.json`)
+console.error(`${written.length} tasks in ${TASKS}`)

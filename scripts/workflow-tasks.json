@@ -1,0 +1,1220 @@
+[
+  {
+    "id": "retire-subdomain",
+    "product": "emailSending",
+    "kind": "single",
+    "writer": "claude-fable-5-2",
+    "task": "On our acmeshop.io zone, retire the old sending subdomain news.acmeshop.io and set up mail.acmeshop.io as its replacement for outbound mail. Then give me the DNS records the new subdomain needs so I can check them.",
+    "prefixes": [
+      "emailSending"
+    ],
+    "exists": [
+      "acmeshop.io",
+      "news.acmeshop.io"
+    ],
+    "steps": [
+      {
+        "does": "look up the zone by name",
+        "tools": [
+          "zones_list",
+          "zones_get"
+        ],
+        "stated": false,
+        "optional": true
+      },
+      {
+        "does": "find the old sending subdomain",
+        "tools": [
+          "emailSending_subdomains_list"
+        ],
+        "stated": false
+      },
+      {
+        "does": "delete it",
+        "tools": [
+          "emailSending_subdomains_delete"
+        ],
+        "stated": true
+      },
+      {
+        "does": "create the new one",
+        "tools": [
+          "emailSending_subdomains_create"
+        ],
+        "stated": true
+      },
+      {
+        "does": "get its DNS records",
+        "tools": [
+          "emailSending_subdomains_dns"
+        ],
+        "stated": true
+      }
+    ],
+    "writerSteps": [
+      {
+        "does": "List sending subdomains to find news.acmeshop.io",
+        "stated": false
+      },
+      {
+        "does": "Delete the old sending subdomain",
+        "stated": true
+      },
+      {
+        "does": "Create sending subdomain mail.acmeshop.io",
+        "stated": true
+      },
+      {
+        "does": "Get DNS records for the new subdomain",
+        "stated": true
+      }
+    ]
+  },
+  {
+    "id": "script-config",
+    "product": "workers",
+    "kind": "single",
+    "writer": "gemini-3.6-flash",
+    "task": "We need to update our `data-processor` script configuration. Please set its secret variable `API_KEY` to `5c9f8a3d1b`, map the domain `processor.example.com` to it, and update its scheduled cron trigger to run at `0 0 * * *`.",
+    "prefixes": [
+      "workers"
+    ],
+    "exists": [
+      "data-processor",
+      "example.com"
+    ],
+    "steps": [
+      {
+        "does": "read the script",
+        "tools": [
+          "workers_legacy_scripts_settings_get",
+          "workers_get",
+          "workers_list"
+        ],
+        "stated": false,
+        "optional": true
+      },
+      {
+        "does": "set the secret",
+        "tools": [
+          "workers_secrets_update",
+          "workers_secrets_bulk"
+        ],
+        "stated": true
+      },
+      {
+        "does": "attach the domain",
+        "tools": [
+          "workers_domains_update"
+        ],
+        "stated": true
+      },
+      {
+        "does": "set the cron schedule",
+        "tools": [
+          "workers_scripts_schedules_update"
+        ],
+        "stated": true
+      }
+    ],
+    "writerSteps": [
+      {
+        "does": "Get configuration details for script data-processor",
+        "stated": false
+      },
+      {
+        "does": "Create secret API_KEY for script data-processor",
+        "stated": true
+      },
+      {
+        "does": "Attach custom domain processor.example.com to script data-processor",
+        "stated": true
+      },
+      {
+        "does": "Update cron schedules for script data-processor",
+        "stated": true
+      }
+    ]
+  },
+  {
+    "id": "leaking-container",
+    "product": "containers",
+    "kind": "cross",
+    "writer": "claude-fable-5-2",
+    "task": "Our 'pdf-renderer' container app looks like it's leaking instances. Tell me what image and max instance count it's currently deployed with, how many stored objects exist in the namespace that backs it, and show me the bindings on the script that owns that namespace.",
+    "prefixes": [
+      "containers",
+      "durableObjects",
+      "workers"
+    ],
+    "exists": [
+      "pdf-renderer"
+    ],
+    "steps": [
+      {
+        "does": "find the container app",
+        "tools": [
+          "containers_applications_list",
+          "containers_applications_get"
+        ],
+        "stated": true
+      },
+      {
+        "does": "find the namespace and the script that owns it",
+        "tools": [
+          "durableObjects_namespaces_list"
+        ],
+        "stated": false
+      },
+      {
+        "does": "count the objects in it",
+        "tools": [
+          "durableObjects_namespaces_objects_list"
+        ],
+        "stated": true
+      },
+      {
+        "does": "read the script's bindings",
+        "tools": [
+          "workers_legacy_scripts_settings_get",
+          "workers_get"
+        ],
+        "stated": true
+      }
+    ],
+    "writerSteps": [
+      {
+        "product": "Cloudflare containers",
+        "does": "List container applications to find 'pdf-renderer' and read its image, instance limit and backing namespace",
+        "stated": true
+      },
+      {
+        "product": "Durable Objects",
+        "does": "List namespaces to find the script that owns the backing namespace",
+        "stated": false
+      },
+      {
+        "product": "Durable Objects",
+        "does": "List objects in that namespace",
+        "stated": true
+      },
+      {
+        "product": "Workers",
+        "does": "Get the owning script's settings and bindings",
+        "stated": true
+      }
+    ]
+  },
+  {
+    "id": "forwarding-setup",
+    "product": "emailRouting",
+    "kind": "cross",
+    "writer": "gemini-3.6-flash",
+    "task": "Please set up email forwarding for our domain standard-corp.com so that messages sent to support@standard-corp.com are delivered to dev-team@externaldomain.com. You will need to register dev-team@externaldomain.com as a destination address on the account, ensure email forwarding is turned on for the domain, and create the rule to forward incoming support mail to that address.",
+    "prefixes": [
+      "emailRouting"
+    ],
+    "exists": [
+      "standard-corp.com"
+    ],
+    "steps": [
+      {
+        "does": "look up the zone by name",
+        "tools": [
+          "zones_list",
+          "zones_get"
+        ],
+        "stated": false,
+        "optional": true
+      },
+      {
+        "does": "register the destination address",
+        "tools": [
+          "emailRouting_addresses_create"
+        ],
+        "stated": true
+      },
+      {
+        "does": "turn forwarding on for the zone",
+        "tools": [
+          "emailRouting_enable",
+          "emailRouting_settings_get"
+        ],
+        "stated": true
+      },
+      {
+        "does": "create the forwarding rule",
+        "tools": [
+          "emailRouting_rules_create"
+        ],
+        "stated": true
+      }
+    ],
+    "writerSteps": [
+      {
+        "product": "Zones",
+        "does": "look up zone ID by domain name",
+        "stated": false
+      },
+      {
+        "product": "Email Routing",
+        "does": "create destination address",
+        "stated": true
+      },
+      {
+        "product": "Email Routing",
+        "does": "enable email routing for zone",
+        "stated": true
+      },
+      {
+        "product": "Email Routing",
+        "does": "create routing rule",
+        "stated": true
+      }
+    ]
+  },
+  {
+    "id": "branch-appliance",
+    "product": "connectors",
+    "kind": "single",
+    "writer": "claude-fable-5-2",
+    "task": "The site appliance with serial number 7KX2-MC-00418 at our Lisbon branch was dropping traffic last night. Tell me what events it logged over the past 24 hours and what its latest health snapshot shows, then move its maintenance window to start at 03:00 and last 2 hours.",
+    "prefixes": [
+      "connectors",
+      "connectorTelemetryEvents",
+      "connectorTelemetrySnapshots",
+      "connectorInterrupts"
+    ],
+    "exists": [
+      "7KX2-MC-00418"
+    ],
+    "steps": [
+      {
+        "does": "find the appliance by serial number",
+        "tools": [
+          "connectors_list"
+        ],
+        "stated": false
+      },
+      {
+        "does": "list its events",
+        "tools": [
+          "connectorTelemetryEvents_list"
+        ],
+        "stated": true
+      },
+      {
+        "does": "get its latest snapshot",
+        "tools": [
+          "connectorTelemetrySnapshots_"
+        ],
+        "stated": true
+      },
+      {
+        "does": "move its maintenance window",
+        "tools": [
+          "connectorInterrupts_create",
+          "connectors_edit",
+          "connectors_update"
+        ],
+        "stated": true
+      }
+    ],
+    "writerSteps": [
+      {
+        "does": "List connectors to find the one with that serial number",
+        "stated": false
+      },
+      {
+        "does": "List telemetry events for the connector over the past 24 hours",
+        "stated": true
+      },
+      {
+        "does": "Get the connector's latest telemetry snapshot",
+        "stated": true
+      },
+      {
+        "does": "Update the connector's interrupt window start hour and duration",
+        "stated": true
+      }
+    ]
+  },
+  {
+    "id": "share-ruleset",
+    "product": "resourceSharing",
+    "kind": "cross",
+    "writer": "claude-fable-5-2",
+    "task": "Our account has a custom firewall ruleset named \"corp-baseline-blocks\" that I want to make available to our other account, \"Acme Staging\", so they can deploy it too. Set up a share called \"baseline-waf-share\" that contains that ruleset and has Acme Staging as the recipient.",
+    "prefixes": [
+      "rulesets",
+      "accounts",
+      "organization",
+      "resourceSharing"
+    ],
+    "exists": [
+      "corp-baseline-blocks",
+      "Acme Staging"
+    ],
+    "steps": [
+      {
+        "does": "find the ruleset",
+        "tools": [
+          "rulesets_list"
+        ],
+        "stated": false
+      },
+      {
+        "does": "find the other account",
+        "tools": [
+          "accounts_list",
+          "organization_account_list"
+        ],
+        "stated": false
+      },
+      {
+        "does": "create the share",
+        "tools": [
+          "resourceSharing_create"
+        ],
+        "stated": true
+      }
+    ],
+    "writerSteps": [
+      {
+        "product": "Rulesets",
+        "does": "List account rulesets to find the ID of \"corp-baseline-blocks\"",
+        "stated": false
+      },
+      {
+        "product": "Accounts",
+        "does": "List accounts to find the ID of \"Acme Staging\"",
+        "stated": false
+      },
+      {
+        "product": "Cloudflare resource sharing",
+        "does": "Create the share with the ruleset as resource and the account as recipient",
+        "stated": true
+      }
+    ]
+  },
+  {
+    "id": "org-invite",
+    "product": "organization",
+    "kind": "cross",
+    "writer": "gemini-3.6-flash",
+    "task": "Invite ops-lead@acme.org to the Acme Ops organization with the Infrastructure Admin role. Once they are added, fetch the latest audit logs for that organization to verify the event was logged.",
+    "prefixes": [
+      "organization",
+      "organizations"
+    ],
+    "exists": [
+      "Acme Ops",
+      "Infrastructure Admin"
+    ],
+    "steps": [
+      {
+        "does": "find the organization",
+        "tools": [
+          "organization_list"
+        ],
+        "stated": false
+      },
+      {
+        "does": "add the member",
+        "tools": [
+          "organization_member_create",
+          "organization_member_batch_create"
+        ],
+        "stated": true
+      },
+      {
+        "does": "read the audit log",
+        "tools": [
+          "organizations_logs_audit"
+        ],
+        "stated": true
+      }
+    ],
+    "writerSteps": [
+      {
+        "product": "Organization",
+        "does": "List organizations to find ID for Acme Ops",
+        "stated": false
+      },
+      {
+        "product": "Organization",
+        "does": "List organization roles to find ID for Infrastructure Admin",
+        "stated": false
+      },
+      {
+        "product": "Organization",
+        "does": "Create organization member",
+        "stated": true
+      },
+      {
+        "product": "Audit Logs",
+        "does": "List organization audit logs",
+        "stated": true
+      }
+    ]
+  },
+  {
+    "id": "tenant-binding",
+    "product": "workersForPlatforms",
+    "kind": "cross",
+    "writer": "claude-fable-5-2",
+    "task": "The customer script \"acme-store\" in our \"production-tenants\" dispatch namespace needs read access to our existing key-value namespace named \"shared-config\", exposed as a binding called CONFIG, and a secret named API_TOKEN set to \"tok_test_81f2\". Its current bindings must stay as they are.",
+    "prefixes": [
+      "kv",
+      "workersForPlatforms"
+    ],
+    "exists": [
+      "acme-store",
+      "production-tenants",
+      "shared-config"
+    ],
+    "steps": [
+      {
+        "does": "find the key-value namespace",
+        "tools": [
+          "kv_namespaces_list"
+        ],
+        "stated": false
+      },
+      {
+        "does": "read the script's bindings",
+        "tools": [
+          "workersForPlatforms_dispatchNamespaces_scripts_bindings_get",
+          "workersForPlatforms_dispatchNamespaces_scripts_settings_get",
+          "workersForPlatforms_dispatchNamespaces_scripts_get"
+        ],
+        "stated": false
+      },
+      {
+        "does": "add the binding",
+        "tools": [
+          "workersForPlatforms_dispatchNamespaces_scripts_settings_edit"
+        ],
+        "stated": true
+      },
+      {
+        "does": "add the secret",
+        "tools": [
+          "workersForPlatforms_dispatchNamespaces_scripts_secrets_update",
+          "workersForPlatforms_dispatchNamespaces_scripts_secrets_bulk"
+        ],
+        "stated": true
+      }
+    ],
+    "writerSteps": [
+      {
+        "product": "Workers KV",
+        "does": "List key-value namespaces to find the ID of \"shared-config\"",
+        "stated": false
+      },
+      {
+        "product": "Workers for Platforms",
+        "does": "Get the current settings and bindings of script \"acme-store\" in the dispatch namespace",
+        "stated": false
+      },
+      {
+        "product": "Workers for Platforms",
+        "does": "Patch the script settings to add the CONFIG binding alongside the existing ones",
+        "stated": true
+      },
+      {
+        "product": "Workers for Platforms",
+        "does": "Add the API_TOKEN secret to the script",
+        "stated": true
+      }
+    ]
+  },
+  {
+    "id": "alert-webhook",
+    "product": "alerting",
+    "kind": "single",
+    "writer": "gemini-3.6-flash",
+    "task": "Create a new webhook alert destination named 'Ops Slack Webhook' pointing to 'https://hooks.slack.com/services/T00/B00/X00' and attach it to the existing alert policy named 'Production Error Spike'. Also create a silence rule named 'Scheduled Maintenance' for that policy lasting for the next two hours.",
+    "prefixes": [
+      "alerting"
+    ],
+    "exists": [
+      "Production Error Spike"
+    ],
+    "steps": [
+      {
+        "does": "create the webhook destination",
+        "tools": [
+          "alerting_destinations_webhooks_create"
+        ],
+        "stated": true
+      },
+      {
+        "does": "find the policy",
+        "tools": [
+          "alerting_policies_list"
+        ],
+        "stated": false
+      },
+      {
+        "does": "attach the destination to it",
+        "tools": [
+          "alerting_policies_update"
+        ],
+        "stated": true
+      },
+      {
+        "does": "create the silence",
+        "tools": [
+          "alerting_silences_create"
+        ],
+        "stated": true
+      }
+    ],
+    "writerSteps": [
+      {
+        "does": "Create a new webhook alert destination",
+        "stated": true
+      },
+      {
+        "does": "List alert policies to find the ID of 'Production Error Spike'",
+        "stated": false
+      },
+      {
+        "does": "Update the alert policy to add the new webhook destination",
+        "stated": true
+      },
+      {
+        "does": "Create a silence rule for the alert policy",
+        "stated": true
+      }
+    ]
+  },
+  {
+    "id": "failed-deploy",
+    "product": "pages",
+    "kind": "single",
+    "writer": "claude-fable-5-2",
+    "task": "The latest production deploy of our static site project \"marketing-site\" failed. Pull its build log so I can see what went wrong, and roll production back to the last successful deployment before it. Then attach promo.acme-corp.com to the project as a custom domain.",
+    "prefixes": [
+      "pages"
+    ],
+    "exists": [
+      "marketing-site"
+    ],
+    "steps": [
+      {
+        "does": "list the project's deployments",
+        "tools": [
+          "pages_deployments_list"
+        ],
+        "stated": false
+      },
+      {
+        "does": "get the build log",
+        "tools": [
+          "pages_deployments_history_logs_get"
+        ],
+        "stated": true
+      },
+      {
+        "does": "roll back",
+        "tools": [
+          "pages_deployments_rollback"
+        ],
+        "stated": true
+      },
+      {
+        "does": "attach the domain",
+        "tools": [
+          "pages_domains_create"
+        ],
+        "stated": true
+      }
+    ],
+    "writerSteps": [
+      {
+        "does": "List the project's production deployments",
+        "stated": false
+      },
+      {
+        "does": "Get the failed deployment's build logs",
+        "stated": true
+      },
+      {
+        "does": "Roll back to the previous successful deployment",
+        "stated": true
+      },
+      {
+        "does": "Add the custom domain to the project",
+        "stated": true
+      }
+    ]
+  },
+  {
+    "id": "scan-and-block",
+    "product": "urlScanner",
+    "kind": "cross",
+    "writer": "gemini-3.6-flash",
+    "task": "Run a public web scan for https://test.example-corp.com/welcome, retrieve the full scan report using the scan ID, and create a domain firewall rule on example-corp.com to block incoming requests from the IP address detected during the scan.",
+    "prefixes": [
+      "urlScanner",
+      "firewall",
+      "rulesets"
+    ],
+    "exists": [
+      "example-corp.com"
+    ],
+    "steps": [
+      {
+        "does": "start the scan",
+        "tools": [
+          "urlScanner_scans_create"
+        ],
+        "stated": true
+      },
+      {
+        "does": "get the report",
+        "tools": [
+          "urlScanner_scans_get"
+        ],
+        "stated": true
+      },
+      {
+        "does": "look up the zone by name",
+        "tools": [
+          "zones_list",
+          "zones_get"
+        ],
+        "stated": false,
+        "optional": true
+      },
+      {
+        "does": "block the address on the zone",
+        "tools": [
+          "firewall_accessRules_create",
+          "rulesets_rules_create",
+          "rulesets_update"
+        ],
+        "stated": true
+      }
+    ],
+    "writerSteps": [
+      {
+        "product": "urlScanner",
+        "does": "Submit a URL scan request",
+        "stated": true
+      },
+      {
+        "product": "urlScanner",
+        "does": "Retrieve scan report by scan ID",
+        "stated": true
+      },
+      {
+        "product": "Zones",
+        "does": "Look up zone ID by domain name",
+        "stated": false
+      },
+      {
+        "product": "Firewall Rules",
+        "does": "Create a firewall rule for the zone",
+        "stated": true
+      }
+    ]
+  },
+  {
+    "id": "flag-binding",
+    "product": "flagship",
+    "kind": "cross",
+    "writer": "claude-fable-5-2",
+    "task": "In our feature flag app \"storefront\", add a boolean flag called new-checkout-flow that is off by default. Then expose that app to our deployed checkout-api script under the binding name FLAGS, keeping the bindings it already has.",
+    "prefixes": [
+      "flagship",
+      "workers"
+    ],
+    "exists": [
+      "storefront",
+      "checkout-api"
+    ],
+    "steps": [
+      {
+        "does": "find the flag app",
+        "tools": [
+          "flagship_apps_list"
+        ],
+        "stated": false
+      },
+      {
+        "does": "create the flag",
+        "tools": [
+          "flagship_apps_flags_create"
+        ],
+        "stated": true
+      },
+      {
+        "does": "read the script's bindings",
+        "tools": [
+          "workers_legacy_scripts_settings_get",
+          "workers_get"
+        ],
+        "stated": false
+      },
+      {
+        "does": "add the binding",
+        "tools": [
+          "workers_legacy_scripts_settings_edit",
+          "workers_legacy_scripts_scriptAndVersionSettings_edit",
+          "workers_edit",
+          "workers_update",
+          "workers_versions_latest_edit"
+        ],
+        "stated": true
+      }
+    ],
+    "writerSteps": [
+      {
+        "product": "Flagship",
+        "does": "List apps to find \"storefront\" ID",
+        "stated": false
+      },
+      {
+        "product": "Flagship",
+        "does": "Create boolean flag in the app",
+        "stated": true
+      },
+      {
+        "product": "Workers",
+        "does": "Get script settings and current bindings",
+        "stated": false
+      },
+      {
+        "product": "Workers",
+        "does": "Patch script settings to add binding",
+        "stated": true
+      }
+    ]
+  },
+  {
+    "id": "traffic-monitoring",
+    "product": "magicNetworkMonitoring",
+    "kind": "single",
+    "writer": "gemini-3.6-flash",
+    "task": "Update our network traffic monitoring setup by changing the bandwidth threshold of the rule named 'High Traffic Warning' to 500000 and adding '192.0.2.1' to the router IPs in our account monitoring configuration.",
+    "prefixes": [
+      "magicNetworkMonitoring"
+    ],
+    "exists": [
+      "High Traffic Warning"
+    ],
+    "steps": [
+      {
+        "does": "find the rule",
+        "tools": [
+          "magicNetworkMonitoring_rules_list"
+        ],
+        "stated": false
+      },
+      {
+        "does": "change its threshold",
+        "tools": [
+          "magicNetworkMonitoring_rules_edit",
+          "magicNetworkMonitoring_rules_update"
+        ],
+        "stated": true
+      },
+      {
+        "does": "read the configuration",
+        "tools": [
+          "magicNetworkMonitoring_configs_get",
+          "magicNetworkMonitoring_configs_full_get"
+        ],
+        "stated": false
+      },
+      {
+        "does": "add the router address",
+        "tools": [
+          "magicNetworkMonitoring_configs_edit",
+          "magicNetworkMonitoring_configs_update"
+        ],
+        "stated": true
+      }
+    ],
+    "writerSteps": [
+      {
+        "does": "List network monitoring rules to find the rule ID",
+        "stated": false
+      },
+      {
+        "does": "Update the monitoring rule bandwidth threshold",
+        "stated": true
+      },
+      {
+        "does": "Read the account network monitoring configuration",
+        "stated": false
+      },
+      {
+        "does": "Update the account network monitoring configuration",
+        "stated": true
+      }
+    ]
+  },
+  {
+    "id": "wipe-cache-store",
+    "product": "cache",
+    "kind": "single",
+    "writer": "claude-fable-5-2",
+    "task": "For the zone shop.example.com, wipe everything currently held in the long-term persistent store for cached assets and confirm the wipe has actually started. While you're at it, turn on automatic selection of the single best upper-tier data center for origin fetches.",
+    "prefixes": [
+      "cache"
+    ],
+    "exists": [
+      "shop.example.com",
+      "example.com"
+    ],
+    "steps": [
+      {
+        "does": "look up the zone by name",
+        "tools": [
+          "zones_list",
+          "zones_get"
+        ],
+        "stated": false,
+        "optional": true
+      },
+      {
+        "does": "turn the store off, which a wipe needs",
+        "tools": [
+          "cache_settings_reserve_edit"
+        ],
+        "stated": false
+      },
+      {
+        "does": "start the wipe",
+        "tools": [
+          "cache_settings_reserve_clear"
+        ],
+        "stated": true
+      },
+      {
+        "does": "read the wipe status",
+        "tools": [
+          "cache_settings_reserve_status"
+        ],
+        "stated": true
+      },
+      {
+        "does": "turn on the upper-tier selection",
+        "tools": [
+          "cache_settings_smartTieredCache_edit",
+          "cache_settings_smartTieredCache_create"
+        ],
+        "stated": true
+      }
+    ],
+    "writerSteps": [
+      {
+        "does": "Turn off the persistent cache store setting, which must be off before a wipe",
+        "stated": false
+      },
+      {
+        "does": "Start the clear of the persistent cache store",
+        "stated": true
+      },
+      {
+        "does": "Read the clear status to confirm it has started",
+        "stated": true
+      },
+      {
+        "does": "Enable the smart tiered cache setting",
+        "stated": true
+      }
+    ]
+  },
+  {
+    "id": "record-to-tunnel",
+    "product": "dns",
+    "kind": "cross",
+    "writer": "claude-fable-5-2",
+    "task": "inventory.acmeparts.com still has an A record pointing at our old origin IP. Switch that hostname over so it resolves to our existing tunnel named warehouse-edge instead, proxied, and leave a comment on the record saying \"moved to tunnel for warehouse rollout\".",
+    "prefixes": [
+      "tunnels",
+      "tunnel",
+      "dns"
+    ],
+    "exists": [
+      "acmeparts.com",
+      "inventory.acmeparts.com",
+      "warehouse-edge"
+    ],
+    "steps": [
+      {
+        "does": "look up the zone by name",
+        "tools": [
+          "zones_list",
+          "zones_get"
+        ],
+        "stated": false,
+        "optional": true
+      },
+      {
+        "does": "find the tunnel",
+        "tools": [
+          "tunnels_list",
+          "tunnel_list"
+        ],
+        "stated": false
+      },
+      {
+        "does": "find the record",
+        "tools": [
+          "dns_records_list"
+        ],
+        "stated": false
+      },
+      {
+        "does": "replace it",
+        "tools": [
+          "dns_records_update",
+          "dns_records_edit"
+        ],
+        "stated": true
+      }
+    ],
+    "writerSteps": [
+      {
+        "product": "Zones",
+        "does": "List zones filtered by name to get the zone ID for acmeparts.com",
+        "stated": false
+      },
+      {
+        "product": "Cloudflare Tunnel",
+        "does": "List tunnels filtered by name to get the warehouse-edge tunnel ID",
+        "stated": false
+      },
+      {
+        "product": "dns",
+        "does": "List DNS records for the inventory hostname to find the existing A record",
+        "stated": false
+      },
+      {
+        "product": "dns",
+        "does": "Overwrite that record as a proxied CNAME to the tunnel hostname with the comment",
+        "stated": true
+      }
+    ]
+  },
+  {
+    "id": "abuse-block",
+    "product": "abuseReports",
+    "kind": "cross",
+    "writer": "gemini-3.6-flash",
+    "task": "Check the recent abuse reports for ticket reference AB-94821 to extract the offending IP address. Then, create a block rule for that IP in the access rules of the example.com zone.",
+    "prefixes": [
+      "abuseReports",
+      "firewall",
+      "rulesets"
+    ],
+    "exists": [
+      "example.com",
+      "AB-94821"
+    ],
+    "steps": [
+      {
+        "does": "look up the zone by name",
+        "tools": [
+          "zones_list",
+          "zones_get"
+        ],
+        "stated": false,
+        "optional": true
+      },
+      {
+        "does": "find the report",
+        "tools": [
+          "abuseReports_list"
+        ],
+        "stated": true
+      },
+      {
+        "does": "read the report for the address",
+        "tools": [
+          "abuseReports_get"
+        ],
+        "stated": false
+      },
+      {
+        "does": "block the address on the zone",
+        "tools": [
+          "firewall_accessRules_create",
+          "rulesets_rules_create",
+          "rulesets_update"
+        ],
+        "stated": true
+      }
+    ],
+    "writerSteps": [
+      {
+        "product": "Zones",
+        "does": "List zones to find the zone ID for example.com",
+        "stated": false
+      },
+      {
+        "product": "Abuse Reports",
+        "does": "List abuse reports to locate ticket AB-94821",
+        "stated": true
+      },
+      {
+        "product": "Abuse Reports",
+        "does": "Get abuse report details to extract the offending IP address",
+        "stated": false
+      },
+      {
+        "product": "IP Access Rules",
+        "does": "Create an IP access rule to block the offending IP address",
+        "stated": true
+      }
+    ]
+  },
+  {
+    "id": "tag-trigger",
+    "product": "zaraz",
+    "kind": "single",
+    "writer": "gemini-3.6-flash",
+    "task": "Verify that workflow mode is enabled for example.com, then add a new trigger named 'Checkout Click' that fires when `#checkout-btn` is clicked, and publish the configuration update to production.",
+    "prefixes": [
+      "zaraz"
+    ],
+    "exists": [
+      "example.com"
+    ],
+    "steps": [
+      {
+        "does": "look up the zone by name",
+        "tools": [
+          "zones_list",
+          "zones_get"
+        ],
+        "stated": false,
+        "optional": true
+      },
+      {
+        "does": "check workflow mode",
+        "tools": [
+          "zaraz_workflow_get"
+        ],
+        "stated": true
+      },
+      {
+        "does": "read the configuration",
+        "tools": [
+          "zaraz_config_get"
+        ],
+        "stated": false
+      },
+      {
+        "does": "add the trigger",
+        "tools": [
+          "zaraz_config_update"
+        ],
+        "stated": true
+      },
+      {
+        "does": "publish",
+        "tools": [
+          "zaraz_publish_create"
+        ],
+        "stated": true
+      }
+    ],
+    "writerSteps": [
+      {
+        "does": "Get workflow status",
+        "stated": true
+      },
+      {
+        "does": "Get current configuration",
+        "stated": false
+      },
+      {
+        "does": "Update configuration with new trigger",
+        "stated": true
+      },
+      {
+        "does": "Publish configuration to production",
+        "stated": true
+      }
+    ]
+  },
+  {
+    "id": "vector-index",
+    "product": "vectorize",
+    "kind": "cross",
+    "writer": "gemini-3.6-flash",
+    "task": "Create a vector database index named catalog-embeddings configured for 768 dimensions using cosine similarity. Bind this new index to the existing script search-service under the environment binding VECTOR_INDEX, then insert a initial vector with ID item-001 containing 768 values of 0.1 into the index.",
+    "prefixes": [
+      "vectorize",
+      "workers"
+    ],
+    "exists": [
+      "search-service"
+    ],
+    "steps": [
+      {
+        "does": "create the index",
+        "tools": [
+          "vectorize_create"
+        ],
+        "stated": true
+      },
+      {
+        "does": "read the script's bindings",
+        "tools": [
+          "workers_legacy_scripts_settings_get",
+          "workers_get"
+        ],
+        "stated": false
+      },
+      {
+        "does": "add the binding",
+        "tools": [
+          "workers_legacy_scripts_settings_edit",
+          "workers_legacy_scripts_scriptAndVersionSettings_edit",
+          "workers_edit",
+          "workers_update",
+          "workers_versions_latest_edit"
+        ],
+        "stated": true
+      },
+      {
+        "does": "insert the vector",
+        "tools": [
+          "vectorize_insert",
+          "vectorize_upsert"
+        ],
+        "stated": true
+      }
+    ],
+    "writerSteps": [
+      {
+        "product": "Vectorize",
+        "does": "Create a vector index",
+        "stated": true
+      },
+      {
+        "product": "Workers Scripts",
+        "does": "Get script settings",
+        "stated": false
+      },
+      {
+        "product": "Workers Scripts",
+        "does": "Patch script settings and bindings",
+        "stated": true
+      },
+      {
+        "product": "Vectorize",
+        "does": "Insert vectors into an index",
+        "stated": true
+      }
+    ]
+  }
+]

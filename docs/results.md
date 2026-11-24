@@ -616,6 +616,34 @@ A first run of the flat catalog behind a vendor's tool search, on the Messages A
 - The rule takes every prefix as a product name. `ips` replaces "IP" and `accounts` replaces "account", so `ips_list` reads "Get mulosktan used on the /JD Cloud network" and `accounts_update` reads "Update an existing vekpelzor".
 - Under `brand`, 18 of the 20 tasks have the same count as on the catalog as served. The game server task goes from 6 to 4 and the edge IP ranges task from 6 to 4.
 
+## Workflow tasks, search against groups, 2026-11-24
+
+A first run of jobs that take three or four calls, on the Messages API with all 3,036 tools sent with `defer_loading`. `scripts/workflow-run.ts` has two arms. In `search` the model has the BM25 tool search tool and sees nothing about the tools first. In `groups` the system prompt lists the 271 groups of the rewritten build with their descriptions, about 80,000 characters, and a client tool `open_group` answers with `tool_reference` blocks for the group's tools. A trial runs until the model stops or has made 14 requests. Nothing is executed: a call gets a made-up result.
+
+The tasks were written by `scripts/write-tasks.ts --set workflow`. Fable 5.2 and Gemini 3.6 Flash each saw one product name and wrote ten jobs, five inside that product and five that also need one or two other products of the writer's choice. The prompt asks for the outcome wanted and for at least one needed step the task does not mention. Gemini skipped four products. `scripts/workflow-answers.ts` holds the key: for each step the tools that do it, chosen from the catalog with the writer's step list beside it, before the run. Two tasks were dropped because the catalog has no tool for steps the writer assumed. That leaves 18 tasks, 8 inside one product and 10 across products, with 65 required steps of which 20 are unsaid.
+
+Haiku 5.5 at effort low, three samples per task, 54 trials per arm, no errors, none stopped at the request limit.
+
+| | Search | Groups |
+| :-- | --: | --: |
+| Required steps with a fitting tool loaded | 167 of 195 | 191 of 195 |
+| Unsaid steps with a fitting tool loaded | 45 of 60 | 59 of 60 |
+| Required steps called | 151 of 195 | 159 of 195 |
+| Trials with every required step called | 20 of 54 | 24 of 54 |
+| Steps called, tasks inside one product | 82 of 93 | 80 of 93 |
+| Steps called, tasks across products | 69 of 102 | 79 of 102 |
+| Searches or opens per trial | 4.1 | 2.3 |
+| Tools loaded per trial | 26.0 | 38.3 |
+| Tools loaded and never called | 21.9 | 33.7 |
+| Requests per trial | 4.6 | 6.2 |
+| Median input tokens per trial | 139,275 | 326,031 |
+
+- By task, search had fewer steps with a fitting tool loaded than groups on nine tasks and the same number on nine.
+- Five steps had no fitting tool loaded in any of the three search trials: finding the old sending subdomain, finding the other account, finding the script that owns a namespace, and reading a script's bindings before adding one, on two tasks. Four of the five are unsaid steps. The search queries in those trials do not ask for them.
+- On the container task search had a fitting tool loaded for 3 of 12 steps and groups for 9.
+- Four steps were loaded and not called in any trial of either arm: the rollback, replacing the DNS record, and blocking the address on two tasks. In those trials the model said the made-up results lacked what the step needed: a scan report with no address, a deployment list whose one item was not a deployment, a get that returned another ID than the list.
+- The search arm used 13.2 million input tokens and the groups arm 19.2 million, of which 10.2 and 16.8 million were cache reads.
+
 ## Limits
 
 ### Every run
@@ -699,6 +727,18 @@ A first run of the flat catalog behind a vendor's tool search, on the Messages A
 - `brand` also renames ordinary uses that start with a capital, such as "Pages use descending revision IDs" and "Robots Access Control License". A reviewer counted 39 tools outside Zero Trust.
 - No run on the API used a renamed catalog. The replay moved two of the 20 tasks, and 27 of the 136 name prefixes are on the list, so that run was not made.
 
+### Workflow tasks
+
+- One model, one vendor's search, one catalog. Samples of a task mostly agree, so the sample is 18 tasks.
+- The made-up results stop some trials. A list returns the resources the key says exist, whatever was listed, and a get returns a new ID. "Called" counts are lowered by this in both arms. "Loaded" counts are not.
+- The key takes a lookup of a named resource as a required step. On the subdomain task the search arm skipped the lookup in three trials and still called the delete in two, with the name. Whether the API takes a name there was not checked, so some unsaid steps may not be needed.
+- The key was written by one person. Zone lookups are optional on every task. One writer step was left out because no tool lists organization roles.
+- Three tasks have no unsaid required step, and Gemini's tasks tend to name each step. Two tasks across products cross only by a zone lookup, and one task inside a product spans four name prefixes.
+- The writer chose the other products of a cross-product task, so that choice is not seeded. It is in `results/tasks-workflow/raw.jsonl` with each reply.
+- Groups are built per product, and the tasks are drawn per product. The cross-product tasks are there for that reason.
+- The groups arm puts every group description in the system prompt. Its input tokens include that listing on every request.
+- A group's instructions are sent as text after the `open_group` result. Skills are not offered in either arm.
+
 ### Follow-up runs
 
 - The chained sessions are two per cell, one per order, on GLM and for cold arm A with dry-run results. The other DeepSeek cells are six after 2026-11-14. The padding is filler of a fixed size, a stand-in for real response bodies and not a measurement of them. The full catalog was served by a local dev server. Arm C in these runs uses the tolerant wrapper.
@@ -726,5 +766,6 @@ A first run of the flat catalog behind a vendor's tool search, on the Messages A
 - `2026-11-20-agent-direct-*.jsonl`: DeepSeek arms A, B, C and D on Baseten's own endpoint, with `-shared` for the shared tool block. `2026-11-20-agent-chain30-d-direct*.jsonl`: arm D's 30-turn sessions, with the sessions that ended in HTTP 429 and their re-runs. `2026-11-20-agent-summary-direct.md`, `-direct-shared.md` and `-chain30-d-direct.md` are `npm run agent:score` over them. `2026-11-20-agent-smoke-d-direct.jsonl` is the check made first.
 - `2026-11-23-select2-subset-groups-s5.jsonl` and `-dedup-s5.jsonl`: the open models on the subset with every skill listed and with each workflow listed once. `2026-11-24-select2-subset-groups-hosted-s5.jsonl` and `-dedup-hosted-s5.jsonl`: Opus, Gemini 3.8 Flash and Kimi on the subset. `2026-11-24-select2-full-groups-s5.jsonl` and `-dedup-s5.jsonl`: those three and DeepSeek on the full catalog. `--replay` prints each summary.
 - `2026-11-24-search-v3-full.jsonl`: the tool search run on the held-out tasks, one row per trial with the queries, the tools returned and the tools called. `npx tsx scripts/search-run.ts --replay` prints its tables. `2026-11-24-search-replay-v3-full.txt` is `scripts/search-replay.ts` over it.
+- `tasks-workflow/`: the workflow tasks and every writer reply. `2026-11-24-workflow-haiku-search.jsonl` and `-groups.jsonl`: their run on Haiku, one row per trial with the searches or opens, the tools loaded and the tools called. `2026-11-24-workflow-haiku.txt` is `scripts/workflow-run.ts --replay` over both.
 
 Re-runs that reproduced an earlier file were not kept, and the 2026-11-02 file from the build against the earlier drafts was removed. This repository starts from a single commit; the private predecessor repository holds the earlier history.
