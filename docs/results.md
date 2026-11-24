@@ -599,6 +599,21 @@ A first run of the flat catalog behind a vendor's tool search, on the Messages A
 - A trial made 1.8 searches on average and at most 5.
 - On the same tasks in the selection trial of 2026-11-10, one sample each, Haiku and Opus picked an accepted group on 19 of 20 on the as-generated build and 20 of 20 on the rewritten one.
 
+### The same queries on a renamed catalog, no model
+
+`scripts/search-replay.ts` replays the run's 215 queries against a local BM25 over the 3,036 tools, as served and with product names replaced. A tool's text is its name, description, argument names and argument descriptions. `prefix` replaces the product prefix of each tool name with an invented word. `label` also replaces the product's label with that word in the tool's description and argument text, drops the API path line and URLs, and removes "Cloudflare". A trial counts when any of its queries brings back a tool that does the task.
+
+| Catalog | In the top 5 | In the top 10 | Same verdict as the API, top 10 | API-returned tools also in the top 10 |
+| :-- | --: | --: | --: | --: |
+| As served | 101 of 120 | 113 | 110 | 711 of 1,092 |
+| Prefix | 101 | 112 | 109 | 707 |
+| Label | 81 | 96 | 97 | 622 |
+
+- 167 of the 215 queries hold the product label of a tool that does the task.
+- Replacing the prefix alone changes one trial in the top 10, on the origin protocols task.
+- Under `label`, 12 of the 20 tasks have the same count in the top 10 as on the catalog as served. Seven lose trials: the Google Tag Gateway task from 6 to 0, the edge IP ranges task from 6 to 1, the container task from 6 to 3, the account task from 2 to 0, the game server task from 6 to 4, and the URL overrides and origin protocols tasks from 6 to 5. The IPFS gateway task goes from 3 to 6.
+- The rule takes every prefix as a product name. `ips` replaces "IP" and `accounts` replaces "account", so `ips_list` reads "Get mulosktan used on the /JD Cloud network" and `accounts_update` reads "Update an existing vekpelzor".
+
 ## Limits
 
 ### Every run
@@ -675,6 +690,9 @@ A first run of the flat catalog behind a vendor's tool search, on the Messages A
 - A lookup first counts as a call to another tool here. The first-call rule in `scripts/v3-rescore.ts` is not applied.
 - The local ranking is a proxy. It indexes names and descriptions, and the API's search also indexes argument names and descriptions.
 - The file is dated 2026-11-24, the UTC date.
+- The replay uses queries the models wrote for the catalog as served. A model given a renamed catalog would write other queries, so the replay does not measure search on one.
+- The replay's BM25 is not the API's. On the catalog as served it gives the API's verdict in 110 of 120 trials and holds 711 of the 1,092 tools the API returned. The API returned 5 or 10 tools per query and the run did not record which was asked for.
+- The replay renames a product's label only in that product's own tools. Another product's tool that mentions it keeps the name.
 
 ### Follow-up runs
 
@@ -702,6 +720,6 @@ A first run of the flat catalog behind a vendor's tool search, on the Messages A
 - `2026-11-19-agent-probe-deferred.txt` and `2026-11-20-repro-deferred-loading.txt`: the deferred loading probe through the router and on Baseten direct, and the one-tool reproduction. `2026-11-20-agent-probe-*.txt` and `2026-11-21-agent-probe-*.txt`: the same probe through OpenRouter, and the OpenAI Responses, Gemini and Anthropic probes.
 - `2026-11-20-agent-direct-*.jsonl`: DeepSeek arms A, B, C and D on Baseten's own endpoint, with `-shared` for the shared tool block. `2026-11-20-agent-chain30-d-direct*.jsonl`: arm D's 30-turn sessions, with the sessions that ended in HTTP 429 and their re-runs. `2026-11-20-agent-summary-direct.md`, `-direct-shared.md` and `-chain30-d-direct.md` are `npm run agent:score` over them. `2026-11-20-agent-smoke-d-direct.jsonl` is the check made first.
 - `2026-11-23-select2-subset-groups-s5.jsonl` and `-dedup-s5.jsonl`: the open models on the subset with every skill listed and with each workflow listed once. `2026-11-24-select2-subset-groups-hosted-s5.jsonl` and `-dedup-hosted-s5.jsonl`: Opus, Gemini 3.8 Flash and Kimi on the subset. `2026-11-24-select2-full-groups-s5.jsonl` and `-dedup-s5.jsonl`: those three and DeepSeek on the full catalog. `--replay` prints each summary.
-- `2026-11-24-search-v3-full.jsonl`: the tool search run on the held-out tasks, one row per trial with the queries, the tools returned and the tools called. `npx tsx scripts/search-run.ts --replay` prints its tables.
+- `2026-11-24-search-v3-full.jsonl`: the tool search run on the held-out tasks, one row per trial with the queries, the tools returned and the tools called. `npx tsx scripts/search-run.ts --replay` prints its tables. `2026-11-24-search-replay-v3-full.txt` is `scripts/search-replay.ts` over it.
 
 Re-runs that reproduced an earlier file were not kept, and the 2026-11-02 file from the build against the earlier drafts was removed. This repository starts from a single commit; the private predecessor repository holds the earlier history.
