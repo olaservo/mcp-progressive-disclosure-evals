@@ -639,7 +639,7 @@ Haiku 5.5 at effort low, three samples per task, 54 trials per arm, no errors, n
 | Median input tokens per trial | 139,275 | 326,031 |
 
 - By task, search had fewer steps with a fitting tool loaded than groups on nine tasks and the same number on nine.
-- Five steps had no fitting tool loaded in any of the three search trials: finding the old sending subdomain, finding the other account, finding the script that owns a namespace, and reading a script's bindings before adding one, on two tasks. Four of the five are unsaid steps. The search queries in those trials do not ask for them.
+- Five steps had no fitting tool loaded in any of the three search trials: finding the old sending subdomain, finding the other account, finding the script that owns a namespace, and reading a script's bindings before adding one, on two tasks. Four of the five are unsaid steps.
 - On the container task search had a fitting tool loaded for 3 of 12 steps and groups for 9.
 - Four steps were loaded and not called in any trial of either arm: the rollback, replacing the DNS record, and blocking the address on two tasks. In those trials the model said the made-up results lacked what the step needed: a scan report with no address, a deployment list whose one item was not a deployment, a get that returned another ID than the list.
 - The search arm used 13.2 million input tokens and the groups arm 19.2 million, of which 10.2 and 16.8 million were cache reads.
@@ -671,7 +671,7 @@ The key has 70 required steps, 25 unsaid. Haiku 5.5, three samples, 54 trials pe
 
 - The four steps that neither arm called in the first run were called in every trial of both arms, except the rollback in one search trial.
 - By task, search called fewer required steps than groups on 11 tasks, the same number on 6 and more on 1.
-- Three unsaid lookups had no fitting tool loaded in any search trial: the old sending subdomain, the other account, and the script that owns the namespace. The alert policy lookup had none in two of three. In those trials the model called the next tool with an ID it had not looked up.
+- Three unsaid lookups had no fitting tool loaded in any search trial: the old sending subdomain, the other account, and the script that owns the namespace. The alert policy lookup had none in two of three.
 - The groups arm missed three steps in 54 trials.
 - The search arm used 14.5 million input tokens and the groups arm 18.7 million, of which 11.4 and 15.9 million were cache reads.
 
@@ -696,7 +696,19 @@ Opus 5.5 at effort low, the same 18 tasks, key and results, three samples, 54 tr
 
 - By task, search called fewer required steps than groups on 5 tasks and the same number on 13. Four of the five are tasks across products.
 - Search's nine missed steps: the other account and the share on the ruleset task in two trials each, starting the scan in two, and one each of adding a secret, reading the monitoring configuration and adding the vector index binding. Five of the nine had a fitting tool loaded.
-- Opus searched for the lookups Haiku skipped. Its search arm called 72 of 75 unsaid steps, against Haiku's 60.
+- Opus's search arm called 72 of 75 unsaid steps, against Haiku's 60.
+
+### What the misses are, from a review of the trial rows
+
+A second reader went through the rows of the second run and the Opus run on 2026-11-24, and the points below were checked again against the files. They replace an earlier reading in this section, that search missed steps because the model did not search for them.
+
+- Haiku's search arm missed 17 stated steps and 15 unsaid ones. The gap is not particular to unsaid steps.
+- In 13 of the 15 unsaid misses the model did search for the lookup and no fitting tool came back. Its queries include "list zones by domain name", "list accounts memberships", "list notification policies alerting" and "Durable Objects namespaces list objects count". Of the other two, one trial made no such query and one had the tool loaded.
+- So on Haiku the search arm's misses are mostly searches for a list or lookup tool that did not return one. After such a miss the model usually stopped, said so, or took another route.
+- Some misses are the key's or the made-up results' doing. On the subdomain task the model found the old subdomain with `emailSending_subdomains_get` and `_preview`, which the key does not accept for the lookup. On the ruleset task it called `user_memberships_list` and `organization_list`, and the made-up results returned nothing for either. The reviewer puts about 8 of Haiku's 32 search misses in this class.
+- Opus's search arm missed nine steps and most are of that class. Four are the ruleset task, where the routes it tried returned nothing and it declined to create a share with an unknown account. Two are `urlScanner_scans_bulkCreate` used to start the scan, and one is a binding added with `workers_legacy_scripts_versions_create`. The key accepts neither. One is the secret set through the settings edit. One, the monitoring configuration read, is a step not done. The run does not show a gap between the arms on Opus.
+- One groups miss on Haiku is the runner's: a trial stopped at `max_tokens` and was not continued.
+- The rows hold tool names and not the arguments, so they do not show what a call passed as an ID.
 
 ### Input tokens in the second run and the Opus run
 
@@ -713,6 +725,8 @@ The median and the mean give different answers on what groups cost.
 - A groups trial pays for the group listing on every request, about 80,000 characters, so its trials sit close together.
 - A search trial is small unless a search returns tools with large schemas. Opus's three trials on the container task took 1.7, 2.2 and 2.7 million input tokens in four requests each.
 - In total the groups arm used 1.29 times the search arm's input tokens on Haiku and 0.98 times on Opus.
+- That near-parity rests on one task. Without the container task the groups arm used 1.73 times the search arm's input tokens on Haiku and 1.55 times on Opus.
+- Tokens that were not cache reads were lower for groups on both models: 2.72 million against 3.05 million on Haiku, and 1.98 million against 2.54 million on Opus.
 - Opus's arms were billed about $17 for search and $14 for groups, read from the console's credit balance before and after each.
 
 ## Limits
@@ -803,7 +817,7 @@ The median and the mean give different answers on what groups cost.
 - Two models from one vendor, one vendor's search, one catalog. Samples of a task mostly agree, so the sample is 18 tasks.
 - Input tokens are summed over a trial's requests, cached or not, and most were cache reads. The comparison between arms depends on the cache price and on whether the mean or the median is taken.
 - In the first run the made-up results stopped some trials. A list returned the resources the key said exist, whatever was listed, and a get returned a new ID. Its "called" counts are lowered by this in both arms. Its "loaded" counts are not.
-- In both runs a made-up result accepts any ID. A call made with an ID that was never looked up gets a success, where the API would return an error. The second run shows search skipping lookups the task did not mention. It does not show whether the model would search for the lookup after an error.
+- In both runs a made-up result accepts any ID. A call made with an ID that was never looked up gets a success, where the API would return an error. The rows do not record call arguments, so how often this happened is not known. A call made with an invented ID counts as done, which favours whichever arm does it more.
 - The key was written by one person and revised after the first run's results were seen. The second run's `world` results were written by the same person, from the tool names and descriptions and not from the API's response schemas.
 - One writer step was left out because no tool lists organization roles.
 - Three tasks have no unsaid required step, and Gemini's tasks tend to name each step. Two tasks across products cross only by a zone lookup, and one task inside a product spans four name prefixes.
