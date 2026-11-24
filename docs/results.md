@@ -601,18 +601,20 @@ A first run of the flat catalog behind a vendor's tool search, on the Messages A
 
 ### The same queries on a renamed catalog, no model
 
-`scripts/search-replay.ts` replays the run's 215 queries against a local BM25 over the 3,036 tools, as served and with product names replaced. A tool's text is its name, description, argument names and argument descriptions. `prefix` replaces the product prefix of each tool name with an invented word. `label` also replaces the product's label with that word in the tool's description and argument text, drops the API path line and URLs, and removes "Cloudflare". A trial counts when any of its queries brings back a tool that does the task.
+`scripts/search-replay.ts` replays the run's 215 queries against a local BM25 over the 3,036 tools, as served and with product names replaced. A tool's text is its name, description, argument names and argument descriptions. `prefix` replaces the product prefix of each tool name with an invented word. `label` also replaces the product's label with that word in the tool's description and argument text, drops the API path line and URLs, and removes "Cloudflare". `brand` replaces the vendor and the 28 coined product names listed in `scripts/rename.ts` (R2, Spectrum, Workers, Zero Trust) wherever they appear, and keeps names that describe the product (Email Routing, Queues, AI Gateway). A trial counts when any of its queries brings back a tool that does the task.
 
 | Catalog | In the top 5 | In the top 10 | Same verdict as the API, top 10 | API-returned tools also in the top 10 |
 | :-- | --: | --: | --: | --: |
 | As served | 101 of 120 | 113 | 110 | 711 of 1,092 |
 | Prefix | 101 | 112 | 109 | 707 |
 | Label | 81 | 96 | 97 | 622 |
+| Brand | 98 | 109 | 108 | 663 |
 
 - 167 of the 215 queries hold the product label of a tool that does the task.
 - Replacing the prefix alone changes one trial in the top 10, on the origin protocols task.
 - Under `label`, 12 of the 20 tasks have the same count in the top 10 as on the catalog as served. Seven lose trials: the Google Tag Gateway task from 6 to 0, the edge IP ranges task from 6 to 1, the container task from 6 to 3, the account task from 2 to 0, the game server task from 6 to 4, and the URL overrides and origin protocols tasks from 6 to 5. The IPFS gateway task goes from 3 to 6.
 - The rule takes every prefix as a product name. `ips` replaces "IP" and `accounts` replaces "account", so `ips_list` reads "Get mulosktan used on the /JD Cloud network" and `accounts_update` reads "Update an existing vekpelzor".
+- Under `brand`, 18 of the 20 tasks have the same count as on the catalog as served. The game server task goes from 6 to 4 and the edge IP ranges task from 6 to 4.
 
 ## Limits
 
@@ -692,7 +694,10 @@ A first run of the flat catalog behind a vendor's tool search, on the Messages A
 - The file is dated 2026-11-24, the UTC date.
 - The replay uses queries the models wrote for the catalog as served. A model given a renamed catalog would write other queries, so the replay does not measure search on one.
 - The replay's BM25 is not the API's. On the catalog as served it gives the API's verdict in 110 of 120 trials and holds 711 of the 1,092 tools the API returned. The API returned 5 or 10 tools per query and the run did not record which was asked for.
-- The replay renames a product's label only in that product's own tools. Another product's tool that mentions it keeps the name.
+- `label` renames a product's label only in that product's own tools. Another product's tool that mentions it keeps the name.
+- `brand` matches prose by its capital letter and leaves argument names alone. "the worker" in lower case and arguments such as `r2` keep the name.
+- `brand` also renames ordinary uses that start with a capital, such as "Pages use descending revision IDs" and "Robots Access Control License". A reviewer counted 39 tools outside Zero Trust.
+- No run on the API used a renamed catalog. The replay moved two of the 20 tasks, and 27 of the 136 name prefixes are on the list, so that run was not made.
 
 ### Follow-up runs
 

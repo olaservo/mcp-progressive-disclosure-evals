@@ -7,9 +7,12 @@
 //   label:  the same, and in the description and argument text the product's label becomes that word, the API path line and
 //           URLs are dropped and "Cloudflare" is removed. Every prefix counts as a product name, so `ips` renames "IP" and
 //           `accounts` renames "account".
+//   brand:  the vendor and the coined product names in scripts/rename.ts become invented words, in names, descriptions and
+//           argument descriptions. Names that describe the product are kept.
 // Usage: tsx scripts/search-replay.ts <search-run jsonl> [--url <flat mcp url>] [--show <tool name>]
 import { readFileSync } from 'node:fs'
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
+import { renameTool } from './rename.js'
 
 const args = process.argv.slice(2)
 const opt = (name: string, fallback?: string) => {
@@ -76,9 +79,13 @@ function label(prefix: string): RegExp {
   return new RegExp(`\\b${parts.join('[ _/-]?')}\\b`, 'gi')
 }
 
-const RENAMINGS = ['as served', 'prefix', 'label'] as const
+const RENAMINGS = ['as served', 'prefix', 'label', 'brand'] as const
 type Renaming = (typeof RENAMINGS)[number]
 function text(tool: Listed, renaming: Renaming): string {
+  if (renaming === 'brand') {
+    const renamed = renameTool(tool)
+    return `${renamed.name}\n${renamed.description ?? ''}\n${argumentText(renamed.inputSchema)}`
+  }
   const prefix = prefixOf(tool.name)
   const word = invented.get(prefix)!
   const name = renaming === 'as served' ? tool.name : word + tool.name.slice(prefix.length)
@@ -165,10 +172,10 @@ if (show) {
   }
 
   console.log('\nTrials per task whose queries bring back a tool that does the task, top 10:')
-  console.log('| Task | Product | Trials | As served | Prefix | Label |')
-  console.log('| :-- | :-- | --: | --: | --: | --: |')
+  console.log('| Task | Product | Trials | As served | Prefix | Label | Brand |')
+  console.log('| :-- | :-- | --: | --: | --: | --: | --: |')
   for (const task of tasks) {
     const count = (renaming: Renaming) => hits.get(`${renaming} 10`)!.get(task.id) ?? 0
-    console.log(`| ${task.id} | ${task.product} | ${trials.filter((trial) => trial.id === task.id).length} | ${count('as served')} | ${count('prefix')} | ${count('label')} |`)
+    console.log(`| ${task.id} | ${task.product} | ${trials.filter((trial) => trial.id === task.id).length} | ${count('as served')} | ${count('prefix')} | ${count('label')} | ${count('brand')} |`)
   }
 }
