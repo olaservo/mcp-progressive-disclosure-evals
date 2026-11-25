@@ -729,6 +729,24 @@ The median and the mean give different answers on what groups cost.
 - Tokens that were not cache reads were lower for groups on both models: 2.72 million against 3.05 million on Haiku, and 1.98 million against 2.54 million on Opus.
 - Opus's arms were billed about $17 for search and $14 for groups, read from the console's credit balance before and after each.
 
+### Third Haiku run, with call arguments recorded, 2026-11-25
+
+The key was revised a second time from the calls made in trials that missed a step. A settings edit or a version upload now counts for adding a binding or a secret, `urlScanner_scans_bulkCreate` for starting the scan, `emailRouting_settings_apply` and `_update` for turning forwarding on, and `user_memberships_list` for finding the other account. The made-up results now answer `organization_list`, `accounts_organizations_list` and `user_memberships_list` on the ruleset task. `emailSending_subdomains_get` is still not accepted as the subdomain lookup, since it takes a subdomain ID the task does not give. The runner now records each call's arguments, and sends a request again with a larger limit when it stops at `max_tokens`.
+
+Under this key the earlier rows score 182 of 210 for Haiku's search arm and 208 for its groups arm, and 206 and 210 for Opus. Haiku was run again on both arms, 54 trials each, no errors.
+
+| Arm | Every required step | Required steps | Stated | Unsaid | Median input tokens | Mean input tokens |
+| :-- | --: | --: | --: | --: | --: | --: |
+| Search | 39 of 54 | 187 of 210 | 123 of 135 | 64 of 75 | 146,310 | 277,372 |
+| Groups | 53 of 54 | 209 of 210 | 134 of 135 | 75 of 75 | 340,221 | 364,628 |
+
+- The search arm missed 23 steps in 15 trials. Five are on the container task in two trials, four on the subdomain task in three, three each on the notification policy task and the cache store task in one trial each, and the other eight are on seven tasks.
+- The ruleset task was done in full in all three search trials. It was the task with a dead end in the made-up results.
+- Groups used 1.31 times the input tokens of search in total, and 1.55 times with the container task left out.
+- No call in the search arm passed a path ID the model had not read in the task, the system prompt or an earlier result, in 236 calls. Nine of the 269 calls in the groups arm did, in nine trials. The values are "PLACEHOLDER", "example-zone-id" and the like as a zone ID. In the trials read, the call was sent in the same request as `zones_list` and made again with the ID that came back.
+- Five vector index trials still ended at `max_tokens` after the insert was called, with about 85,000 output tokens each. The limit was 64,000 on the second resend. It is 16,000 after this run.
+- The two attempts cost $5.29 of promotional credit. The first attempt ran the search arm only and three of its trials ended in an SDK error, so it was run again.
+
 ### What the search returned, by kind of tool
 
 `scripts/search-returned.ts` tallies the tools the API's search returned in the three search files: the held-out run of 2026-11-23, the second Haiku workflow run and the Opus workflow run. That is 228 trials, 694 queries and 4,237 returned tools, repeats counted. A tool's kind is the verb at the end of its name. No model is called.
@@ -852,8 +870,9 @@ The median and the mean give different answers on what groups cost.
 - Two models from one vendor, one vendor's search, one catalog. Samples of a task mostly agree, so the sample is 18 tasks.
 - Input tokens are summed over a trial's requests, cached or not, and most were cache reads. The comparison between arms depends on the cache price and on whether the mean or the median is taken.
 - In the first run the made-up results stopped some trials. A list returned the resources the key said exist, whatever was listed, and a get returned a new ID. Its "called" counts are lowered by this in both arms. Its "loaded" counts are not.
-- In both runs a made-up result accepts any ID. A call made with an ID that was never looked up gets a success, where the API would return an error. The rows do not record call arguments, so how often this happened is not known. A call made with an invented ID counts as done, which favours whichever arm does it more.
-- The key was written by one person and revised after the first run's results were seen. The second run's `world` results were written by the same person, from the tool names and descriptions and not from the API's response schemas.
+- In both runs a made-up result accepts any ID. A call made with an ID that was never looked up gets a success, where the API would return an error. The rows of the first two Haiku runs and the Opus run do not record call arguments, so how often this happened in them is not known. The third Haiku run records them. A call made with an invented ID counts as done, which favours whichever arm does it more.
+- The check for a path value not read before compares text. It passes over `account_or_zone` and `ruleset_phase`, which take a fixed word, and it does not look at IDs in a request body.
+- The key was written by one person and revised after the first run's results were seen, and again after the second run and the Opus run. Each revision accepted more calls, and the calls it accepted were made more often in the search arm. The second run's `world` results were written by the same person, from the tool names and descriptions and not from the API's response schemas.
 - One writer step was left out because no tool lists organization roles.
 - Three tasks have no unsaid required step, and Gemini's tasks tend to name each step. Two tasks across products cross only by a zone lookup, and one task inside a product spans four name prefixes.
 - The writer chose the other products of a cross-product task, so that choice is not seeded. It is in `results/tasks-workflow/raw.jsonl` with each reply.
@@ -891,7 +910,7 @@ The median and the mean give different answers on what groups cost.
 - `2026-11-20-agent-direct-*.jsonl`: DeepSeek arms A, B, C and D on Baseten's own endpoint, with `-shared` for the shared tool block. `2026-11-20-agent-chain30-d-direct*.jsonl`: arm D's 30-turn sessions, with the sessions that ended in HTTP 429 and their re-runs. `2026-11-20-agent-summary-direct.md`, `-direct-shared.md` and `-chain30-d-direct.md` are `npm run agent:score` over them. `2026-11-20-agent-smoke-d-direct.jsonl` is the check made first.
 - `2026-11-23-select2-subset-groups-s5.jsonl` and `-dedup-s5.jsonl`: the open models on the subset with every skill listed and with each workflow listed once. `2026-11-24-select2-subset-groups-hosted-s5.jsonl` and `-dedup-hosted-s5.jsonl`: Opus, Gemini 3.8 Flash and Kimi on the subset. `2026-11-24-select2-full-groups-s5.jsonl` and `-dedup-s5.jsonl`: those three and DeepSeek on the full catalog. `--replay` prints each summary.
 - `2026-11-24-search-v3-full.jsonl`: the tool search run on the held-out tasks, one row per trial with the queries, the tools returned and the tools called. `npx tsx scripts/search-run.ts --replay` prints its tables. `2026-11-24-search-replay-v3-full.txt` is `scripts/search-replay.ts` over it.
-- `tasks-workflow/`: the workflow tasks and every writer reply. `2026-11-24-workflow-haiku-search.jsonl` and `-groups.jsonl`: their run on Haiku, one row per trial with the searches or opens, the tools loaded and the tools called. `2026-11-24-workflow-haiku.txt` is `scripts/workflow-run.ts --replay` over both, printed with the first key. The `-v2` files are the second run. `2026-11-24-workflow-opus-search.jsonl`, `-groups.jsonl` and `2026-11-24-workflow-opus.txt` are the Opus run. `scripts/workflow-tasks.json` now holds the revised key, so `--replay` over the first run's files scores them with it.
+- `tasks-workflow/`: the workflow tasks and every writer reply. `2026-11-24-workflow-haiku-search.jsonl` and `-groups.jsonl`: their run on Haiku, one row per trial with the searches or opens, the tools loaded and the tools called. `2026-11-24-workflow-haiku.txt` is `scripts/workflow-run.ts --replay` over both, printed with the first key. The `-v2` files are the second run. `2026-11-24-workflow-opus-search.jsonl`, `-groups.jsonl` and `2026-11-24-workflow-opus.txt` are the Opus run. `scripts/workflow-tasks.json` now holds the revised key, so `--replay` over the first run's files scores them with it. `2026-11-25-workflow-haiku-search-v3.jsonl`, `-groups-v3.jsonl` and `2026-11-25-workflow-haiku-v3.txt` are the third Haiku run, with a `calls` field holding each call's arguments. The key was revised again before it, so `--replay` over the earlier files now gives the rescored counts.
 - `2026-11-24-search-returned.txt`: `scripts/search-returned.ts` over the three search files. `2026-11-25-search-probe.jsonl` and `.txt`: the 20-query probe of the search, one row per query with the query sent and the tools returned.
 
 Re-runs that reproduced an earlier file were not kept, and the 2026-11-02 file from the build against the earlier drafts was removed. This repository starts from a single commit; the private predecessor repository holds the earlier history.

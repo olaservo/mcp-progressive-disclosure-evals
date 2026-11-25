@@ -7,6 +7,9 @@
 // The key was revised on 2026-11-24 after the first run, whose results showed the made-up results stopping trials: `world`
 // replaced a flat list of names, zone lookups became required where a zone-scoped tool is, the two abuse report steps
 // became one, and the read before the vector index binding became optional.
+// Revised again after the second run and the Opus run, from the calls made in trials that missed a step: a settings edit
+// or a version upload can add a binding or a secret, a bulk submit starts a scan, a settings update turns forwarding on,
+// and the user's memberships give the other account. `world` now answers the organization and membership lists.
 // Checks every prefix against the catalog as served and prints scripts/workflow-tasks.json.
 // Usage: tsx scripts/workflow-answers.ts [--url <flat mcp url>]
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -20,7 +23,7 @@ const step = (does: string, stated: boolean, ...tools: string[]): Need => ({ doe
 const optional = (does: string, stated: boolean, ...tools: string[]): Need => ({ does, tools, stated, optional: true })
 const ZONE = step('look up the zone by name', false, 'zones_list', 'zones_get')
 const SCRIPT_SETTINGS_GET = ['workers_legacy_scripts_settings_get', 'workers_legacy_scripts_scriptAndVersionSettings_get', 'workers_get']
-const SCRIPT_SETTINGS_EDIT = ['workers_legacy_scripts_settings_edit', 'workers_legacy_scripts_scriptAndVersionSettings_edit', 'workers_edit', 'workers_update', 'workers_versions_latest_edit']
+const SCRIPT_SETTINGS_EDIT = ['workers_legacy_scripts_settings_edit', 'workers_legacy_scripts_scriptAndVersionSettings_edit', 'workers_edit', 'workers_update', 'workers_versions_latest_edit', 'workers_legacy_scripts_versions_create']
 
 const zone = (name: string, id: string) => ({ zones_list: [{ id, name, status: 'active', type: 'full' }], zones_get: { id, name, status: 'active', type: 'full' } })
 const script = (name: string, bindings: unknown[]) => ({
@@ -60,7 +63,7 @@ const NEEDS: ({ id: string; world: World; steps: Need[] } | { id: string; drop: 
     world: { ...zone('example.com', '2d7f1a9c4e6b4f0a8c5d3e1b9a7f6c20'), ...script('data-processor', [{ type: 'plain_text', name: 'ENVIRONMENT', text: 'production' }]), workers_scripts_schedules_get: { schedules: [{ cron: '*/30 * * * *' }] } },
     steps: [
       optional('read the script', false, ...SCRIPT_SETTINGS_GET, 'workers_list'),
-      step('set the secret', true, 'workers_secrets_update', 'workers_secrets_bulk'),
+      step('set the secret', true, 'workers_secrets_update', 'workers_secrets_bulk', ...SCRIPT_SETTINGS_EDIT),
       step('attach the domain', true, 'workers_domains_update'),
       step('set the cron schedule', true, 'workers_scripts_schedules_update')
     ]
@@ -87,13 +90,15 @@ const NEEDS: ({ id: string; world: World; steps: Need[] } | { id: string; drop: 
       ...zone('standard-corp.com', '8c2a4e6f0b1d4c3e9a7f5d3b1c0e2a46'),
       emailRouting_settings_get: { id: '75610dab9e69410a82cf7e400a09ecec', name: 'standard-corp.com', enabled: false, status: 'unconfigured' },
       emailRouting_enable: { id: '75610dab9e69410a82cf7e400a09ecec', name: 'standard-corp.com', enabled: true, status: 'ready' },
+      emailRouting_settings_apply: { id: '75610dab9e69410a82cf7e400a09ecec', name: 'standard-corp.com', enabled: true, status: 'ready' },
+      emailRouting_settings_update: { id: '75610dab9e69410a82cf7e400a09ecec', name: 'standard-corp.com', enabled: true, status: 'ready' },
       emailRouting_addresses_list: [],
       emailRouting_addresses_create: { id: 'ea95132c15732412d22c1476fa83f27a', email: 'dev-team@externaldomain.com', verified: null, created: '2026-11-24T10:00:00Z' }
     },
     steps: [
       ZONE,
       step('register the destination address', true, 'emailRouting_addresses_create'),
-      step('turn forwarding on for the zone', true, 'emailRouting_enable', 'emailRouting_settings_get'),
+      step('turn forwarding on for the zone', true, 'emailRouting_enable', 'emailRouting_settings_get', 'emailRouting_settings_apply', 'emailRouting_settings_update'),
       step('create the forwarding rule', true, 'emailRouting_rules_create')
     ]
   },
@@ -130,11 +135,17 @@ const NEEDS: ({ id: string; world: World; steps: Need[] } | { id: string; drop: 
         { id: '4f1c2a9e7b3d4c5e8a6f0b1d2c3e4f5a', name: 'Acme Production' },
         { id: 'd0a2c4e6f8b14d3c9e7a5f3b1d0c2e48', name: 'Acme Staging' }
       ],
+      organization_list: [{ id: 'a7b9c1d3e5f74a6c8e0b2d4f6a8c0e13', name: 'Acme', create_time: '2025-02-03T08:00:00Z' }],
+      accounts_organizations_list: [{ id: 'a7b9c1d3e5f74a6c8e0b2d4f6a8c0e13', name: 'Acme', create_time: '2025-02-03T08:00:00Z' }],
+      user_memberships_list: [
+        { id: '4536bcfad5faccb111b47003c79917fa', status: 'accepted', account: { id: '4f1c2a9e7b3d4c5e8a6f0b1d2c3e4f5a', name: 'Acme Production' }, roles: ['Administrator'] },
+        { id: '9b2d4f6a8c0e4a1c3e5b7d9f1a3c5e70', status: 'accepted', account: { id: 'd0a2c4e6f8b14d3c9e7a5f3b1d0c2e48', name: 'Acme Staging' }, roles: ['Administrator'] }
+      ],
       resourceSharing_list: []
     },
     steps: [
       step('find the ruleset', false, 'rulesets_list'),
-      step('find the other account', false, 'accounts_list', 'organization_account_list'),
+      step('find the other account', false, 'accounts_list', 'organization_account_list', 'user_memberships_list'),
       step('create the share', true, 'resourceSharing_create')
     ]
   },
@@ -171,7 +182,7 @@ const NEEDS: ({ id: string; world: World; steps: Need[] } | { id: string; drop: 
       step('find the key-value namespace', false, 'kv_namespaces_list'),
       step("read the script's bindings", false, 'workersForPlatforms_dispatchNamespaces_scripts_bindings_get', 'workersForPlatforms_dispatchNamespaces_scripts_settings_get', 'workersForPlatforms_dispatchNamespaces_scripts_get'),
       step('add the binding', true, 'workersForPlatforms_dispatchNamespaces_scripts_settings_edit'),
-      step('add the secret', true, 'workersForPlatforms_dispatchNamespaces_scripts_secrets_update', 'workersForPlatforms_dispatchNamespaces_scripts_secrets_bulk')
+      step('add the secret', true, 'workersForPlatforms_dispatchNamespaces_scripts_secrets_update', 'workersForPlatforms_dispatchNamespaces_scripts_secrets_bulk', 'workersForPlatforms_dispatchNamespaces_scripts_settings_edit')
     ]
   },
   {
@@ -218,12 +229,13 @@ const NEEDS: ({ id: string; world: World; steps: Need[] } | { id: string; drop: 
     world: {
       ...zone('example-corp.com', '1e3a5c7f9b0d4e2a8c6f4b2d0a1c3e57'),
       urlScanner_scans_create: { uuid: '095be615-a8ad-4c33-8e9c-c7612fbf6c9f', api: 'https://api.cloudflare.com/client/v4/accounts/4f1c2a9e7b3d4c5e8a6f0b1d2c3e4f5a/urlscanner/v2/result/095be615-a8ad-4c33-8e9c-c7612fbf6c9f', url: 'https://test.example-corp.com/welcome', visibility: 'public', message: 'Submission successful' },
+      urlScanner_scans_bulkCreate: [{ uuid: '095be615-a8ad-4c33-8e9c-c7612fbf6c9f', api: 'https://api.cloudflare.com/client/v4/accounts/4f1c2a9e7b3d4c5e8a6f0b1d2c3e4f5a/urlscanner/v2/result/095be615-a8ad-4c33-8e9c-c7612fbf6c9f', url: 'https://test.example-corp.com/welcome', visibility: 'public' }],
       urlScanner_scans_get: { task: { uuid: '095be615-a8ad-4c33-8e9c-c7612fbf6c9f', url: 'https://test.example-corp.com/welcome', status: 'finished', visibility: 'public' }, page: { url: 'https://test.example-corp.com/welcome', domain: 'test.example-corp.com', ip: '203.0.113.77', asn: 'AS64500', country: 'NL', status: '200' }, verdicts: { overall: { malicious: false } }, stats: { requests: 23 } },
       urlScanner_scans_list: [{ task: { uuid: '095be615-a8ad-4c33-8e9c-c7612fbf6c9f', url: 'https://test.example-corp.com/welcome', time: '2026-11-24T10:00:00Z' }, page: { ip: '203.0.113.77' } }],
       firewall_accessRules_list: []
     },
     steps: [
-      step('start the scan', true, 'urlScanner_scans_create'),
+      step('start the scan', true, 'urlScanner_scans_create', 'urlScanner_scans_bulkCreate'),
       step('get the report', true, 'urlScanner_scans_get'),
       ZONE,
       step('block the address on the zone', true, 'firewall_accessRules_create', 'rulesets_rules_create', 'rulesets_update')

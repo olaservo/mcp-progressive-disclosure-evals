@@ -1,0 +1,126 @@
+
+| Arm | Model | Trials | Every required step | Required steps | Stated | Unsaid | Single-product tasks | Cross-product tasks | Steps with a tool loaded | Unsaid steps with a tool loaded | Stopped at the request limit |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: |
+| search | claude-haiku-5-5 | 54 | 39 | 187 of 210 | 123 of 135 | 64 of 75 | 88 of 102 | 99 of 108 | 192 of 210 | 65 of 75 | 0 |
+| groups | claude-haiku-5-5 | 54 | 53 | 209 of 210 | 134 of 135 | 75 of 75 | 102 of 102 | 107 of 108 | 210 of 210 | 75 of 75 | 0 |
+
+| Arm | Model | Searches or opens | Tools loaded | Loaded and never called | Calls to a tool no step accepts | Requests | Median input tokens | Median output tokens |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: |
+| search | claude-haiku-5-5 | 4.0 | 25.6 | 21.4 | 0.7 | 4.4 | 146310 | 1716 |
+| groups | claude-haiku-5-5 | 2.4 | 42.8 | 38.2 | 0.5 | 6.1 | 340221 | 1582 |
+
+| Task | Kind | Arm | Model | Required steps done | Missed | Searches or opens |
+| :-- | :-- | :-- | :-- | --: | :-- | :-- |
+| script-config | single | search | claude-haiku-5-5 #1 | 2 of 3 | attach the domain | Cloudflare worker script secret, domain route, cron trigger ; create or update secret for Worker script ; list zones find zone id by name example.com ; zones list get zone by name ; zone details zone id name status ; GET /zones list zones account |
+| retire-subdomain | single | search | claude-haiku-5-5 #2 | 3 of 5 | find the old sending subdomain (unsaid); get its DNS records | list zones DNS records create delete update Cloudflare ; list zones by name acmeshop.io ; email sending subdomains create delete |
+| retire-subdomain | single | search | claude-haiku-5-5 #3 | 4 of 5 | find the old sending subdomain (unsaid) | Cloudflare DNS records list create delete zone ; list zones by name acmeshop.io; list email sending subdomains; delete sending subdomain ; zones list account zone id by domain name |
+| retire-subdomain | single | search | claude-haiku-5-5 #1 | 4 of 5 | find the old sending subdomain (unsaid) | Cloudflare DNS records zone list create delete ; email sending subdomain delete list create zone ; list zones by name acmeshop.io zone identifier ; List zones ; list email sending subdomains |
+| script-config | single | search | claude-haiku-5-5 #2 | 3 of 3 |  | Cloudflare worker script secret variable ; Cloudflare worker domain route custom domain ; Cloudflare worker cron trigger schedule update ; list zones by name example.com zone id ; zones list account name filter |
+| script-config | single | search | claude-haiku-5-5 #3 | 3 of 3 |  | Cloudflare Workers script secret variable ; Cloudflare worker custom domain route ; Cloudflare worker cron schedule trigger update ; list zones by name example.com ; list zones account get zone id ; zones GET list zones filter name |
+| leaking-container | cross | search | claude-haiku-5-5 #1 | 1 of 4 | find the container app; find the namespace and the script that owns it (unsaid); count the objects in it | Cloudflare container app list image max instances ; Cloudflare workers KV namespace list keys count ; Cloudflare worker script bindings get ; get container application details by id, list containers applications ; durable object namespaces list account script |
+| leaking-container | cross | search | claude-haiku-5-5 #2 | 2 of 4 | find the namespace and the script that owns it (unsaid); count the objects in it | Cloudflare container app list image max instances ; Workers KV namespace list keys count ; Workers script bindings settings get ; list containers applications get application details |
+| leaking-container | cross | search | claude-haiku-5-5 #3 | 4 of 4 |  | Cloudflare container app list image max instances ; Workers KV namespace list keys count ; Workers script bindings settings get ; list containers applications get application details ; Workers KV namespaces list account ; containers applications list all applications account GET ; durable object namespaces list account |
+| forwarding-setup | cross | search | claude-haiku-5-5 #3 | 3 of 4 | turn forwarding on for the zone | email routing destination address create forwarding rule zone enable ; list zones by domain name zone id lookup ; enable email routing DNS records zone |
+| forwarding-setup | cross | search | claude-haiku-5-5 #2 | 4 of 4 |  | email routing destination address create forwarding rule zone ; list zones by domain name; enable email routing DNS records ; list zones filter by name |
+| forwarding-setup | cross | search | claude-haiku-5-5 #1 | 4 of 4 |  | email routing destination address forwarding rule zone ; list zones by domain name zone id lookup ; enable email routing DNS records zone |
+| branch-appliance | single | search | claude-haiku-5-5 #1 | 4 of 4 |  | site appliance serial number events health snapshot maintenance window ; Cloudflare appliance logs events list ; magic connector list serial number maintenance window ; Magic WAN connector events logs update |
+| branch-appliance | single | search | claude-haiku-5-5 #2 | 4 of 4 |  | site appliance serial number events health snapshot maintenance window ; Cloudflare appliance logs events ; magic connectors list connector maintenance window ; magic connector events logs serial number |
+| share-ruleset | cross | search | claude-haiku-5-5 #2 | 3 of 3 |  | create resource share recipients ruleset account ; list firewall rulesets account custom ; list accounts memberships Acme Staging account id |
+| branch-appliance | single | search | claude-haiku-5-5 #3 | 4 of 4 |  | site appliance serial number events health snapshot maintenance window ; magic connector list serial number maintenance window update ; connector events log magic wan |
+| share-ruleset | cross | search | claude-haiku-5-5 #1 | 3 of 3 |  | create resource share recipients account ruleset ; list firewall rulesets account custom WAF ; list accounts memberships Acme Staging ; list account rulesets phase custom firewall ; get ruleset by name id list rulesets account phase http_request_firewall_custom |
+| share-ruleset | cross | search | claude-haiku-5-5 #3 | 3 of 3 |  | create resource share recipients custom ruleset ; list firewall rulesets account ; list accounts memberships |
+| org-invite | cross | search | claude-haiku-5-5 #1 | 3 of 3 |  | invite member organization account role ; audit logs account organization list ; list organizations account memberships roles ; create organization invite member email role Acme Ops ; list organizations |
+| org-invite | cross | search | claude-haiku-5-5 #3 | 3 of 3 |  | invite member to organization with role ; audit logs organization ; organizations list invite create organization member role |
+| org-invite | cross | search | claude-haiku-5-5 #2 | 3 of 3 |  | invite member organization account role ; audit logs account list ; list accounts organizations Acme Ops ; organization member invite create role |
+| tenant-binding | cross | search | claude-haiku-5-5 #1 | 4 of 4 |  | dispatch namespace script bindings secret KV namespace ; list KV namespaces ; get dispatch namespace script settings ; patch dispatch namespace script settings bindings metadata ; workers kv namespaces list account ; patch multiple script secrets dispatch |
+| tenant-binding | cross | search | claude-haiku-5-5 #3 | 4 of 4 |  | dispatch namespace script bindings secret kv namespace ; list workers kv namespaces ; workers for platforms script settings update bindings patch |
+| alert-webhook | single | search | claude-haiku-5-5 #1 | 4 of 4 |  | create webhook alert destination notification ; list alert policies notification policy ; create silence rule alert policy maintenance |
+| alert-webhook | single | search | claude-haiku-5-5 #2 | 1 of 4 | find the policy (unsaid); attach the destination to it; create the silence | notification webhook destination create ; alert policy list update silence ; list notification policies alerting ; get alerting policy by id or list policies account |
+| tenant-binding | cross | search | claude-haiku-5-5 #2 | 4 of 4 |  | dispatch namespace script bindings secret KV namespace ; list KV namespaces ; get dispatch namespace script settings ; list workers KV namespaces account ; patch multiple dispatch namespace script secrets ; update dispatch namespace script settings bindings metadata ; patch dispatch namespace script settings bindings kv_namespace ; GET storage kv namespaces list title pagination ; PATCH script settings bindings keep existing dispatch namespace ; workers for platforms patch script secrets multiple ; update script settings bindings kv namespace binding dispatch namespace PATCH |
+| alert-webhook | single | search | claude-haiku-5-5 #3 | 4 of 4 |  | notification webhook destination create ; alert policy list update notification policy ; notification silence create maintenance |
+| failed-deploy | single | search | claude-haiku-5-5 #1 | 3 of 4 | attach the domain | Pages project deployments list build log rollback custom domain ; list pages deployments for project, rollback deployment, retry deployment |
+| failed-deploy | single | search | claude-haiku-5-5 #2 | 4 of 4 |  | Pages project deployments build log rollback custom domain ; list pages deployments rollback deployment |
+| failed-deploy | single | search | claude-haiku-5-5 #3 | 4 of 4 |  | Cloudflare Pages deployments list build log rollback custom domain ; Pages project deployments list domains add custom domain |
+| scan-and-block | cross | search | claude-haiku-5-5 #1 | 4 of 4 |  | URL scanner public web scan ; create firewall rule block IP zone ; list zones domain name lookup zone id |
+| scan-and-block | cross | search | claude-haiku-5-5 #2 | 4 of 4 |  | URL scanner public web scan ; firewall rule create block IP zone ; urlscanner get scan result report by scan ID ; list zones by domain name example-corp.com ; urlscanner v2 result scan uuid get full report ; list zones filter by name |
+| scan-and-block | cross | search | claude-haiku-5-5 #3 | 3 of 4 | look up the zone by name (unsaid) | public web scan URL cloudflare ; create firewall rule zone block IP access rule ; list zones domain lookup ; zone list get zone id by name |
+| flag-binding | cross | search | claude-haiku-5-5 #1 | 3 of 4 | find the flag app (unsaid) | feature flag app boolean flag create ; worker script settings bindings update ; get worker script settings bindings read ; get script settings bindings metadata worker legacy |
+| traffic-monitoring | single | search | claude-haiku-5-5 #1 | 4 of 4 |  | network traffic monitoring rule bandwidth threshold ; account monitoring configuration router IPs |
+| flag-binding | cross | search | claude-haiku-5-5 #2 | 4 of 4 |  | cloudflare feature flag app boolean flag ; cloudflare worker script bindings update ; list flagship apps account ; get worker script settings bindings ; get script settings metadata bindings legacy worker |
+| flag-binding | cross | search | claude-haiku-5-5 #3 | 4 of 4 |  | feature flag app boolean flag Cloudflare Flagship ; Workers script settings bindings update script ; flagship create flag PUT variations boolean default_variation ; patch worker script settings bindings non-dispatch |
+| traffic-monitoring | single | search | claude-haiku-5-5 #2 | 4 of 4 |  | network traffic monitoring rule bandwidth threshold ; account monitoring configuration router IPs |
+| traffic-monitoring | single | search | claude-haiku-5-5 #3 | 4 of 4 |  | network traffic monitoring rule bandwidth threshold ; account monitoring configuration router IPs |
+| wipe-cache-store | single | search | claude-haiku-5-5 #3 | 2 of 5 | turn the store off, which a wipe needs (unsaid); start the wipe; read the wipe status | purge cache everything zone ; tiered cache smart topology upper tier data center ; list zones by name domain zone id |
+| wipe-cache-store | single | search | claude-haiku-5-5 #1 | 5 of 5 |  | cache reserve clear zone ; smart tiered cache topology upper tier ; list zones by name |
+| wipe-cache-store | single | search | claude-haiku-5-5 #2 | 5 of 5 |  | clear Cache Reserve zone cache ; smart tiered cache topology enable zone ; list zones by name |
+| record-to-tunnel | cross | search | claude-haiku-5-5 #1 | 4 of 4 |  | cloudflare tunnel list dns record update ; cloudflare tunnels list account zones lookup by name ; list zones by name domain ; GET zones list zone identifier name filter |
+| abuse-block | cross | search | claude-haiku-5-5 #1 | 3 of 3 |  | abuse reports ticket lookup ; create IP access rule zone block ; list zones by name |
+| record-to-tunnel | cross | search | claude-haiku-5-5 #2 | 4 of 4 |  | Cloudflare DNS record update tunnel list tunnels ; dns records list edit zone A record proxied comment ; list zones by name domain zone id |
+| record-to-tunnel | cross | search | claude-haiku-5-5 #3 | 4 of 4 |  | list tunnels cloudflare zero trust ; list DNS records zone ; update DNS record ; cloudflare tunnels list get tunnel by name cfd_tunnel ; list zones zone id by domain name ; edit patch dns record proxied comment content type |
+| abuse-block | cross | search | claude-haiku-5-5 #3 | 3 of 3 |  | abuse reports ticket lookup ; create zone access rule block IP ; list zones by domain name ; list zones get zone id by name ; zones list filter name account |
+| tag-trigger | single | search | claude-haiku-5-5 #1 | 4 of 5 | look up the zone by name (unsaid) | workflow mode example.com zone setting ; add trigger click selector configuration ; publish configuration update production ; list zones by name example.com zone id ; Zaraz workflow mode setting ; list zones account |
+| abuse-block | cross | search | claude-haiku-5-5 #2 | 2 of 3 | look up the zone by name (unsaid) | abuse reports ticket lookup ; create zone access rule block IP ; list zones example.com ; list zones by name account ; zone identifier lookup by domain name ; zone details status name_servers zone id |
+| tag-trigger | single | search | claude-haiku-5-5 #2 | 5 of 5 |  | workflow mode example.com zone setting ; create trigger click selector ; publish configuration production ; list zones by domain name zone ID lookup ; zaraz workflow mode setting |
+| tag-trigger | single | search | claude-haiku-5-5 #3 | 4 of 5 | check workflow mode | workflow mode enabled zone example.com ; add trigger click selector workflow ; publish configuration production ; list zones by domain name zone id |
+| vector-index | cross | search | claude-haiku-5-5 #1 | 3 of 3 |  | create vectorize index dimensions metric cosine ; insert vectors into vectorize index ; worker script settings bindings vectorize environment variable |
+| vector-index | cross | search | claude-haiku-5-5 #2 | 3 of 3 |  | Vectorize create index dimensions metric cosine ; Workers script bind vectorize index environment binding ; Vectorize insert vectors index |
+| vector-index | cross | search | claude-haiku-5-5 #3 | 3 of 3 |  | vectorize create index dimensions cosine ; workers script binding vectorize index ; insert vectors into vectorize index |
+| script-config | single | groups | claude-haiku-5-5 #1 | 3 of 3 |  | workers-secrets ; workers-domains ; workers-core ; zones-core |
+| retire-subdomain | single | groups | claude-haiku-5-5 #1 | 5 of 5 |  | email-sending-api ; zones-core |
+| retire-subdomain | single | groups | claude-haiku-5-5 #3 | 5 of 5 |  | email-sending-api ; zones-core |
+| retire-subdomain | single | groups | claude-haiku-5-5 #2 | 5 of 5 |  | email-sending-api ; zones-core |
+| script-config | single | groups | claude-haiku-5-5 #2 | 3 of 3 |  | workers-secrets ; workers-domains ; workers-core ; zones-core |
+| leaking-container | cross | groups | claude-haiku-5-5 #1 | 4 of 4 |  | containers-api ; durable-objects-api ; workers-legacy |
+| script-config | single | groups | claude-haiku-5-5 #3 | 3 of 3 |  | workers-secrets ; workers-domains ; workers-core ; zones-core |
+| leaking-container | cross | groups | claude-haiku-5-5 #2 | 4 of 4 |  | containers-api ; durable-objects-api ; workers-legacy |
+| leaking-container | cross | groups | claude-haiku-5-5 #3 | 4 of 4 |  | containers-api ; durable-objects-api ; workers-legacy |
+| forwarding-setup | cross | groups | claude-haiku-5-5 #1 | 4 of 4 |  | cloudflare-email-service ; zones-core |
+| forwarding-setup | cross | groups | claude-haiku-5-5 #2 | 4 of 4 |  | email-routing-api ; cloudflare-email-service ; zones-core |
+| forwarding-setup | cross | groups | claude-haiku-5-5 #3 | 4 of 4 |  | email-routing-api ; cloudflare-email-service ; zones-core |
+| branch-appliance | single | groups | claude-haiku-5-5 #1 | 4 of 4 |  | connectors-api ; connector-telemetry-events-api ; connector-telemetry-snapshots-api |
+| branch-appliance | single | groups | claude-haiku-5-5 #2 | 4 of 4 |  | connectors-api ; connector-telemetry-events-api ; connector-telemetry-snapshots-api |
+| branch-appliance | single | groups | claude-haiku-5-5 #3 | 4 of 4 |  | connectors-api ; connector-telemetry-events-api ; connector-telemetry-snapshots-api |
+| share-ruleset | cross | groups | claude-haiku-5-5 #1 | 3 of 3 |  | resource-sharing-api ; rulesets-core ; accounts-core |
+| share-ruleset | cross | groups | claude-haiku-5-5 #3 | 3 of 3 |  | resource-sharing-api ; rulesets-core ; accounts-core |
+| share-ruleset | cross | groups | claude-haiku-5-5 #2 | 3 of 3 |  | resource-sharing-api ; rulesets-core ; accounts-core ; resource-sharing-api |
+| org-invite | cross | groups | claude-haiku-5-5 #1 | 3 of 3 |  | organization-api ; organizations-api |
+| org-invite | cross | groups | claude-haiku-5-5 #2 | 3 of 3 |  | organization-api ; organizations-api |
+| org-invite | cross | groups | claude-haiku-5-5 #3 | 3 of 3 |  | organization-api ; organizations-api |
+| tenant-binding | cross | groups | claude-haiku-5-5 #2 | 4 of 4 |  | kv-api ; workers-for-platforms-dispatch-namespaces |
+| tenant-binding | cross | groups | claude-haiku-5-5 #3 | 4 of 4 |  | kv-api ; workers-for-platforms-dispatch-namespaces |
+| tenant-binding | cross | groups | claude-haiku-5-5 #1 | 4 of 4 |  | kv-api ; workers-for-platforms-dispatch-namespaces |
+| alert-webhook | single | groups | claude-haiku-5-5 #1 | 4 of 4 |  | alerting-api |
+| alert-webhook | single | groups | claude-haiku-5-5 #2 | 4 of 4 |  | alerting-api |
+| failed-deploy | single | groups | claude-haiku-5-5 #1 | 4 of 4 |  | pages-api |
+| alert-webhook | single | groups | claude-haiku-5-5 #3 | 4 of 4 |  | alerting-api |
+| failed-deploy | single | groups | claude-haiku-5-5 #2 | 4 of 4 |  | pages-api |
+| failed-deploy | single | groups | claude-haiku-5-5 #3 | 4 of 4 |  | pages-api |
+| scan-and-block | cross | groups | claude-haiku-5-5 #1 | 4 of 4 |  | url-scanner-api ; firewall-api ; zones-core |
+| scan-and-block | cross | groups | claude-haiku-5-5 #2 | 4 of 4 |  | url-scanner-api ; firewall-api ; zones-core |
+| flag-binding | cross | groups | claude-haiku-5-5 #1 | 3 of 4 | add the binding | flagship-api ; workers-legacy |
+| scan-and-block | cross | groups | claude-haiku-5-5 #3 | 4 of 4 |  | url-scanner-api ; firewall-api ; zones-core |
+| flag-binding | cross | groups | claude-haiku-5-5 #2 | 4 of 4 |  | flagship-api ; workers-legacy |
+| traffic-monitoring | single | groups | claude-haiku-5-5 #1 | 4 of 4 |  | magic-network-monitoring-api |
+| traffic-monitoring | single | groups | claude-haiku-5-5 #2 | 4 of 4 |  | magic-network-monitoring-api |
+| flag-binding | cross | groups | claude-haiku-5-5 #3 | 4 of 4 |  | flagship-api ; workers-legacy |
+| traffic-monitoring | single | groups | claude-haiku-5-5 #3 | 4 of 4 |  | magic-network-monitoring-api |
+| record-to-tunnel | cross | groups | claude-haiku-5-5 #1 | 4 of 4 |  | dns-records ; tunnel-api ; tunnels-api ; zones-core |
+| wipe-cache-store | single | groups | claude-haiku-5-5 #1 | 5 of 5 |  | cache-api ; zones-core |
+| wipe-cache-store | single | groups | claude-haiku-5-5 #2 | 5 of 5 |  | cache-api ; zones-core |
+| wipe-cache-store | single | groups | claude-haiku-5-5 #3 | 5 of 5 |  | cache-api ; zones-core ; cache-api |
+| record-to-tunnel | cross | groups | claude-haiku-5-5 #3 | 4 of 4 |  | dns-records ; tunnel-api ; zones-core |
+| abuse-block | cross | groups | claude-haiku-5-5 #2 | 3 of 3 |  | abuse-reports-api ; firewall-api ; zones-core |
+| record-to-tunnel | cross | groups | claude-haiku-5-5 #2 | 4 of 4 |  | dns-records ; tunnel-api ; zones-core |
+| abuse-block | cross | groups | claude-haiku-5-5 #1 | 3 of 3 |  | abuse-reports-api ; firewall-api ; zones-core |
+| abuse-block | cross | groups | claude-haiku-5-5 #3 | 3 of 3 |  | abuse-reports-api ; firewall-api ; zones-core |
+| tag-trigger | single | groups | claude-haiku-5-5 #1 | 5 of 5 |  | zaraz-api ; zones-core |
+| tag-trigger | single | groups | claude-haiku-5-5 #2 | 5 of 5 |  | zaraz-api ; zones-core |
+| tag-trigger | single | groups | claude-haiku-5-5 #3 | 5 of 5 |  | zaraz-api ; zones-core |
+| vector-index | cross | groups | claude-haiku-5-5 #1 | 3 of 3 |  | vectorize-api ; workers-secrets ; workers-legacy |
+| vector-index | cross | groups | claude-haiku-5-5 #2 | 3 of 3 |  | vectorize-api ; workers-legacy |
+| vector-index | cross | groups | claude-haiku-5-5 #3 | 3 of 3 |  | vectorize-api ; workers-legacy |
+
+| Arm | Model | Trials | Calls | Calls with a path value not read before | Trials with one | Tool and parameter, most frequent |
+| :-- | :-- | --: | --: | --: | --: | :-- |
+| search | claude-haiku-5-5 | 54 | 236 | 0 | 0 |  |
+| groups | claude-haiku-5-5 | 54 | 269 | 9 | 9 | emailSending_subdomains_list zone_id (3), zaraz_workflow_get zone_id (3), cache_settings_reserve_get zone_id (1), cache_settings_reserve_status zone_id (1), zones_settings_get setting_id (1) |

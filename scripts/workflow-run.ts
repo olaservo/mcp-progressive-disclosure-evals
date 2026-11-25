@@ -6,7 +6,8 @@
 // Nothing is executed. A call to a catalog tool gets a made-up result. The key's `world` gives the result for the tools
 // a task is expected to touch, with the IDs and fields later steps need. Any other list returns nothing, and any other
 // call returns the request body under the ID it was addressed to. A trial runs until the model stops or
-// --max-requests is reached.
+// --max-requests is reached. A request that stops at max_tokens is sent again with a larger limit. Each call is
+// recorded with its arguments.
 // Scored per step of the answer key: a step is done when a tool that fits it was called, and reachable when such a tool was
 // loaded. The made-up results can stall a model, which lowers the first and not the second. The summary also gives searches
 // or opens, tools loaded, tools loaded and never called, and input tokens summed over the trial's requests, cached or not.
@@ -54,6 +55,10 @@ type Trial = {
   finds: string[]
   loaded: string[]
   called: string[]
+  /** Each call to a catalog tool with its arguments. Rows written before 2026-11-25 do not have it. */
+  calls?: { name: string; input: unknown }[]
+  /** Requests sent again because they stopped at max_tokens. */
+  resent?: number
   said: string
   stop: string
   requests: number
@@ -132,6 +137,42 @@ function summary(trials: Trial[]): void {
     const missed = required.filter((step) => !done(step, trial.called))
     console.log(`| ${trial.id} | ${task.kind} | ${trial.arm} | ${trial.model} #${trial.sample} | ${required.length - missed.length} of ${required.length} | ${missed.map((step) => `${step.does}${step.stated ? '' : ' (unsaid)'}`).join('; ')} | ${trial.finds.join(' ; ')} |`)
   }
+  // Path values the model could not have read: not in the task, the system prompt or an earlier result of the trial.
+  // Calls made in one request are checked in order, so a value from a result of the same request counts as read.
+  // `account_or_zone` and `ruleset_phase` take one of a fixed set of words, not an ID.
+  const FIXED = ['account_or_zone', 'ruleset_phase']
+  const logged = ok.filter((trial) => trial.calls)
+  if (logged.length) {
+    console.log('\n| Arm | Model | Trials | Calls | Calls with a path value not read before | Trials with one | Tool and parameter, most frequent |')
+    console.log('| :-- | :-- | --: | --: | --: | --: | :-- |')
+    for (const cell of cells) {
+      const [cellArm, model] = cell.split('\t')
+      const rows = logged.filter((trial) => trial.arm === cellArm && trial.model === model)
+      let calls = 0
+      let unread = 0
+      let withOne = 0
+      const which = new Map<string, number>()
+      for (const trial of rows) {
+        const task = byId.get(trial.id)!
+        let seen = `${SYSTEM}\n${task.task}`
+        let any = false
+        for (const call of trial.calls!) {
+          calls++
+          const values = Object.entries(((call.input ?? {}) as { path?: Record<string, unknown> }).path ?? {}).filter(([param, value]) => typeof value === 'string' && value !== '' && !FIXED.includes(param)) as [string, string][]
+          const missing = values.filter(([, value]) => !seen.toLowerCase().includes(value.toLowerCase()))
+          if (missing.length) {
+            unread++
+            any = true
+            for (const [param] of missing) which.set(`${call.name} ${param}`, (which.get(`${call.name} ${param}`) ?? 0) + 1)
+          }
+          seen += `\n${madeUp(task, call.name, call.input)}`
+        }
+        if (any) withOne++
+      }
+      const top = [...which].sort((x, y) => y[1] - x[1]).slice(0, 6).map(([name, n]) => `${name} (${n})`).join(', ')
+      console.log(`| ${cellArm} | ${model} | ${rows.length} | ${calls} | ${unread} | ${withOne} | ${top} |`)
+    }
+  }
   const failed = trials.filter((trial) => trial.error)
   if (failed.length) console.log(`\n${failed.length} trials ended in an error: ${[...new Set(failed.map((trial) => trial.error!.slice(0, 120)))].join(' | ')}`)
 }
@@ -182,18 +223,25 @@ if (replayAt >= 0) {
   const anthropic = new Anthropic({ maxRetries: 4 })
 
   async function run(model: string, sample: number, task: Task): Promise<Trial> {
-    const trial: Trial = { arm, model, sample, id: task.id, finds: [], loaded: [], called: [], said: '', stop: '', requests: 0, inputTokens: 0, outputTokens: 0, ms: 0 }
+    const trial: Trial = { arm, model, sample, id: task.id, finds: [], loaded: [], called: [], calls: [], resent: 0, said: '', stop: '', requests: 0, inputTokens: 0, outputTokens: 0, ms: 0 }
     const started = Date.now()
     const messages: Anthropic.MessageParam[] = [{ role: 'user', content: task.task }]
+    let maxTokens = 4000
     try {
       while (trial.requests < maxRequests) {
         // Automatic caching, so a trial's later requests read the earlier ones from cache.
-        const response = await anthropic.messages.create({ model, max_tokens: 4000, output_config: { effort: 'low' }, cache_control: { type: 'ephemeral' }, system, tools, messages } as Anthropic.MessageCreateParamsNonStreaming)
+        const response = await anthropic.messages.stream({ model, max_tokens: maxTokens, output_config: { effort: 'low' }, cache_control: { type: 'ephemeral' }, system, tools, messages } as Anthropic.MessageStreamParams).finalMessage()
         trial.requests++
         trial.inputTokens += response.usage.input_tokens + (response.usage.cache_read_input_tokens ?? 0) + (response.usage.cache_creation_input_tokens ?? 0)
         trial.cacheRead = (trial.cacheRead ?? 0) + (response.usage.cache_read_input_tokens ?? 0)
         trial.outputTokens += response.usage.output_tokens
         trial.stop = response.stop_reason ?? ''
+        // A reply cut off at the limit is dropped and the request sent again, once, with four times the limit.
+        if (response.stop_reason === 'max_tokens' && maxTokens < 16000) {
+          maxTokens *= 4
+          trial.resent = (trial.resent ?? 0) + 1
+          continue
+        }
         const results: Anthropic.ContentBlockParam[] = []
         const notes: string[] = []
         for (const block of response.content as Array<Record<string, any>>) {
@@ -212,7 +260,10 @@ if (replayAt >= 0) {
               if (group.instructions) notes.push(`Instructions of group ${name}:\n${group.instructions}`)
             }
           } else if (block.type === 'tool_use') {
-            if (names.has(block.name)) trial.called.push(block.name)
+            if (names.has(block.name)) {
+              trial.called.push(block.name)
+              trial.calls!.push({ name: block.name, input: block.input })
+            }
             results.push({ type: 'tool_result', tool_use_id: block.id, content: names.has(block.name) ? madeUp(task, block.name, block.input) : `No tool named ${block.name}.`, ...(names.has(block.name) ? {} : { is_error: true }) })
           }
         }

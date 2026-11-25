@@ -150,7 +150,13 @@
         "does": "set the secret",
         "tools": [
           "workers_secrets_update",
-          "workers_secrets_bulk"
+          "workers_secrets_bulk",
+          "workers_legacy_scripts_settings_edit",
+          "workers_legacy_scripts_scriptAndVersionSettings_edit",
+          "workers_edit",
+          "workers_update",
+          "workers_versions_latest_edit",
+          "workers_legacy_scripts_versions_create"
         ],
         "stated": true
       },
@@ -594,7 +600,9 @@
         "does": "turn forwarding on for the zone",
         "tools": [
           "emailRouting_enable",
-          "emailRouting_settings_get"
+          "emailRouting_settings_get",
+          "emailRouting_settings_apply",
+          "emailRouting_settings_update"
         ],
         "stated": true
       },
@@ -628,6 +636,18 @@
         "status": "unconfigured"
       },
       "emailRouting_enable": {
+        "id": "75610dab9e69410a82cf7e400a09ecec",
+        "name": "standard-corp.com",
+        "enabled": true,
+        "status": "ready"
+      },
+      "emailRouting_settings_apply": {
+        "id": "75610dab9e69410a82cf7e400a09ecec",
+        "name": "standard-corp.com",
+        "enabled": true,
+        "status": "ready"
+      },
+      "emailRouting_settings_update": {
         "id": "75610dab9e69410a82cf7e400a09ecec",
         "name": "standard-corp.com",
         "enabled": true,
@@ -820,6 +840,7 @@
       "rulesets",
       "accounts",
       "organization",
+      "user",
       "resourceSharing"
     ],
     "steps": [
@@ -834,7 +855,8 @@
         "does": "find the other account",
         "tools": [
           "accounts_list",
-          "organization_account_list"
+          "organization_account_list",
+          "user_memberships_list"
         ],
         "stated": false
       },
@@ -883,6 +905,44 @@
         {
           "id": "d0a2c4e6f8b14d3c9e7a5f3b1d0c2e48",
           "name": "Acme Staging"
+        }
+      ],
+      "organization_list": [
+        {
+          "id": "a7b9c1d3e5f74a6c8e0b2d4f6a8c0e13",
+          "name": "Acme",
+          "create_time": "2025-02-03T08:00:00Z"
+        }
+      ],
+      "accounts_organizations_list": [
+        {
+          "id": "a7b9c1d3e5f74a6c8e0b2d4f6a8c0e13",
+          "name": "Acme",
+          "create_time": "2025-02-03T08:00:00Z"
+        }
+      ],
+      "user_memberships_list": [
+        {
+          "id": "4536bcfad5faccb111b47003c79917fa",
+          "status": "accepted",
+          "account": {
+            "id": "4f1c2a9e7b3d4c5e8a6f0b1d2c3e4f5a",
+            "name": "Acme Production"
+          },
+          "roles": [
+            "Administrator"
+          ]
+        },
+        {
+          "id": "9b2d4f6a8c0e4a1c3e5b7d9f1a3c5e70",
+          "status": "accepted",
+          "account": {
+            "id": "d0a2c4e6f8b14d3c9e7a5f3b1d0c2e48",
+            "name": "Acme Staging"
+          },
+          "roles": [
+            "Administrator"
+          ]
         }
       ],
       "resourceSharing_list": []
@@ -1049,7 +1109,8 @@
         "does": "add the secret",
         "tools": [
           "workersForPlatforms_dispatchNamespaces_scripts_secrets_update",
-          "workersForPlatforms_dispatchNamespaces_scripts_secrets_bulk"
+          "workersForPlatforms_dispatchNamespaces_scripts_secrets_bulk",
+          "workersForPlatforms_dispatchNamespaces_scripts_settings_edit"
         ],
         "stated": true
       }
@@ -1410,7 +1471,8 @@
       {
         "does": "start the scan",
         "tools": [
-          "urlScanner_scans_create"
+          "urlScanner_scans_create",
+          "urlScanner_scans_bulkCreate"
         ],
         "stated": true
       },
@@ -1461,6 +1523,14 @@
         "visibility": "public",
         "message": "Submission successful"
       },
+      "urlScanner_scans_bulkCreate": [
+        {
+          "uuid": "095be615-a8ad-4c33-8e9c-c7612fbf6c9f",
+          "api": "https://api.cloudflare.com/client/v4/accounts/4f1c2a9e7b3d4c5e8a6f0b1d2c3e4f5a/urlscanner/v2/result/095be615-a8ad-4c33-8e9c-c7612fbf6c9f",
+          "url": "https://test.example-corp.com/welcome",
+          "visibility": "public"
+        }
+      ],
       "urlScanner_scans_get": {
         "task": {
           "uuid": "095be615-a8ad-4c33-8e9c-c7612fbf6c9f",
@@ -1563,7 +1633,8 @@
           "workers_legacy_scripts_scriptAndVersionSettings_edit",
           "workers_edit",
           "workers_update",
-          "workers_versions_latest_edit"
+          "workers_versions_latest_edit",
+          "workers_legacy_scripts_versions_create"
         ],
         "stated": true
       }
@@ -2268,7 +2339,8 @@
           "workers_legacy_scripts_scriptAndVersionSettings_edit",
           "workers_edit",
           "workers_update",
-          "workers_versions_latest_edit"
+          "workers_versions_latest_edit",
+          "workers_legacy_scripts_versions_create"
         ],
         "stated": true
       },
