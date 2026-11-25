@@ -1,0 +1,87 @@
+[
+  {
+    "id": "invalid-index",
+    "task": "An index build on the orders table failed a while ago and left an unusable index behind. Which index is it?",
+    "answer": ["orders_status_created_idx"],
+    "tools": [{ "name": "list_invalid_indexes" }, { "name": "list_indexes", "arguments": { "table_name": "orders" } }, { "name": "list_tables", "arguments": { "table_names": "orders" } }]
+  },
+  {
+    "id": "dead-rows",
+    "task": "One table in the shop database is mostly dead rows. Which table is it, and how many dead rows does it have?",
+    "answer": ["sessions", "55[,.]?000|55k"],
+    "tools": [{ "name": "list_top_bloated_tables" }, { "name": "list_table_stats" }]
+  },
+  {
+    "id": "blocked-update",
+    "task": "Price updates on the product with SKU-0001 hang and never finish. Which session is holding them up? Give its process ID.",
+    "setup": "blocker",
+    "answerQuery": "SELECT pid FROM pg_stat_activity WHERE application_name = 'pd-blocker'",
+    "tools": [{ "name": "list_locks" }, { "name": "long_running_transactions" }, { "name": "list_active_queries" }]
+  },
+  {
+    "id": "slow-lookup",
+    "task": "Looking up a customer's orders is slow. Get the plan for SELECT * FROM orders WHERE customer_id = 42 and say which kind of scan the planner picks.",
+    "answer": ["seq(uential)?[\\s-]*scan"],
+    "tools": [{ "name": "get_query_plan", "arguments": { "query": "SELECT * FROM orders WHERE customer_id = 42" } }]
+  },
+  {
+    "id": "unused-index",
+    "task": "Which index on order_items has never been scanned?",
+    "answer": ["order_items_qty_idx"],
+    "tools": [{ "name": "list_indexes", "arguments": { "table_name": "order_items", "only_unused": true } }, { "name": "list_indexes", "arguments": { "table_name": "order_items" } }]
+  },
+  {
+    "id": "query-stats",
+    "task": "We want per-query timing statistics from pg_stat_statements. Which version of that extension can be installed on this server?",
+    "answer": ["\\b1\\.12\\b"],
+    "tools": [{ "name": "list_available_extensions" }, { "name": "list_installed_extensions" }]
+  },
+  {
+    "id": "role-limit",
+    "task": "How many connections is the reporting role limited to, and can it log in?",
+    "answer": ["\\b(7|seven)\\b"],
+    "tools": [{ "name": "list_roles" }, { "name": "list_roles", "arguments": { "role_name": "reporting" } }]
+  },
+  {
+    "id": "audit-trigger",
+    "task": "Changes to customers have stopped showing up in the audit log. Which trigger should be recording them, and what state is it in?",
+    "answer": ["customers_audit", "disabled|not enabled|turned off|switched off"],
+    "tools": [{ "name": "list_triggers" }, { "name": "list_tables", "arguments": { "table_names": "customers" } }]
+  },
+  {
+    "id": "order-ids",
+    "task": "New orders fail with a duplicate key error on the order ID. What is the last value of the sequence behind the orders ID column?",
+    "answer": ["\\b100\\b"],
+    "tools": [{ "name": "list_sequences" }, { "name": "list_sequences", "arguments": { "sequence_name": "orders_id_seq" } }]
+  },
+  {
+    "id": "view-columns",
+    "task": "Which columns does the order_summary view return?",
+    "answer": ["order_id", "customer_name"],
+    "tools": [{ "name": "list_views" }, { "name": "list_tables", "arguments": { "table_names": "order_summary" } }]
+  },
+  {
+    "id": "sort-memory",
+    "task": "Sorts in the shop database spill to disk. What is work_mem set to on this server right now?",
+    "answer": ["\\b4\\s?MB\\b|\\b4096\\b"],
+    "tools": [{ "name": "list_memory_configurations" }, { "name": "list_pg_settings", "arguments": { "setting_name": "work_mem" } }]
+  },
+  {
+    "id": "replication-slot",
+    "task": "Is there a replication slot on this server? If so, give its name and say whether it is active.",
+    "answer": ["pd_archive_slot"],
+    "tools": [{ "name": "list_replication_slots" }]
+  },
+  {
+    "id": "publication",
+    "task": "Which tables are published for logical replication, and under which publication?",
+    "answer": ["pd_orders_pub", "order_items"],
+    "tools": [{ "name": "list_publication_tables" }]
+  },
+  {
+    "id": "procedure",
+    "task": "Is there a stored procedure that clears out old sessions? Give its name.",
+    "answer": ["purge_stale_sessions"],
+    "tools": [{ "name": "list_stored_procedure" }]
+  }
+]

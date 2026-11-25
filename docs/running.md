@@ -158,6 +158,8 @@ npx tsx scripts/search-probe.ts --env path/to/.env    # 20 fixed queries passed 
 npx tsx scripts/toolbox-probe.ts    # what a local MCP Toolbox for Databases server serves: tools, and groups through its own extension
 npx tsx scripts/db-check.ts    # each database task's check query, false on the seeded database and true after its fix, no model
 npx tsx scripts/db-run.ts --arm search --env path/to/.env --label haiku-search-smoke    # or --arm groups; the Cloudflare catalog and the toolbox together, toolbox calls executed
+npx tsx scripts/db-find-check.ts    # each lookup task's answer, looked for in the output of the tools the task lists, no model
+npx tsx scripts/db-run.ts --arm search --tasks scripts/db-find-tasks.json --without execute_sql --samples 3 --env path/to/.env --label find-haiku-search    # the lookup tasks, with the catch-all SQL tool left out
 npx tsx scripts/agent-probe-toolsearch.ts --env path/to/.env --url https://pd-groups-flat-full.olahungerford.workers.dev/mcp    # the whole catalog deferred behind the Messages API's tool search
 npm run agent:run -- --arm D --base-url https://inference.baseten.co/v1 --key-env BASETEN_API_KEY --models deepseek-ai/DeepSeek-V4.1-Flash:baseten --samples 3 --label direct-d    # arm D on Baseten direct
 npm run agent:probe-order    # where the endpoint puts tools relative to the system prompt, from its cache counts

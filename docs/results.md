@@ -803,6 +803,27 @@ Haiku 5.5 at effort low, one sample per task.
 
 Limits: one model, one sample, 11 tasks written by the person who wrote the seed, and tool names from the two servers merged without a server prefix.
 
+### Lookups with `execute_sql` taken away
+
+A second run on the same two servers, to see whether either arm has trouble finding one narrow database tool among 3,064. `--without execute_sql` leaves that tool out of the tool list and out of the toolbox's groups, so 28 database tools remain and none of them writes. `scripts/db-find-tasks.json` has 14 lookups, such as which index is invalid, which session holds a lock, and what the replication slot is called. A trial passes when a database tool was called and the model's answer holds the expected value. `scripts/db-find-check.ts` shows each answer in the output of at least one tool the task lists, with no model. The seed gained a stored procedure, a publication and a replication slot for three of the lookups.
+
+Haiku 5.5 at effort low, three samples per task, 42 trials per arm.
+
+| Arm | Passed | Called a tool the task lists | Searches or opens | Tools loaded | Database tools among them | Requests | Median input tokens | Total input tokens |
+| :-- | --: | --: | --: | --: | --: | --: | --: | --: |
+| Search | 41 of 42 | 41 | 1.7 | 10.7 | 5.2 | 2.0 | 12,009 | 930,715 |
+| Groups | 41 of 42 | 41 | 1.9 | 11.9 | 11.9 | 3.7 | 90,771 | 4,603,802 |
+
+- Both arms passed 41 of 42, so this run does not separate them on the outcome either.
+- The search arm's miss was a `sort-memory` trial. It searched twice for a tool that runs SQL, called nothing, and asked for one.
+- The groups arm's miss was a `role-limit` trial. `list_roles` is in the group `replication`. The trial opened the other four groups, called nothing, and asked for a tool that queries `pg_roles`. The other two samples of that task opened four and five groups before calling `list_roles`.
+- In 22 of the 42 groups trials the first group opened held a tool the task lists. With names and no descriptions, the model opened `monitor` first for the index, extension and trigger tasks, whose tools are in `data`, `health` and `view-config`.
+- Neither arm called a Cloudflare tool. The groups arm opened no Cloudflare group.
+- Groups used 4.9 times the input tokens of search. The listing of 271 Cloudflare groups is in every request, and a groups trial took 3.7 requests against 2.0.
+- The run cost $0.17 of promotional credit.
+
+Limits: one model, 14 tasks written by the person who wrote the seed, answers matched by pattern, and `execute_sql` removed by the harness and not by the server's configuration.
+
 ## Limits
 
 ### Every run
@@ -934,5 +955,6 @@ Limits: one model, one sample, 11 tasks written by the person who wrote the seed
 - `tasks-workflow/`: the workflow tasks and every writer reply. `2026-11-24-workflow-haiku-search.jsonl` and `-groups.jsonl`: their run on Haiku, one row per trial with the searches or opens, the tools loaded and the tools called. `2026-11-24-workflow-haiku.txt` is `scripts/workflow-run.ts --replay` over both, printed with the first key. The `-v2` files are the second run. `2026-11-24-workflow-opus-search.jsonl`, `-groups.jsonl` and `2026-11-24-workflow-opus.txt` are the Opus run. `scripts/workflow-tasks.json` now holds the revised key, so `--replay` over the first run's files scores them with it. `2026-11-25-workflow-haiku-search-v3.jsonl`, `-groups-v3.jsonl` and `2026-11-25-workflow-haiku-v3.txt` are the third Haiku run, with a `calls` field holding each call's arguments. The key was revised again before it, so `--replay` over the earlier files now gives the rescored counts.
 - `2026-11-24-search-returned.txt`: `scripts/search-returned.ts` over the three search files. `2026-11-25-search-probe.jsonl` and `.txt`: the 20-query probe of the search, one row per query with the query sent and the tools returned.
 - `2026-11-25-db-haiku-search-smoke.jsonl` and `-groups-smoke.jsonl`: the two-server database run, one row per trial with the searches or opens, the tools loaded, each call with its arguments, and whether the check passed. `npx tsx scripts/db-run.ts --replay` prints the tables.
+- `2026-11-25-db-find-haiku-search.jsonl`, `-groups.jsonl` and `2026-11-25-db-find-haiku.txt`: the lookup tasks on the two servers with `execute_sql` left out, and the tables printed from both files.
 
 Re-runs that reproduced an earlier file were not kept, and the 2026-11-02 file from the build against the earlier drafts was removed. This repository starts from a single commit; the private predecessor repository holds the earlier history.

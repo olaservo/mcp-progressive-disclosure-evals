@@ -1,0 +1,97 @@
+
+| Arm | Model | Trials | Passed | Called a tool the task lists | Loaded a database tool | Called one | Called a Cloudflare tool | Database calls | Database calls that returned an error |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: |
+| search | claude-haiku-5-5 | 42 | 41 | 41 | 42 | 41 | 0 | 1.1 | 0.0 |
+| groups | claude-haiku-5-5 | 42 | 41 | 41 | 42 | 41 | 0 | 1.3 | 0.0 |
+
+| Arm | Model | Searches or opens | Tools loaded | Database tools loaded | Loaded and never called | Requests | Median input tokens | Mean input tokens | Median output tokens |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: |
+| search | claude-haiku-5-5 | 1.7 | 10.7 | 5.2 | 9.6 | 2.0 | 12009 | 22160 | 430 |
+| groups | claude-haiku-5-5 | 1.9 | 11.9 | 11.9 | 10.6 | 3.7 | 90771 | 109614 | 445 |
+
+| Task | Arm | Model | Passed | Searches or opens | Calls |
+| :-- | :-- | :-- | :-- | :-- | :-- |
+| invalid-index | search | claude-haiku-5-5 #1 | yes | postgresql query shop database run SQL ; shop-db postgres query tool ; list indexes invalid pg_index orders table | list_invalid_indexes |
+| invalid-index | search | claude-haiku-5-5 #2 | yes | shop-db query postgresql execute sql ; shop-db PostgreSQL query tool | list_invalid_indexes |
+| invalid-index | search | claude-haiku-5-5 #3 | yes | shop-db query postgresql indexes orders invalid index | list_invalid_indexes |
+| dead-rows | search | claude-haiku-5-5 #1 | yes | shop-db postgresql query ; execute SQL query database ; dead tuples pg_stat_user_tables table bloat vacuum statistics | list_top_bloated_tables |
+| dead-rows | search | claude-haiku-5-5 #2 | yes | shop-db query PostgreSQL ; dead tuples table bloat vacuum statistics | list_top_bloated_tables |
+| dead-rows | search | claude-haiku-5-5 #3 | yes | shop-db query postgres dead rows | list_table_stats |
+| blocked-update | search | claude-haiku-5-5 #1 | yes | postgres query pg_stat_activity locks blocking sessions ; shop-db execute SQL query | list_locks, list_active_queries |
+| blocked-update | search | claude-haiku-5-5 #2 | yes | postgres query pg_stat_activity locks blocking sessions ; shop-db execute SQL query | list_locks, list_active_queries |
+| blocked-update | search | claude-haiku-5-5 #3 | yes | shop-db postgres query activity locks pg_stat_activity | list_locks, list_active_queries |
+| slow-lookup | search | claude-haiku-5-5 #1 | yes | shop-db PostgreSQL query execute SQL | get_query_plan |
+| slow-lookup | search | claude-haiku-5-5 #2 | yes | shop-db run SQL query PostgreSQL explain | get_query_plan |
+| slow-lookup | search | claude-haiku-5-5 #3 | yes | shop-db PostgreSQL query execute SQL | get_query_plan |
+| unused-index | search | claude-haiku-5-5 #1 | yes | shop-db query PostgreSQL index scan statistics order_items | list_indexes |
+| unused-index | search | claude-haiku-5-5 #2 | yes | shop-db query postgresql index usage order_items ; shop-db run SQL query database ; postgres shop database execute SQL read-only query tool pg_stat_user_indexes ; indexes idx_scan unused indexes list postgres | list_indexes |
+| unused-index | search | claude-haiku-5-5 #3 | yes | shop-db query postgresql index scans order_items | list_indexes |
+| query-stats | search | claude-haiku-5-5 #1 | yes | shop-db PostgreSQL query pg_available_extensions pg_stat_statements version ; run arbitrary SQL query against database | list_installed_extensions, database_overview |
+| query-stats | search | claude-haiku-5-5 #2 | yes | shop-db postgresql query pg_available_extensions | list_available_extensions |
+| query-stats | search | claude-haiku-5-5 #3 | yes | shop-db PostgreSQL query pg_available_extensions pg_stat_statements version | list_available_extensions |
+| role-limit | search | claude-haiku-5-5 #1 | yes | postgres query role reporting connection limit can login | list_roles |
+| role-limit | search | claude-haiku-5-5 #2 | yes | shop-db query PostgreSQL role reporting connection limit login | list_roles |
+| role-limit | search | claude-haiku-5-5 #3 | yes | shop-db query PostgreSQL role connection limit rolcanlogin | list_roles |
+| audit-trigger | search | claude-haiku-5-5 #1 | yes | shop-db postgres query triggers audit customers ; PostgreSQL shop database SQL query ; list database triggers pg_trigger | list_triggers |
+| audit-trigger | search | claude-haiku-5-5 #2 | yes | postgres query triggers audit customers ; shop-db postgresql execute SQL query ; shop-db postgres triggers pg_trigger customers table | list_triggers |
+| audit-trigger | search | claude-haiku-5-5 #3 | yes | postgresql query triggers customers audit log ; shop-db execute SQL query database ; postgres run query pg_trigger information_schema triggers list | list_triggers |
+| order-ids | search | claude-haiku-5-5 #1 | yes | shop-db postgres query sequence orders id | list_sequences |
+| order-ids | search | claude-haiku-5-5 #2 | yes | shop-db PostgreSQL query sequence orders id | list_sequences |
+| order-ids | search | claude-haiku-5-5 #3 | yes | shop-db postgres query sequence orders id | list_sequences |
+| view-columns | search | claude-haiku-5-5 #1 | yes | shop-db query PostgreSQL columns view ; execute SQL query read-only PostgreSQL database shop ; postgres view definition information_schema columns describe table schema | list_views |
+| view-columns | search | claude-haiku-5-5 #2 | yes | shop-db query PostgreSQL columns view ; shop-db execute SQL query database ; PostgreSQL list tables views schema describe columns information_schema ; run read-only SQL statement on shop PostgreSQL database view definition | list_tables, list_views |
+| view-columns | search | claude-haiku-5-5 #3 | yes | shop-db query postgresql columns view ; execute SQL query shop database view columns information_schema ; shop-db PostgreSQL ; list tables schema describe table postgres ; run read-only SQL query PostgreSQL database view definition | list_views |
+| sort-memory | search | claude-haiku-5-5 #1 | yes | shop-db query postgresql | list_memory_configurations |
+| sort-memory | search | claude-haiku-5-5 #2 | no | shop-db query postgresql run SQL ; shop-db execute SQL statement PostgreSQL SHOW work_mem |  |
+| sort-memory | search | claude-haiku-5-5 #3 | yes | shop-db postgresql query work_mem | list_memory_configurations |
+| replication-slot | search | claude-haiku-5-5 #1 | yes | shop-db query postgresql replication slots | list_replication_slots |
+| replication-slot | search | claude-haiku-5-5 #2 | yes | shop-db query postgresql replication slot | list_replication_slots |
+| replication-slot | search | claude-haiku-5-5 #3 | yes | shop-db query PostgreSQL replication slots | list_replication_slots |
+| publication | search | claude-haiku-5-5 #1 | yes | shop-db query PostgreSQL SQL ; shop database PostgreSQL publication logical replication pg_publication_tables | list_publication_tables |
+| publication | search | claude-haiku-5-5 #2 | yes | shop-db query postgres publication logical replication tables | list_publication_tables |
+| publication | search | claude-haiku-5-5 #3 | yes | shop-db query postgresql publication logical replication | list_publication_tables |
+| procedure | search | claude-haiku-5-5 #1 | yes | shop-db query PostgreSQL stored procedures functions | list_stored_procedure |
+| procedure | search | claude-haiku-5-5 #2 | yes | shop-db query postgresql stored procedures functions | list_stored_procedure |
+| procedure | search | claude-haiku-5-5 #3 | yes | shop-db query postgresql stored procedures functions | list_stored_procedure |
+| invalid-index | groups | claude-haiku-5-5 #1 | yes | shop-db/monitor ; shop-db/data ; shop-db/health | list_invalid_indexes |
+| invalid-index | groups | claude-haiku-5-5 #2 | yes | shop-db/monitor ; shop-db/data ; shop-db/health | list_indexes, list_tables, list_invalid_indexes |
+| invalid-index | groups | claude-haiku-5-5 #3 | yes | shop-db/health | list_invalid_indexes |
+| dead-rows | groups | claude-haiku-5-5 #1 | yes | shop-db/health ; shop-db/monitor | list_top_bloated_tables |
+| dead-rows | groups | claude-haiku-5-5 #2 | yes | shop-db/health ; shop-db/monitor | list_top_bloated_tables |
+| dead-rows | groups | claude-haiku-5-5 #3 | yes | shop-db/health ; shop-db/monitor | list_top_bloated_tables |
+| blocked-update | groups | claude-haiku-5-5 #1 | yes | shop-db/monitor ; shop-db/data | list_locks, list_active_queries, long_running_transactions |
+| blocked-update | groups | claude-haiku-5-5 #2 | yes | shop-db/monitor ; shop-db/data | list_locks, list_active_queries, long_running_transactions |
+| blocked-update | groups | claude-haiku-5-5 #3 | yes | shop-db/monitor | list_locks, long_running_transactions |
+| slow-lookup | groups | claude-haiku-5-5 #1 | yes | shop-db/data ; shop-db/monitor | get_query_plan, list_indexes |
+| slow-lookup | groups | claude-haiku-5-5 #2 | yes | shop-db/data ; shop-db/monitor | get_query_plan |
+| slow-lookup | groups | claude-haiku-5-5 #3 | yes | shop-db/data ; shop-db/monitor | get_query_plan |
+| unused-index | groups | claude-haiku-5-5 #1 | yes | shop-db/monitor ; shop-db/data | list_indexes |
+| unused-index | groups | claude-haiku-5-5 #2 | yes | shop-db/monitor ; shop-db/data | list_indexes |
+| unused-index | groups | claude-haiku-5-5 #3 | yes | shop-db/monitor ; shop-db/data | list_indexes |
+| query-stats | groups | claude-haiku-5-5 #1 | yes | shop-db/monitor ; shop-db/view-config | list_available_extensions |
+| query-stats | groups | claude-haiku-5-5 #2 | yes | shop-db/monitor ; shop-db/view-config | list_available_extensions |
+| query-stats | groups | claude-haiku-5-5 #3 | yes | shop-db/monitor ; shop-db/view-config | list_available_extensions |
+| role-limit | groups | claude-haiku-5-5 #1 | yes | shop-db/view-config ; shop-db/data ; shop-db/monitor ; shop-db/replication ; shop-db/health | list_roles |
+| role-limit | groups | claude-haiku-5-5 #2 | no | shop-db/view-config ; shop-db/data ; shop-db/monitor ; shop-db/health |  |
+| role-limit | groups | claude-haiku-5-5 #3 | yes | shop-db/view-config ; shop-db/data ; shop-db/health ; shop-db/monitor ; shop-db/replication | list_roles |
+| audit-trigger | groups | claude-haiku-5-5 #1 | yes | shop-db/monitor ; shop-db/view-config ; shop-db/data | list_triggers, list_tables |
+| audit-trigger | groups | claude-haiku-5-5 #2 | yes | shop-db/monitor ; shop-db/view-config ; shop-db/data | list_triggers, list_triggers |
+| audit-trigger | groups | claude-haiku-5-5 #3 | yes | shop-db/monitor ; shop-db/view-config ; shop-db/data | list_triggers, list_triggers |
+| order-ids | groups | claude-haiku-5-5 #1 | yes | shop-db/data | list_sequences, list_tables |
+| order-ids | groups | claude-haiku-5-5 #2 | yes | shop-db/data | list_sequences, list_tables |
+| order-ids | groups | claude-haiku-5-5 #3 | yes | shop-db/data | list_sequences, list_tables |
+| view-columns | groups | claude-haiku-5-5 #1 | yes | shop-db/view-config ; shop-db/data | list_views |
+| view-columns | groups | claude-haiku-5-5 #2 | yes | shop-db/view-config ; shop-db/data | list_views |
+| view-columns | groups | claude-haiku-5-5 #3 | yes | shop-db/view-config ; shop-db/data | list_views |
+| sort-memory | groups | claude-haiku-5-5 #1 | yes | shop-db/view-config | list_pg_settings |
+| sort-memory | groups | claude-haiku-5-5 #2 | yes | shop-db/view-config | list_memory_configurations |
+| sort-memory | groups | claude-haiku-5-5 #3 | yes | shop-db/view-config | list_pg_settings |
+| replication-slot | groups | claude-haiku-5-5 #1 | yes | shop-db/replication | list_replication_slots |
+| replication-slot | groups | claude-haiku-5-5 #2 | yes | shop-db/replication | list_replication_slots |
+| replication-slot | groups | claude-haiku-5-5 #3 | yes | shop-db/replication | list_replication_slots |
+| publication | groups | claude-haiku-5-5 #1 | yes | shop-db/replication | list_publication_tables |
+| publication | groups | claude-haiku-5-5 #2 | yes | shop-db/replication | list_publication_tables |
+| publication | groups | claude-haiku-5-5 #3 | yes | shop-db/replication | list_publication_tables |
+| procedure | groups | claude-haiku-5-5 #1 | yes | shop-db/data | list_stored_procedure |
+| procedure | groups | claude-haiku-5-5 #2 | yes | shop-db/data | list_stored_procedure |
+| procedure | groups | claude-haiku-5-5 #3 | yes | shop-db/data | list_stored_procedure |

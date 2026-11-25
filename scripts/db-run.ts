@@ -7,9 +7,11 @@
 //           descriptions. A client tool `open_group` answers with `tool_reference` blocks for the group's tools.
 // Toolbox calls are executed against the database. Cloudflare calls are dry runs with a made-up result.
 // Before each trial the database is reset from scripts/db/seed.sql, so trials run one at a time. After it, the task's
-// check query is run in the database and the trial passes when it returns true.
+// check query is run in the database and the trial passes when it returns true. A task file of lookups
+// (scripts/db-find-tasks.json) has an answer in place of a check: the trial passes when a database tool was called and
+// what the model said holds every answer pattern. `--without` leaves toolbox tools out of the tool list and the groups.
 // Usage: tsx scripts/db-run.ts --arm search|groups [--models a,b] [--samples N] [--limit N] [--max-requests N]
-//          [--toolbox http://127.0.0.1:5055/mcp] [--container pd-toolbox-pg] [--env <.env path>] [--label name]
+//          [--tasks scripts/db-find-tasks.json] [--without execute_sql] [--toolbox http://127.0.0.1:5055/mcp] [--container pd-toolbox-pg] [--env <.env path>] [--label name]
 //        tsx scripts/db-run.ts --replay <jsonl> [<jsonl> ...]
 import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync } from 'node:fs'
 import { execFileSync, spawn } from 'node:child_process'
@@ -44,14 +46,18 @@ const maxRequests = Number(opt('max-requests', '16'))
 const toolboxUrl = opt('toolbox', 'http://127.0.0.1:5055/mcp')!
 const container = opt('container', 'pd-toolbox-pg')!
 const label = opt('label', arm)!
+const without = new Set((opt('without', '') ?? '').split(',').filter(Boolean))
+const tasksFile = opt('tasks')
 
-type Task = { id: string; task: string; setup?: 'blocker'; check: string; tools: string[] }
+type Task = { id: string; task: string; setup?: 'blocker'; check?: string; answer?: string[]; answerQuery?: string; tools: (string | { name: string })[] }
 type Trial = {
   arm: string
   model: string
   sample: number
   id: string
   pass: boolean
+  /** Whether a tool the task lists was called. */
+  listed?: boolean
   /** Search queries in the search arm, `server/group` in the groups arm. */
   finds: string[]
   loaded: string[]
@@ -66,7 +72,7 @@ type Trial = {
   ms: number
   error?: string
 }
-const allTasks = JSON.parse(readFileSync(new URL('./db-tasks.json', import.meta.url), 'utf8')) as Task[]
+const allTasks = JSON.parse(readFileSync(tasksFile ?? new URL('./db-tasks.json', import.meta.url), 'utf8')) as Task[]
 const tasks = limit ? allTasks.slice(0, limit) : allTasks
 
 const SYSTEM = [
@@ -82,12 +88,12 @@ function summary(trials: Trial[]): void {
   const cells = [...new Set(ok.map((trial) => `${trial.arm}\t${trial.model}`))]
   const rowsOf = (cell: string) => ok.filter((trial) => `${trial.arm}\t${trial.model}` === cell)
   const db = (trial: Trial) => trial.calls.filter((call) => call.server === 'shop-db')
-  console.log('\n| Arm | Model | Trials | Passed the check | Loaded a database tool | Called one | Called a Cloudflare tool | Database calls | Database calls that returned an error |')
-  console.log('| :-- | :-- | --: | --: | --: | --: | --: | --: | --: |')
+  console.log('\n| Arm | Model | Trials | Passed | Called a tool the task lists | Loaded a database tool | Called one | Called a Cloudflare tool | Database calls | Database calls that returned an error |')
+  console.log('| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: |')
   for (const cell of cells) {
     const rows = rowsOf(cell)
     console.log(
-      `| ${cell.replace('\t', ' | ')} | ${rows.length} | ${rows.filter((t) => t.pass).length} | ${rows.filter((t) => t.loaded.some((name) => dbNames.has(name))).length} | ${rows.filter((t) => db(t).length).length} | ${rows.filter((t) => t.calls.some((call) => call.server === 'cloudflare')).length} | ${mean(rows.map((t) => db(t).length))} | ${mean(rows.map((t) => db(t).filter((call) => call.error).length))} |`
+      `| ${cell.replace('\t', ' | ')} | ${rows.length} | ${rows.filter((t) => t.pass).length} | ${rows.some((t) => t.listed !== undefined) ? rows.filter((t) => t.listed).length : ''} | ${rows.filter((t) => t.loaded.some((name) => dbNames.has(name))).length} | ${rows.filter((t) => db(t).length).length} | ${rows.filter((t) => t.calls.some((call) => call.server === 'cloudflare')).length} | ${mean(rows.map((t) => db(t).length))} | ${mean(rows.map((t) => db(t).filter((call) => call.error).length))} |`
     )
   }
   console.log('\n| Arm | Model | Searches or opens | Tools loaded | Database tools loaded | Loaded and never called | Requests | Median input tokens | Mean input tokens | Median output tokens |')
@@ -137,7 +143,7 @@ if (replayAt >= 0) {
   await flat.close()
   const toolbox = new Client({ name: 'groups-db-run', version: '0.1.0' }, { capabilities: { extensions: { [TOOLBOX]: {} } }, versionNegotiation: { mode: 'auto' } })
   await toolbox.connect(new StreamableHTTPClientTransport(new URL(toolboxUrl)))
-  const database = await listAll(toolbox)
+  const database = (await listAll(toolbox)).filter((tool) => !without.has(tool.name))
   dbNames = new Set(database.map((tool) => tool.name))
   const cfNames = new Set(cloudflare.map((tool) => tool.name))
   const clash = database.filter((tool) => cfNames.has(tool.name))
@@ -179,7 +185,7 @@ if (replayAt >= 0) {
       writeFileSync(cache, JSON.stringify(groups))
     }
     const listed = ((await toolbox.request({ method: 'groups/list', params: {} }, Loose)) as unknown as { groups: { name: string; description?: string }[] }).groups
-    for (const group of listed) groups.push({ server: 'shop-db', name: group.name, description: group.description, tools: await toolboxGroup(group.name) })
+    for (const group of listed) groups.push({ server: 'shop-db', name: group.name, description: group.description, tools: (await toolboxGroup(group.name)).filter((name) => dbNames.has(name)) })
     process.stderr.write(`${groups.filter((group) => group.server === 'cloudflare').length} cloudflare groups, ${groups.filter((group) => group.server === 'shop-db').length} shop-db groups\n`)
   }
   const line = (group: Group) => `- ${group.name}${group.description ? `: ${group.description}` : ''}`
@@ -270,18 +276,24 @@ if (replayAt >= 0) {
     trial.ms = Date.now() - started
     // Table statistics reach the views a moment after the statement that changed them.
     await pause(1500)
+    const listed = task.tools.map((tool) => (typeof tool === 'string' ? tool : tool.name))
+    trial.listed = trial.calls.some((call) => listed.includes(call.name))
     try {
-      trial.pass = psql(task.check) === 't'
+      if (task.check) trial.pass = psql(task.check) === 't'
+      else {
+        const wanted = task.answerQuery ? [`\\b${psql(task.answerQuery)}\\b`] : task.answer!
+        trial.pass = trial.calls.some((call) => call.server === 'shop-db') && wanted.every((pattern) => new RegExp(pattern, 'i').test(trial.said))
+      }
     } catch (error) {
       trial.error ??= `check: ${String(error).slice(0, 200)}`
     }
-    trial.said = trial.said.replace(/\s+/g, ' ').slice(0, 600)
+    trial.said = trial.said.replace(/\s+/g, ' ').slice(-1200)
     return trial
   }
 
   mkdirSync('results', { recursive: true })
   const out = `results/${new Date().toISOString().slice(0, 10)}-db-${label}.jsonl`
-  writeFileSync(out, JSON.stringify({ arm, flat: FLAT, grouped: arm === 'groups' ? GROUPED : undefined, toolbox: toolbox.getServerVersion(), tools: cloudflare.length + database.length, dbTools: [...dbNames], groups: groups.length || undefined, tasks: tasks.length, samples, models, maxRequests, effort: 'low', system }) + '\n')
+  writeFileSync(out, JSON.stringify({ arm, flat: FLAT, grouped: arm === 'groups' ? GROUPED : undefined, toolbox: toolbox.getServerVersion(), tools: cloudflare.length + database.length, dbTools: [...dbNames], without: without.size ? [...without] : undefined, taskFile: tasksFile, groups: groups.length || undefined, tasks: tasks.length, samples, models, maxRequests, effort: 'low', system }) + '\n')
   const trials: Trial[] = []
   for (const model of models) {
     for (const task of tasks) {
