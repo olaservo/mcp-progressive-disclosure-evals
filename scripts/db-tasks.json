@@ -1,0 +1,69 @@
+[
+  {
+    "id": "invalid-index",
+    "task": "An index build on the orders table failed a while ago and left something behind. Find it and remove it.",
+    "check": "SELECT count(*) = 0 FROM pg_index WHERE NOT indisvalid",
+    "tools": ["list_invalid_indexes", "list_indexes", "execute_sql"]
+  },
+  {
+    "id": "dead-rows",
+    "task": "One table in the shop database is mostly dead rows. Find which one and clean it up so the space can be reused.",
+    "check": "SELECT last_vacuum IS NOT NULL AND n_dead_tup < 1000 FROM pg_stat_user_tables WHERE relname = 'sessions'",
+    "tools": ["list_top_bloated_tables", "list_table_stats", "execute_sql"]
+  },
+  {
+    "id": "blocked-update",
+    "task": "Price updates on the product with SKU-0001 hang and never finish. Find what is holding them up and clear it.",
+    "setup": "blocker",
+    "check": "SELECT count(*) = 0 FROM pg_stat_activity WHERE application_name = 'pd-blocker'",
+    "tools": ["list_locks", "long_running_transactions", "list_active_queries", "execute_sql"]
+  },
+  {
+    "id": "slow-lookup",
+    "task": "Looking up a customer's orders is slow. Confirm why from the query plan, then fix it.",
+    "check": "SELECT count(*) > 0 FROM pg_index i JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = i.indkey[0] WHERE i.indrelid = 'orders'::regclass AND a.attname = 'customer_id' AND i.indisvalid",
+    "tools": ["get_query_plan", "list_indexes", "list_tables", "execute_sql"]
+  },
+  {
+    "id": "unused-index",
+    "task": "Drop any index on order_items that has never been used. Keep the primary key.",
+    "check": "SELECT to_regclass('order_items_qty_idx') IS NULL AND to_regclass('order_items_pkey') IS NOT NULL AND to_regclass('order_items_order_id_idx') IS NOT NULL",
+    "tools": ["list_indexes", "execute_sql"]
+  },
+  {
+    "id": "query-stats",
+    "task": "We want per-query timing statistics collected in the shop database. Check what is missing and set it up.",
+    "check": "SELECT count(*) = 1 FROM pg_extension WHERE extname = 'pg_stat_statements'",
+    "tools": ["list_installed_extensions", "list_available_extensions", "list_query_stats", "execute_sql"]
+  },
+  {
+    "id": "reporting-access",
+    "task": "The reporting role should be able to read orders and customers, and nothing else. Check what it has now and set that up.",
+    "check": "SELECT has_table_privilege('reporting', 'orders', 'SELECT') AND has_table_privilege('reporting', 'customers', 'SELECT') AND NOT has_table_privilege('reporting', 'products', 'SELECT') AND NOT has_table_privilege('reporting', 'orders', 'INSERT')",
+    "tools": ["list_roles", "execute_sql"]
+  },
+  {
+    "id": "audit-trigger",
+    "task": "Changes to customers have stopped showing up in the audit log. Find out why and get them recorded again.",
+    "check": "SELECT tgenabled = 'O' FROM pg_trigger WHERE tgname = 'customers_audit'",
+    "tools": ["list_triggers", "execute_sql"]
+  },
+  {
+    "id": "order-ids",
+    "task": "New orders fail with a duplicate key error on the order ID. Find the cause and fix it so new orders go in.",
+    "check": "SELECT (SELECT last_value FROM orders_id_seq) >= (SELECT max(id) FROM orders)",
+    "tools": ["list_sequences", "execute_sql"]
+  },
+  {
+    "id": "summary-email",
+    "task": "The order summary view should also show the customer's email address. Add it without losing the columns it has.",
+    "check": "SELECT count(*) FILTER (WHERE column_name ILIKE '%email%') = 1 AND count(*) FILTER (WHERE column_name IN ('order_id', 'status', 'total', 'customer_name')) = 4 FROM information_schema.columns WHERE table_name = 'order_summary'",
+    "tools": ["list_views", "execute_sql"]
+  },
+  {
+    "id": "sort-memory",
+    "task": "Sorts in the shop database spill to disk. Check the current memory settings and raise the per-operation sort memory to 64MB for this database only, not the whole server.",
+    "check": "SELECT count(*) = 1 FROM pg_db_role_setting s JOIN pg_database d ON d.oid = s.setdatabase, unnest(s.setconfig) c WHERE d.datname = 'shop' AND s.setrole = 0 AND lower(c) IN ('work_mem=64mb', 'work_mem=65536', 'work_mem=65536kb')",
+    "tools": ["list_memory_configurations", "list_pg_settings", "execute_sql"]
+  }
+]

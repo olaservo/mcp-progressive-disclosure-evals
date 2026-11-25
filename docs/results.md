@@ -782,6 +782,27 @@ Under this key the earlier rows score 182 of 210 for Haiku's search arm and 208 
 - "list email sending subdomains" returned four tools of that resource and not its list tool. `emailSending_subdomains_list` is the shortest of the resource's tools, 97 characters of description and 229 of schema, so its absence is not explained by longer tools holding more matching words. The `alerting_policies_create` and `_update` tools returned for the policy queries have about 9,700 characters of schema each, and `alerting_policies_list` has 238.
 - The probe cost $0.02 of the account's promotional credit, 183,981 input tokens over 20 requests.
 
+## A second server with real execution, 2026-11-25
+
+A first check of two servers attached at once. `scripts/db-run.ts` sends the 3,036 Cloudflare tools and the 29 tools of Google's MCP Toolbox for Databases v1.18.0, run locally with `--prebuilt=postgres` against a Postgres 18 container, all with `defer_loading`. Toolbox calls are executed. Cloudflare calls are dry runs. `scripts/db/seed.sql` plants 11 problems in a small shop database, and each of the 11 tasks in `scripts/db-tasks.json` is passed when its check query returns true afterwards. `scripts/db-check.ts` shows each check false on the seeded database and true after the fix in `scripts/db/fixes.sql`. The groups arm lists the 271 rewritten Cloudflare groups and the toolbox's own five groups, read through its `com.google.cloud/toolbox.v1` extension. Those five have names (`data`, `health`, `monitor`, `replication`, `view-config`) and no descriptions.
+
+Haiku 5.5 at effort low, one sample per task.
+
+| Arm | Passed the check | Called a Cloudflare tool | Searches or opens | Tools loaded | Database tools among them | Median input tokens | Total input tokens |
+| :-- | --: | --: | --: | --: | --: | --: | --: |
+| Search | 11 of 11 | 0 | 1.7 | 16.3 | 4.4 | 45,465 | 733,620 |
+| Groups | 11 of 11 | 0 | 2.3 | 15.4 | 15.4 | 159,449 | 1,928,471 |
+
+- Both arms passed every task, so the run does not separate them on the outcome.
+- Every task can be done with `execute_sql` alone. The search arm used only that tool in 5 of 11 trials and the groups arm in 2.
+- The search arm's queries name Postgres or the server, as in "shop-db postgresql query execute SQL". The system prompt gives both. About 12 of the 16 tools a search trial loaded were Cloudflare tools, and none was called.
+- The groups arm opened two or more of the toolbox's groups in every trial, and `data`, which holds `execute_sql`, in all of them. It opened no Cloudflare group.
+- Groups used 2.6 times the input tokens of search. The listing of 271 Cloudflare groups is in the system prompt of every request.
+- The toolbox advertises `io.modelcontextprotocol/skills` and serves no skill with the prebuilt configuration. Its `skills-generate` command writes one skill per toolset that runs each tool as a Node script from a shell, which this harness does not have, so no skill was offered.
+- The run cost $0.10 of promotional credit.
+
+Limits: one model, one sample, 11 tasks written by the person who wrote the seed, and tool names from the two servers merged without a server prefix.
+
 ## Limits
 
 ### Every run
@@ -912,5 +933,6 @@ Under this key the earlier rows score 182 of 210 for Haiku's search arm and 208 
 - `2026-11-24-search-v3-full.jsonl`: the tool search run on the held-out tasks, one row per trial with the queries, the tools returned and the tools called. `npx tsx scripts/search-run.ts --replay` prints its tables. `2026-11-24-search-replay-v3-full.txt` is `scripts/search-replay.ts` over it.
 - `tasks-workflow/`: the workflow tasks and every writer reply. `2026-11-24-workflow-haiku-search.jsonl` and `-groups.jsonl`: their run on Haiku, one row per trial with the searches or opens, the tools loaded and the tools called. `2026-11-24-workflow-haiku.txt` is `scripts/workflow-run.ts --replay` over both, printed with the first key. The `-v2` files are the second run. `2026-11-24-workflow-opus-search.jsonl`, `-groups.jsonl` and `2026-11-24-workflow-opus.txt` are the Opus run. `scripts/workflow-tasks.json` now holds the revised key, so `--replay` over the first run's files scores them with it. `2026-11-25-workflow-haiku-search-v3.jsonl`, `-groups-v3.jsonl` and `2026-11-25-workflow-haiku-v3.txt` are the third Haiku run, with a `calls` field holding each call's arguments. The key was revised again before it, so `--replay` over the earlier files now gives the rescored counts.
 - `2026-11-24-search-returned.txt`: `scripts/search-returned.ts` over the three search files. `2026-11-25-search-probe.jsonl` and `.txt`: the 20-query probe of the search, one row per query with the query sent and the tools returned.
+- `2026-11-25-db-haiku-search-smoke.jsonl` and `-groups-smoke.jsonl`: the two-server database run, one row per trial with the searches or opens, the tools loaded, each call with its arguments, and whether the check passed. `npx tsx scripts/db-run.ts --replay` prints the tables.
 
 Re-runs that reproduced an earlier file were not kept, and the 2026-11-02 file from the build against the earlier drafts was removed. This repository starts from a single commit; the private predecessor repository holds the earlier history.

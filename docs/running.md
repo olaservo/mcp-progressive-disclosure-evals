@@ -155,10 +155,15 @@ npx tsx scripts/workflow-run.ts --arm search --samples 3 --env path/to/.env --la
 npx tsx scripts/search-replay.ts results/2026-11-24-search-v3-full.jsonl    # that run's queries on a local BM25, catalog as served and renamed, no model; --show <tool> prints a tool's text under each renaming
 npx tsx scripts/search-returned.ts results/2026-11-24-search-v3-full.jsonl results/2026-11-24-workflow-haiku-search-v2.jsonl results/2026-11-24-workflow-opus-search.jsonl    # the tools the API's search returned in those runs, by kind, no model
 npx tsx scripts/search-probe.ts --env path/to/.env    # 20 fixed queries passed to the API's search one at a time, with the tools each returns
+npx tsx scripts/toolbox-probe.ts    # what a local MCP Toolbox for Databases server serves: tools, and groups through its own extension
+npx tsx scripts/db-check.ts    # each database task's check query, false on the seeded database and true after its fix, no model
+npx tsx scripts/db-run.ts --arm search --env path/to/.env --label haiku-search-smoke    # or --arm groups; the Cloudflare catalog and the toolbox together, toolbox calls executed
 npx tsx scripts/agent-probe-toolsearch.ts --env path/to/.env --url https://pd-groups-flat-full.olahungerford.workers.dev/mcp    # the whole catalog deferred behind the Messages API's tool search
 npm run agent:run -- --arm D --base-url https://inference.baseten.co/v1 --key-env BASETEN_API_KEY --models deepseek-ai/DeepSeek-V4.1-Flash:baseten --samples 3 --label direct-d    # arm D on Baseten direct
 npm run agent:probe-order    # where the endpoint puts tools relative to the system prompt, from its cache counts
 ```
+
+The database run needs Docker and the toolbox binary. `docker run -d --name pd-toolbox-pg -e POSTGRES_PASSWORD=pd_local_only -e POSTGRES_DB=shop -p 127.0.0.1:55432:5432 postgres:18` starts the database. `POSTGRES_HOST=127.0.0.1 POSTGRES_PORT=55432 POSTGRES_DATABASE=shop POSTGRES_USER=postgres POSTGRES_PASSWORD=pd_local_only toolbox --prebuilt=postgres --port 5055` starts the toolbox, v1.18.0 from the project's release bucket.
 
 The result files are dated in UTC, so the runs of the evening of 2026-11-12 are named `2026-11-13`.
 
