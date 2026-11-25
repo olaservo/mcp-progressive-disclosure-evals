@@ -1,0 +1,26 @@
+3036 tools, claude-haiku-5-5, 20 requests, 183981 input tokens. Rows in results/2026-11-25-search-probe.jsonl
+
+| Query | Wanted | Query sent as given | Returned | Wanted tool at | Tools returned |
+| :-- | :-- | :-- | --: | :-- | :-- |
+| list zones by domain name | zones_list | yes | 5 | not returned | workers_domains_list, zeroTrust_access_applications_list, zones_create, workers_domains_update, aiAudit_robots_bulkGet |
+| zones list account get zone id name | zones_list | yes | 5 | not returned | accounts_subscriptions_get, customNameservers_get, logpush_accountJobs_list, customPages_accountCustomPages_list, zeroTrust_access_mtlsCertificates_settings_get |
+| zone lookup get zone identifier account zones list | zones_list | yes | 5 | not returned | accounts_subscriptions_get, customNameservers_get, logpush_accountJobs_list, customPages_accountCustomPages_list, zeroTrust_access_mtlsCertificates_settings_get |
+| list zones by name acmeshop.io | zones_list | yes | 5 | 4 | dns_settings_account_views_create, dns_zoneTransfers_incoming_create, dns_zoneTransfers_incoming_update, zones_list, accounts_subscriptions_get |
+| list zones filter by name | zones_list | yes | 5 | 1 | zones_list, securityInsights_auditLogs_list, securityInsights_auditLogs_get, logs_datasets_create, logs_query |
+| list accounts memberships Acme Staging account id | accounts_list | yes | 5 | not returned | user_memberships_list, organization_member_list, observability_usageLimit_get, addressing_addressMaps_create, zeroTrust_dlp_datasets_prepareUpload |
+| list accounts under account name lookup | accounts_list | yes | 5 | not returned | accounts_applications_lookup, accounts_applications_list, sql_datasets, analytics_sql_accounts_introspection_get, zeroTrust_access_logs_scim_updates_list |
+| list all accounts Cloudflare | accounts_list | yes | 5 | not returned | tunnels_connections_list, addressing_prefixes_serviceBindings_list, addressing_leases_list, addressing_prefixes_list, realtime_sfu_apps_list |
+| list notification policies alerting | alerting_policies_list | yes | 5 | not returned | alerting_policies_test, alerting_policies_update, alerting_policies_create, ssl_ctAlerting_update, alerting_policies_delete |
+| alerting policies get all policies account | alerting_policies_list | yes | 5 | not returned | alerting_policies_test, alerting_policies_update, alerting_policies_create, billing_spendPolicies_delete, billing_spendPolicies_audit_list |
+| get alerting policies by name Production Error Spike | alerting_policies_list | yes | 5 | not returned | alerting_policies_update, alerting_policies_test, alerting_policies_create, billing_spendPolicies_create, ssl_ctAlerting_update |
+| Durable Objects namespaces list objects count | durableObjects_namespaces_list | yes | 5 | not returned | containers_applications_create, kv_namespaces_create, durableObjects_namespaces_objects_list, workers_versions_create, workers_versions_latest_edit |
+| durable objects namespaces list objects count script | durableObjects_namespaces_list | yes | 5 | not returned | workersForPlatforms_dispatchNamespaces_scripts_delete, containers_applications_create, workers_legacy_scripts_delete, workersForPlatforms_dispatchNamespaces_scripts_settings_edit, workers_versions_create |
+| list email sending subdomains | emailSending_subdomains_list | yes | 5 | not returned | emailSending_subdomains_delete, emailSending_subdomains_create, emailSecurity_sendingDomainRestrictions_create, emailSending_subdomains_preview, emailSending_subdomains_update |
+| email sending subdomains list zone | emailSending_subdomains_list | yes | 5 | not returned | emailSending_subdomains_create, emailSending_subdomains_delete, emailSending_subdomains_preview, emailSecurity_sendingDomainRestrictions_create, ssl_ctAlerting_update |
+| get email sending subdomains list for zone | emailSending_subdomains_list | yes | 5 | not returned | emailSending_subdomains_create, emailSending_subdomains_delete, emailSending_subdomains_preview, emailSecurity_sendingDomainRestrictions_create, emailSending_subdomains_get |
+| zones_list | zones_list | yes | 1 | 1 | zones_list |
+| accounts_list | accounts_list | yes | 1 | 1 | accounts_list |
+| alerting_policies_list | alerting_policies_list | yes | 1 | 1 | alerting_policies_list |
+| list zones | zones_list | yes | 5 | 4 | dns_settings_account_views_create, dns_zoneTransfers_incoming_create, dns_zoneTransfers_incoming_update, zones_list, accounts_subscriptions_get |
+
+Wanted tool returned for 6 of 20 queries. Query passed word for word in 20.

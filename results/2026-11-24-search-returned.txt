@@ -1,0 +1,17 @@
+3036 tools. 228 trials, 694 queries, 4237 tools returned, repeats counted.
+
+| Kind | Share of catalog | Share of tools returned | Median characters of description and schema |
+| :-- | --: | --: | --: |
+| list | 18% (534) | 16% (685) | 729 |
+| get | 24% (734) | 19% (803) | 499 |
+| create | 13% (402) | 18% (763) | 1262 |
+| update | 11% (335) | 16% (689) | 1370 |
+| edit | 4% (132) | 8% (356) | 1375 |
+| delete | 13% (391) | 10% (411) | 556 |
+| other | 17% (508) | 13% (530) | 1014 |
+
+Median characters: catalog 750, tools returned 1043.
+Queries holding the word: "list" 283, "get" 107, "create" 128, "update" 61, "delete" 6.
+Trials whose every query says "list" and not create, update or delete: 12. Tools returned 135: 20 list, 12 get, 81 create, update, edit or delete.
+A create, update, edit or delete tool was returned and a sibling _list tool exists: the _list tool was returned nowhere in the trial in 636 of 850 cases.
+The reverse, a _list tool returned and a sibling _create exists: the _create tool was returned nowhere in the trial in 261 of 390 cases.

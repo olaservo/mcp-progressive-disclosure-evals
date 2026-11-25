@@ -153,6 +153,8 @@ npx tsx scripts/write-tasks.ts --set workflow --env path/to/.env    # the workfl
 npx tsx scripts/workflow-answers.ts    # checks the key against the catalog and writes scripts/workflow-tasks.json
 npx tsx scripts/workflow-run.ts --arm search --samples 3 --env path/to/.env --label haiku-search    # or --arm groups; --replay <jsonl> <jsonl> prints the tables
 npx tsx scripts/search-replay.ts results/2026-11-24-search-v3-full.jsonl    # that run's queries on a local BM25, catalog as served and renamed, no model; --show <tool> prints a tool's text under each renaming
+npx tsx scripts/search-returned.ts results/2026-11-24-search-v3-full.jsonl results/2026-11-24-workflow-haiku-search-v2.jsonl results/2026-11-24-workflow-opus-search.jsonl    # the tools the API's search returned in those runs, by kind, no model
+npx tsx scripts/search-probe.ts --env path/to/.env    # 20 fixed queries passed to the API's search one at a time, with the tools each returns
 npx tsx scripts/agent-probe-toolsearch.ts --env path/to/.env --url https://pd-groups-flat-full.olahungerford.workers.dev/mcp    # the whole catalog deferred behind the Messages API's tool search
 npm run agent:run -- --arm D --base-url https://inference.baseten.co/v1 --key-env BASETEN_API_KEY --models deepseek-ai/DeepSeek-V4.1-Flash:baseten --samples 3 --label direct-d    # arm D on Baseten direct
 npm run agent:probe-order    # where the endpoint puts tools relative to the system prompt, from its cache counts

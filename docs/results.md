@@ -729,6 +729,41 @@ The median and the mean give different answers on what groups cost.
 - Tokens that were not cache reads were lower for groups on both models: 2.72 million against 3.05 million on Haiku, and 1.98 million against 2.54 million on Opus.
 - Opus's arms were billed about $17 for search and $14 for groups, read from the console's credit balance before and after each.
 
+### What the search returned, by kind of tool
+
+`scripts/search-returned.ts` tallies the tools the API's search returned in the three search files: the held-out run of 2026-11-23, the second Haiku workflow run and the Opus workflow run. That is 228 trials, 694 queries and 4,237 returned tools, repeats counted. A tool's kind is the verb at the end of its name. No model is called.
+
+| Kind | Share of catalog | Share of tools returned | Median characters of description and schema |
+| :-- | --: | --: | --: |
+| `_list` | 18% | 16% | 729 |
+| `_get` | 24% | 19% | 499 |
+| `_create` | 13% | 18% | 1,262 |
+| `_update` | 11% | 16% | 1,370 |
+| `_edit` | 4% | 8% | 1,375 |
+| `_delete` | 13% | 10% | 556 |
+| other | 17% | 13% | 1,014 |
+
+- 283 of the 694 queries hold the word "list". 128 hold "create" and 61 hold "update".
+- In the 12 trials whose every query says "list" and none says create, update or delete, the search returned 135 tools: 20 list tools, 12 get tools and 81 create, update, edit or delete tools.
+- Where a create, update, edit or delete tool was returned and the same resource has a `_list` tool, the `_list` tool was returned nowhere in the trial in 636 of 850 cases. In the other direction, a `_list` tool returned and a sibling `_create` absent, the count is 261 of 390.
+- The returned tools have a median of 1,043 characters of description and schema. The catalog's median is 750.
+
+`scripts/search-probe.ts` passes 20 fixed queries to the search one at a time on Haiku 5.5, with the whole catalog deferred, and records what each returns. Sixteen are queries the models wrote in the workflow runs when a lookup step was missed. Haiku passed every query word for word.
+
+| Queries | Wanted tool | Returned for | Returned in its place |
+| :-- | :-- | --: | :-- |
+| 5 written by a model, about zones | `zones_list` | 2 of 5, at ranks 4 and 1 | `zones_create`, `workers_domains_list`, `accounts_subscriptions_get`, `customNameservers_get` |
+| 3 written by a model, about accounts | `accounts_list` | 0 of 3 | `user_memberships_list`, `accounts_applications_list`, `tunnels_connections_list` |
+| 3 written by a model, about notification policies | `alerting_policies_list` | 0 of 3 | `alerting_policies_test`, `_update` and `_create` in all three |
+| 2 written by a model, about Durable Object namespaces | `durableObjects_namespaces_list` | 0 of 2 | `durableObjects_namespaces_objects_list`, `kv_namespaces_create`, `containers_applications_create` |
+| 3 written by a model, about email sending subdomains | `emailSending_subdomains_list` | 0 of 3 | `emailSending_subdomains_create`, `_delete` and `_preview` in all three |
+| "list zones" | `zones_list` | rank 4 | three `dns_` create and update tools above it |
+| 3 tool names as the query | that tool | 3 of 3 | nothing: the search returned that one tool |
+
+- Each query returned five tools, and a query that is a tool's name returned that tool alone.
+- "list email sending subdomains" returned four tools of that resource and not its list tool. `emailSending_subdomains_list` is the shortest of the resource's tools, 97 characters of description and 229 of schema, so its absence is not explained by longer tools holding more matching words. The `alerting_policies_create` and `_update` tools returned for the policy queries have about 9,700 characters of schema each, and `alerting_policies_list` has 238.
+- The probe cost $0.02 of the account's promotional credit, 183,981 input tokens over 20 requests.
+
 ## Limits
 
 ### Every run
@@ -825,6 +860,9 @@ The median and the mean give different answers on what groups cost.
 - Groups are built per product, and the tasks are drawn per product. The cross-product tasks are there for that reason.
 - The groups arm puts every group description in the system prompt. Its input tokens include that listing on every request.
 - A group's instructions are sent as text after the `open_group` result. Skills are not offered in either arm.
+- The search returns five tools for a query. The tally of returned tools by kind is over trials, since the run files do not record which query returned which tool. The probe records that, for 20 queries on one day, one sample each.
+- The API's ranking is not documented at the level of what text is indexed or how a tool name is split into words, and the probe does not show it. Why a list tool ranks below its siblings is not known.
+- The 16 model-written probe queries were picked from trials where a lookup was missed. They are not a sample of all queries.
 
 ### Follow-up runs
 
@@ -854,5 +892,6 @@ The median and the mean give different answers on what groups cost.
 - `2026-11-23-select2-subset-groups-s5.jsonl` and `-dedup-s5.jsonl`: the open models on the subset with every skill listed and with each workflow listed once. `2026-11-24-select2-subset-groups-hosted-s5.jsonl` and `-dedup-hosted-s5.jsonl`: Opus, Gemini 3.8 Flash and Kimi on the subset. `2026-11-24-select2-full-groups-s5.jsonl` and `-dedup-s5.jsonl`: those three and DeepSeek on the full catalog. `--replay` prints each summary.
 - `2026-11-24-search-v3-full.jsonl`: the tool search run on the held-out tasks, one row per trial with the queries, the tools returned and the tools called. `npx tsx scripts/search-run.ts --replay` prints its tables. `2026-11-24-search-replay-v3-full.txt` is `scripts/search-replay.ts` over it.
 - `tasks-workflow/`: the workflow tasks and every writer reply. `2026-11-24-workflow-haiku-search.jsonl` and `-groups.jsonl`: their run on Haiku, one row per trial with the searches or opens, the tools loaded and the tools called. `2026-11-24-workflow-haiku.txt` is `scripts/workflow-run.ts --replay` over both, printed with the first key. The `-v2` files are the second run. `2026-11-24-workflow-opus-search.jsonl`, `-groups.jsonl` and `2026-11-24-workflow-opus.txt` are the Opus run. `scripts/workflow-tasks.json` now holds the revised key, so `--replay` over the first run's files scores them with it.
+- `2026-11-24-search-returned.txt`: `scripts/search-returned.ts` over the three search files. `2026-11-25-search-probe.jsonl` and `.txt`: the 20-query probe of the search, one row per query with the query sent and the tools returned.
 
 Re-runs that reproduced an earlier file were not kept, and the 2026-11-02 file from the build against the earlier drafts was removed. This repository starts from a single commit; the private predecessor repository holds the earlier history.
