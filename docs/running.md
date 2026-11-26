@@ -1,6 +1,6 @@
 # Running the servers and the trials
 
-This page is reference detail, written to be searched more than read through. It was checked against the scripts on 2026-11-23.
+This page is reference detail, written to be searched more than read through. It was checked against the scripts on 2026-11-25.
 
 ## Sources
 
@@ -36,6 +36,7 @@ npm run dev                         # every variant at http://localhost:8787/<va
 npm run compare                     # the token comparison, against localhost
 npx wrangler deploy --env opt2      # one variant as its own Worker, served at /mcp
 npm run deploy:all                  # flat, opt2 and opt2-rec; opt1 and opt3 run locally
+npm run deploy:full                 # the same three on the 3,036-tool catalog, as pd-groups-<variant>-full
 npm run compare -- --urls flat=https://pd-groups-flat.<sub>.workers.dev/mcp,opt2=...
 npm run vendor:full && npm run dev   # the 3,036-tool catalog, locally; npm run vendor restores the subset
 ```
@@ -48,7 +49,7 @@ npm run vendor:full && npm run dev   # the 3,036-tool catalog, locally; npm run 
 - https://pd-groups-opt2.olahungerford.workers.dev/mcp
 - https://pd-groups-opt2-rec.olahungerford.workers.dev/mcp
 
-The full catalog is deployed beside them since 2026-11-23, as `pd-groups-flat-full`, `pd-groups-opt2-full` and `pd-groups-opt2-rec-full` at the same paths. They are not in `wrangler.jsonc`. To deploy one, run `npm run vendor:full`, then `npx wrangler deploy --env opt2 --name pd-groups-opt2-full`, then `npm run vendor`.
+The full catalog is deployed beside them since 2026-11-23, as `pd-groups-flat-full`, `pd-groups-opt2-full` and `pd-groups-opt2-rec-full` at the same paths. Each has its own environment in `wrangler.jsonc`: `flat-full`, `opt2-full` and `opt2-rec-full`. `npm run deploy:full` vendors the full catalog, deploys the three, and vendors the subset back.
 
 Each Worker answers 429 to a client past 120 requests a minute (the Workers Rate Limiting binding, keyed on the client IP, counted per Cloudflare location, approximate under bursts). The account is on the Workers Free plan, so Cloudflare stops a Worker with Error 1027 after 100,000 requests a day and bills nothing; the limiter keeps one client from using that quota up.
 

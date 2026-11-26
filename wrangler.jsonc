@@ -17,6 +17,11 @@
     "opt1": { "name": "pd-groups-opt1", "vars": { "VARIANT": "opt1" }, "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1002", "simple": { "limit": 120, "period": 60 } }] },
     "opt2": { "name": "pd-groups-opt2", "vars": { "VARIANT": "opt2" }, "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1003", "simple": { "limit": 120, "period": 60 } }] },
     "opt2-rec": { "name": "pd-groups-opt2-rec", "vars": { "VARIANT": "opt2-rec" }, "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1005", "simple": { "limit": 120, "period": 60 } }] },
-    "opt3": { "name": "pd-groups-opt3", "vars": { "VARIANT": "opt3" }, "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1004", "simple": { "limit": 120, "period": 60 } }] }
+    "opt3": { "name": "pd-groups-opt3", "vars": { "VARIANT": "opt3" }, "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1004", "simple": { "limit": 120, "period": 60 } }] },
+    // The 3,036-tool catalog. What a Worker serves is what is vendored at deploy time, so `npm run deploy:full` vendors the
+    // full catalog first. Each shares its limiter namespace with the subset Worker of the same variant.
+    "flat-full": { "name": "pd-groups-flat-full", "vars": { "VARIANT": "flat" }, "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 120, "period": 60 } }] },
+    "opt2-full": { "name": "pd-groups-opt2-full", "vars": { "VARIANT": "opt2" }, "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1003", "simple": { "limit": 120, "period": 60 } }] },
+    "opt2-rec-full": { "name": "pd-groups-opt2-rec-full", "vars": { "VARIANT": "opt2-rec" }, "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1005", "simple": { "limit": 120, "period": 60 } }] }
   }
 }
