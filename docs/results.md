@@ -779,7 +779,7 @@ Under this key the earlier rows score 182 of 210 for Haiku's search arm and 208 
 | 3 tool names as the query | that tool | 3 of 3 | nothing: the search returned that one tool |
 
 - Each query returned five tools, and a query that is a tool's name returned that tool alone.
-- "list email sending subdomains" returned four tools of that resource and not its list tool. `emailSending_subdomains_list` is the shortest of the resource's tools, 97 characters of description and 229 of schema, so its absence is not explained by longer tools holding more matching words. The `alerting_policies_create` and `_update` tools returned for the policy queries have about 9,700 characters of schema each, and `alerting_policies_list` has 238.
+- "list email sending subdomains" returned four tools of that resource and not its list tool. `emailSending_subdomains_list` is the shortest of the resource's tools, 97 characters of description and 229 of schema, so its absence is not explained by longer tools holding more matching words. The 2026-11-26 run below shows the search does not split hyphenated words, so its "sending-enabled" does not match "sending". The `alerting_policies_create` and `_update` tools returned for the policy queries have about 9,700 characters of schema each, and `alerting_policies_list` has 238.
 - The probe cost $0.02 of the account's promotional credit, 183,981 input tokens over 20 requests.
 
 ## A second server with real execution, 2026-11-25
@@ -823,6 +823,53 @@ Haiku 5.5 at effort low, three samples per task, 42 trials per arm.
 - The run cost $0.17 of promotional credit.
 
 Limits: one model, 14 tasks written by the person who wrote the seed, answers matched by pattern, and `execute_sql` removed by the harness and not by the server's configuration.
+
+## How the search splits and ranks, 2026-11-26
+
+`scripts/search-mechanics.ts` sends 44 requests to the Messages API's BM25 tool search on Haiku 5.5, each with one tool list sent with `defer_loading` and one query that Haiku passed word for word. Some use the full catalog in served, reversed and shuffled order, or a single word as the query. Others use small made-up catalogs: a made-up word placed in one part of one tool, eight tools with the same text under different names, and one word repeated in tools of different lengths. `scripts/search-fit.py` compares the results with a local BM25. No request failed. The run used 138,923 input tokens, and the promotional credit on the billing page fell by $0.02.
+
+Where a word was found. Each made-up word was in one place in one tool, and the query was that word.
+
+| Where the word was | Found |
+| :-- | :-- |
+| Description, argument name, argument description, nested argument description | yes |
+| Enum value, a description inside `$defs`, `title`, `default` | yes |
+| Part of the tool's name, between underscores (`place_namepart_frobule`) or in camel case (`place_camelCaseWimbrel`) | no |
+| Either half of a hyphenated word in the description (`dorvin-kelp`) | no |
+| Either half of an underscored word in the description (`yarrow_plinth`) | no |
+| The whole tool name as the query | yes, that tool alone |
+
+- The query "Plimbat" and the query "plimbats" both found the tool whose description says "plimbat". On the full catalog "zone" and "zones" returned the same five tools, as did "subdomain" and "subdomains", and "listing zones" returned what "list zones" did.
+- Anthropic's documentation says the search covers tool names, descriptions, argument names and argument descriptions. Enum values, `$defs`, titles and defaults were searched as well.
+
+Ties. The eight tools had the same description and schema, and names from `aa_widget_list` to `zz_widget_list`. The query was "widget inventory".
+
+| Order sent | Returned |
+| :-- | :-- |
+| aa to zz | aa, bb, cc, dd, ww |
+| zz to aa | zz, yy, xx, ww, dd |
+| aa, xx, bb, yy, zz, dd, cc, ww | aa, xx, bb, yy, zz |
+
+- Tools that tie are returned in the order the request lists them, and the first five in that order are kept. The order of the names did not matter.
+- On the full catalog, "zones list account get zone id name", "list zones" and "list email sending subdomains" returned the same five tools in served, reversed and shuffled order. For the first two, the order within the five changed between catalog orders. A repeat of the first query and the 2026-11-25 probe gave the same list as this run.
+
+Length. "gadget" was sent to eight tools holding it 1 to 16 times, padded with 0 to 200 words that are in neither the query nor the eight filler tools beside them. The API returned the 8-in-40 tool, then 16-in-200, 4-in-40, 1-in-0 and 8-in-200, in either catalog order. Under BM25 that order holds for b from about 0.65 to 0.87, depending on how the schema's words are counted in a tool's length, and for k1 from 0.1 to 10. The common defaults, k1 1.2 and b 0.75, give it.
+
+A local BM25 that splits on whitespace, strips punctuation at the ends of a word, lowercases, drops English stop words, stems with Snowball, and reads every property name and string value in the schema, with k1 1.2 and b 0.75, was compared with the 32 requests on the full catalog in served order whose query is not a tool name: 28 distinct queries, from this run and the 2026-11-25 probe.
+
+- Its top five held 108 of the 160 tools the API returned, and the same set in 9 requests.
+- The API returned the same five tools for "zones list account get" and for "zones list account get zone id name". The model gave the API's five for the first. Adding "zone" or "id" alone kept them, and adding "name" changed four of the five. So the model and the API differ on "name", for a reason not known.
+- Under this model, the query words in the tools behind two of the misses on 2026-11-25:
+
+| Tool | Words | Query words held |
+| :-- | --: | :-- |
+| `emailSending_subdomains_list` | 14 | list 1, email 0, sending 0, subdomain 1 |
+| `emailSending_subdomains_delete` | 42 | list 0, email 1, sending 5, subdomain 4 |
+| `alerting_policies_list` | 15 | list 1, notification 1, policies 1, alerting 0 |
+| `alerting_policies_test` | 83 | list 0, notification 3, policies 2, alerting 5 |
+
+- `emailSending_subdomains_list` says "sending-enabled subdomains", and its other "email" and "sending" are in the path line, `GET /zones/{zone_id}/email/sending/subdomains`. `alerting_policies_list` has "alerting" only in its path line. The hyphenated word is one word in the API, from the test above. The path line is one word in the model, and was not tested. Under the model these list tools lack query words their siblings repeat in prose. Both take only path IDs, so they have little other text.
+- Parts of a made-up tool's name were not found on their own. If that holds on the catalog, the "zones" and "list" in `zones_list` count for nothing, and the tool is found through its description and schema.
 
 ## Limits
 
@@ -922,8 +969,16 @@ Limits: one model, 14 tasks written by the person who wrote the seed, answers ma
 - The groups arm puts every group description in the system prompt. Its input tokens include that listing on every request.
 - A group's instructions are sent as text after the `open_group` result. Skills are not offered in either arm.
 - The search returns five tools for a query. The tally of returned tools by kind is over trials, since the run files do not record which query returned which tool. The probe records that, for 20 queries on one day, one sample each.
-- The API's ranking is not documented at the level of what text is indexed or how a tool name is split into words, and the probe does not show it. Why a list tool ranks below its siblings is not known.
+- The API's ranking is not documented at the level of what text is indexed or how a tool name is split into words. The 2026-11-26 run measures some of it, and its limits are below.
 - The 16 model-written probe queries were picked from trials where a lookup was missed. They are not a sample of all queries.
+
+### How the search splits and ranks
+
+- One model, one sample per request, on one day. The search's results did not vary between repeats where a query was sent more than once, but its behaviour could change without notice.
+- The made-up catalogs test one case each. Splitting was tested on hyphens and underscores only, not on slashes, dots or other punctuation. That a path line is one word comes from the local model, not from a test.
+- Stemming is inferred from plurals and "listing" matching. The stemmer, the stop words and how a tool's length is counted are not known.
+- Exact ties went to the earlier tool in eight identical tools. On the full catalog, order changed no returned set in three queries. It was not tested on more.
+- The local model was chosen after seeing the API's results, and was not checked on queries held out from that choice.
 
 ### Follow-up runs
 
