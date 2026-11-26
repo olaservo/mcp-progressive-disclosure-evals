@@ -778,7 +778,7 @@ Under this key the earlier rows score 182 of 210 for Haiku's search arm and 208 
 | "list zones" | `zones_list` | rank 4 | three `dns_` create and update tools above it |
 | 3 tool names as the query | that tool | 3 of 3 | nothing: the search returned that one tool |
 
-- Each query returned five tools, and a query that is a tool's name returned that tool alone.
+- Each query returned five tools, and a query that is a tool's name returned that tool alone. Five is the default when the model passes no `limit`, and the probe's instruction gave none. In the workflow runs Haiku passed `limit: 10` on some searches. See the 2026-11-26 run on descriptions below.
 - "list email sending subdomains" returned four tools of that resource and not its list tool. `emailSending_subdomains_list` is the shortest of the resource's tools, 97 characters of description and 229 of schema, so its absence is not explained by longer tools holding more matching words. The 2026-11-26 run below shows the search does not split hyphenated words, so its "sending-enabled" does not match "sending". The `alerting_policies_create` and `_update` tools returned for the policy queries have about 9,700 characters of schema each, and `alerting_policies_list` has 238.
 - The probe cost $0.02 of the account's promotional credit, 183,981 input tokens over 20 requests.
 
@@ -870,6 +870,31 @@ A local BM25 that splits on whitespace, strips punctuation at the ends of a word
 
 - `emailSending_subdomains_list` says "sending-enabled subdomains", and its other "email" and "sending" are in the path line, `GET /zones/{zone_id}/email/sending/subdomains`. `alerting_policies_list` has "alerting" only in its path line. The hyphenated word is one word in the API, from the test above. The path line is one word in the model, and was not tested. Under the model these list tools lack query words their siblings repeat in prose. Both take only path IDs, so they have little other text.
 - Parts of a made-up tool's name were not found on their own. If that holds on the catalog, the "zones" and "list" in `zones_list` count for nothing, and the tool is found through its description and schema.
+- Every request in this run used the search's default limit of five tools. The next section shows the model can ask for more.
+
+## Descriptions that start with the tool's name, 2026-11-26
+
+The run above suggests some list tools are missed because their descriptions lack the words in their names. This tests one rule a server author could apply to every tool: start the description with the tool's name split into words at underscores and capitals. `emailSending_subdomains_list` gets "email sending subdomains list. " before its description, and every other tool gets the same treatment.
+
+`scripts/search-rewrite.ts` sends the 185 distinct queries of the third Haiku run's search arm, 215 searches in 54 trials, to the API's search again. Each query is one request on Haiku 5.5, with the catalog as served and rewritten, at `limit` 5 and 10. That is 740 requests, with no errors. Haiku passed every query word for word, and sent one query twice in its request. The limit-5 rows were sent with no limit and each search returned five tools. The limit-10 rows asked for 10 and each returned ten. A required step counts when a tool that fits it is among the tools returned for its trial's queries. The model was not run on the tasks, so each trial keeps the queries it wrote against the served catalog.
+
+The search returns five tools unless the model passes `limit`. In one request on the traffic-monitoring task, Haiku passed `limit: 10` on both its searches and got ten tools back from each. The workflow runner recorded the query and not the limit. A search in the run is taken to have used limit 10 when all ten tools the served catalog returns at 10 are among the tools its trial loaded. That holds for 118 of the 215 searches. With those limits the served rows give exactly the tools each trial loaded, in 54 of 54 trials.
+
+| Tools returned by | Required steps with a fitting tool returned |
+| :-- | --: |
+| The run, as recorded | 192 of 210 |
+| Served, limit 5 | 156 of 210 |
+| Served, limit 10 | 193 of 210 |
+| Rewritten, limit 5 | 168 of 210 |
+| Rewritten, limit 10 | 197 of 210 |
+| Served, the run's limits | 192 of 210 |
+| Rewritten, the run's limits | 192 of 210 |
+
+- At the run's limits the rewrite gained seven steps and lost seven. It gained the old sending subdomain in two trials and its DNS records in a third, the alert policy in one, and the container app, the namespace and the object count in one container trial. It lost four zone lookups, attaching the domain to a script, replacing a DNS record and adding a binding. Why each was lost was not traced.
+- Eleven of the 18 steps with no fitting tool in the run still had none under the rewrite. In one trial of the cache task the queries never mention Cache Reserve, the product of the three steps that trial missed.
+- On the served catalog, limit 10 in place of 5 raised the count from 156 to 193.
+- The groups arm of that run had a fitting tool loaded for 210 of 210 steps. On this catalog and these queries, the rewrite does not narrow that gap.
+- A one-request check sent before the run, which showed the `limit`, is not kept. The promotional credit on the billing page fell from $152.31 to $149.29 over these requests. That includes the limit-10 batch on the rewritten catalog, which was sent twice because its first rows were overwritten. The kept rows hold 10.5 million input tokens. The fall is more than those tokens price at, and other use of the account in that time is not ruled out.
 
 ## Limits
 
@@ -968,7 +993,7 @@ A local BM25 that splits on whitespace, strips punctuation at the ends of a word
 - Groups are built per product, and the tasks are drawn per product. The cross-product tasks are there for that reason.
 - The groups arm puts every group description in the system prompt. Its input tokens include that listing on every request.
 - A group's instructions are sent as text after the `open_group` result. Skills are not offered in either arm.
-- The search returns five tools for a query. The tally of returned tools by kind is over trials, since the run files do not record which query returned which tool. The probe records that, for 20 queries on one day, one sample each.
+- The search returns five tools for a query unless the model passes `limit`. The runner did not record the limit. In the third Haiku run 118 of 215 searches are inferred to have used 10, from the 2026-11-26 replay. The tally of returned tools by kind is over trials, since the run files do not record which query returned which tool. The probe records that, for 20 queries on one day, one sample each.
 - The API's ranking is not documented at the level of what text is indexed or how a tool name is split into words. The 2026-11-26 run measures some of it, and its limits are below.
 - The 16 model-written probe queries were picked from trials where a lookup was missed. They are not a sample of all queries.
 
@@ -979,6 +1004,13 @@ A local BM25 that splits on whitespace, strips punctuation at the ends of a word
 - Stemming is inferred from plurals and "listing" matching. The stemmer, the stop words and how a tool's length is counted are not known.
 - Exact ties went to the earlier tool in eight identical tools. On the full catalog, order changed no returned set in three queries. It was not tested on more.
 - The local model was chosen after seeing the API's results, and was not checked on queries held out from that choice.
+- Every request used the default limit of five.
+
+### Descriptions that start with the tool's name
+
+- The queries are the ones Haiku wrote against the served catalog. A model reading the rewritten catalog's results would write other queries, and might search more or less often. The workflow tasks were not run on the rewritten catalog.
+- One rule on one catalog, with one run's queries and one sample per request. Prose written by hand, or a rule applied to list tools only, was not tested.
+- The limit each search in the run used is inferred, as described in that section.
 
 ### Follow-up runs
 
@@ -1009,6 +1041,8 @@ A local BM25 that splits on whitespace, strips punctuation at the ends of a word
 - `2026-11-24-search-v3-full.jsonl`: the tool search run on the held-out tasks, one row per trial with the queries, the tools returned and the tools called. `npx tsx scripts/search-run.ts --replay` prints its tables. `2026-11-24-search-replay-v3-full.txt` is `scripts/search-replay.ts` over it.
 - `tasks-workflow/`: the workflow tasks and every writer reply. `2026-11-24-workflow-haiku-search.jsonl` and `-groups.jsonl`: their run on Haiku, one row per trial with the searches or opens, the tools loaded and the tools called. `2026-11-24-workflow-haiku.txt` is `scripts/workflow-run.ts --replay` over both, printed with the first key. The `-v2` files are the second run. `2026-11-24-workflow-opus-search.jsonl`, `-groups.jsonl` and `2026-11-24-workflow-opus.txt` are the Opus run. `scripts/workflow-tasks.json` now holds the revised key, so `--replay` over the first run's files scores them with it. `2026-11-25-workflow-haiku-search-v3.jsonl`, `-groups-v3.jsonl` and `2026-11-25-workflow-haiku-v3.txt` are the third Haiku run, with a `calls` field holding each call's arguments. The key was revised again before it, so `--replay` over the earlier files now gives the rescored counts.
 - `2026-11-24-search-returned.txt`: `scripts/search-returned.ts` over the three search files. `2026-11-25-search-probe.jsonl` and `.txt`: the 20-query probe of the search, one row per query with the query sent and the tools returned.
+- `2026-11-26-search-mechanics.jsonl`: the run on what the search indexes, how it splits words and how it breaks ties, one row per request. `scripts/search-fit.py` prints the figures from it.
+- `2026-11-26-search-rewrite.jsonl` and `-10.jsonl`: the third Haiku run's queries sent again on the served and rewritten catalogs, at limit 5 and at limit 10, one row per request with the query and limit sent and the tools returned. `2026-11-26-search-rewrite.txt` is `scripts/search-rewrite.ts --score` over both.
 - `2026-11-25-db-haiku-search-smoke.jsonl` and `-groups-smoke.jsonl`: the two-server database run, one row per trial with the searches or opens, the tools loaded, each call with its arguments, and whether the check passed. `npx tsx scripts/db-run.ts --replay` prints the tables.
 - `2026-11-25-db-find-haiku-search.jsonl`, `-groups.jsonl` and `2026-11-25-db-find-haiku.txt`: the lookup tasks on the two servers with `execute_sql` left out, and the tables printed from both files.
 

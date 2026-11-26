@@ -158,6 +158,7 @@ npx tsx scripts/search-returned.ts results/2026-11-24-search-v3-full.jsonl resul
 npx tsx scripts/search-probe.ts --env path/to/.env    # 20 fixed queries passed to the API's search one at a time, with the tools each returns
 npx tsx scripts/search-mechanics.ts --env path/to/.env    # 44 requests on the full catalog in three orders and on small made-up catalogs, to see what the search indexes, how it splits words and how it breaks ties
 npx tsx scripts/search-mechanics.ts --dump catalog.json && python scripts/search-fit.py catalog.json results/2026-11-25-search-probe.jsonl results/2026-11-26-search-mechanics.jsonl    # a local BM25 against those results, no model; needs bm25s and PyStemmer
+npx tsx scripts/search-rewrite.ts results/2026-11-25-workflow-haiku-search-v3.jsonl --env path/to/.env    # that run's queries sent again on the catalog as served and with each description starting with the tool's name in words, at limit 5 and 10; --score <jsonl> [<jsonl> ...] scores saved rows
 npx tsx scripts/toolbox-probe.ts    # what a local MCP Toolbox for Databases server serves: tools, and groups through its own extension
 npx tsx scripts/db-check.ts    # each database task's check query, false on the seeded database and true after its fix, no model
 npx tsx scripts/db-run.ts --arm search --env path/to/.env --label haiku-search-smoke    # or --arm groups; the Cloudflare catalog and the toolbox together, toolbox calls executed

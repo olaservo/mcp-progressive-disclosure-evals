@@ -1,0 +1,209 @@
+54 trials, 185 distinct queries, 210 required steps.
+
+Searches in the run taken as limit 10: 118 of 215. Trials whose loaded tools the served catalog at the run's limits gives exactly: 54 of 54.
+
+| Tools returned by | Required steps with a fitting tool returned |
+| :-- | --: |
+| the run, as recorded | 192 of 210 |
+| served at 5 | 156 of 210 |
+| served at 10 | 193 of 210 |
+| name-words at 5 | 168 of 210 |
+| name-words at 10 | 197 of 210 |
+| served at the run's limits | 192 of 210 |
+| name-words at the run's limits | 192 of 210 |
+
+No fitting tool returned, the run, as recorded:
+- retire-subdomain #2: find the old sending subdomain
+- retire-subdomain #2: get its DNS records
+- retire-subdomain #3: find the old sending subdomain
+- retire-subdomain #1: find the old sending subdomain
+- leaking-container #1: find the container app
+- leaking-container #1: find the namespace and the script that owns it
+- leaking-container #1: count the objects in it
+- leaking-container #2: find the namespace and the script that owns it
+- leaking-container #2: count the objects in it
+- alert-webhook #2: find the policy
+- failed-deploy #1: attach the domain
+- scan-and-block #3: look up the zone by name
+- flag-binding #1: find the flag app
+- wipe-cache-store #3: turn the store off, which a wipe needs
+- wipe-cache-store #3: start the wipe
+- wipe-cache-store #3: read the wipe status
+- tag-trigger #1: look up the zone by name
+- tag-trigger #3: check workflow mode
+
+No fitting tool returned, served at 5:
+- script-config #1: attach the domain
+- retire-subdomain #2: find the old sending subdomain
+- retire-subdomain #2: get its DNS records
+- retire-subdomain #3: find the old sending subdomain
+- retire-subdomain #3: get its DNS records
+- retire-subdomain #1: find the old sending subdomain
+- retire-subdomain #1: get its DNS records
+- script-config #2: set the secret
+- script-config #3: set the secret
+- leaking-container #1: find the container app
+- leaking-container #1: find the namespace and the script that owns it
+- leaking-container #1: count the objects in it
+- leaking-container #2: find the container app
+- leaking-container #2: find the namespace and the script that owns it
+- leaking-container #2: count the objects in it
+- leaking-container #2: read the script's bindings
+- leaking-container #3: find the container app
+- leaking-container #3: read the script's bindings
+- forwarding-setup #3: turn forwarding on for the zone
+- forwarding-setup #1: turn forwarding on for the zone
+- share-ruleset #2: find the ruleset
+- share-ruleset #3: find the ruleset
+- org-invite #3: add the member
+- tenant-binding #1: find the key-value namespace
+- tenant-binding #1: add the binding
+- tenant-binding #3: find the key-value namespace
+- tenant-binding #3: add the binding
+- alert-webhook #1: find the policy
+- alert-webhook #2: find the policy
+- alert-webhook #3: find the policy
+- failed-deploy #1: list the project's deployments
+- failed-deploy #1: attach the domain
+- failed-deploy #2: list the project's deployments
+- failed-deploy #2: attach the domain
+- failed-deploy #3: list the project's deployments
+- failed-deploy #3: roll back
+- scan-and-block #1: get the report
+- scan-and-block #3: look up the zone by name
+- flag-binding #1: find the flag app
+- flag-binding #1: create the flag
+- traffic-monitoring #1: find the rule
+- flag-binding #2: create the flag
+- flag-binding #3: find the flag app
+- flag-binding #3: read the script's bindings
+- flag-binding #3: add the binding
+- traffic-monitoring #2: find the rule
+- traffic-monitoring #3: find the rule
+- wipe-cache-store #3: turn the store off, which a wipe needs
+- wipe-cache-store #3: start the wipe
+- wipe-cache-store #3: read the wipe status
+- record-to-tunnel #1: replace it
+- record-to-tunnel #2: replace it
+- tag-trigger #1: look up the zone by name
+- tag-trigger #3: check workflow mode
+
+No fitting tool returned, served at 10:
+- retire-subdomain #2: find the old sending subdomain
+- retire-subdomain #3: find the old sending subdomain
+- retire-subdomain #1: find the old sending subdomain
+- leaking-container #1: find the container app
+- leaking-container #1: find the namespace and the script that owns it
+- leaking-container #1: count the objects in it
+- leaking-container #2: find the namespace and the script that owns it
+- leaking-container #2: count the objects in it
+- alert-webhook #2: find the policy
+- failed-deploy #1: attach the domain
+- scan-and-block #3: look up the zone by name
+- flag-binding #1: find the flag app
+- wipe-cache-store #3: turn the store off, which a wipe needs
+- wipe-cache-store #3: start the wipe
+- wipe-cache-store #3: read the wipe status
+- tag-trigger #1: look up the zone by name
+- tag-trigger #3: check workflow mode
+
+No fitting tool returned, name-words at 5:
+- script-config #1: attach the domain
+- retire-subdomain #2: find the old sending subdomain
+- retire-subdomain #3: get its DNS records
+- script-config #2: set the secret
+- script-config #3: set the secret
+- leaking-container #2: find the namespace and the script that owns it
+- leaking-container #2: count the objects in it
+- forwarding-setup #3: look up the zone by name
+- forwarding-setup #1: look up the zone by name
+- branch-appliance #1: move its maintenance window
+- org-invite #3: find the organization
+- tenant-binding #1: add the binding
+- tenant-binding #3: find the key-value namespace
+- tenant-binding #3: add the binding
+- alert-webhook #1: attach the destination to it
+- tenant-binding #2: add the binding
+- alert-webhook #3: attach the destination to it
+- failed-deploy #1: list the project's deployments
+- failed-deploy #1: attach the domain
+- failed-deploy #2: list the project's deployments
+- failed-deploy #2: attach the domain
+- failed-deploy #3: list the project's deployments
+- scan-and-block #1: look up the zone by name
+- scan-and-block #3: look up the zone by name
+- flag-binding #1: find the flag app
+- flag-binding #1: create the flag
+- flag-binding #1: add the binding
+- traffic-monitoring #1: find the rule
+- flag-binding #2: create the flag
+- flag-binding #2: add the binding
+- flag-binding #3: find the flag app
+- flag-binding #3: add the binding
+- traffic-monitoring #2: find the rule
+- traffic-monitoring #3: find the rule
+- wipe-cache-store #3: turn the store off, which a wipe needs
+- wipe-cache-store #3: start the wipe
+- wipe-cache-store #3: read the wipe status
+- record-to-tunnel #1: replace it
+- tag-trigger #1: look up the zone by name
+- tag-trigger #1: publish
+- tag-trigger #2: look up the zone by name
+- tag-trigger #3: check workflow mode
+
+No fitting tool returned, name-words at 10:
+- script-config #1: attach the domain
+- retire-subdomain #2: find the old sending subdomain
+- leaking-container #2: find the namespace and the script that owns it
+- leaking-container #2: count the objects in it
+- tenant-binding #3: add the binding
+- failed-deploy #1: attach the domain
+- scan-and-block #3: look up the zone by name
+- flag-binding #1: find the flag app
+- wipe-cache-store #3: turn the store off, which a wipe needs
+- wipe-cache-store #3: start the wipe
+- wipe-cache-store #3: read the wipe status
+- record-to-tunnel #1: replace it
+- tag-trigger #3: check workflow mode
+
+No fitting tool returned, served at the run's limits:
+- retire-subdomain #2: find the old sending subdomain
+- retire-subdomain #2: get its DNS records
+- retire-subdomain #3: find the old sending subdomain
+- retire-subdomain #1: find the old sending subdomain
+- leaking-container #1: find the container app
+- leaking-container #1: find the namespace and the script that owns it
+- leaking-container #1: count the objects in it
+- leaking-container #2: find the namespace and the script that owns it
+- leaking-container #2: count the objects in it
+- alert-webhook #2: find the policy
+- failed-deploy #1: attach the domain
+- scan-and-block #3: look up the zone by name
+- flag-binding #1: find the flag app
+- wipe-cache-store #3: turn the store off, which a wipe needs
+- wipe-cache-store #3: start the wipe
+- wipe-cache-store #3: read the wipe status
+- tag-trigger #1: look up the zone by name
+- tag-trigger #3: check workflow mode
+
+No fitting tool returned, name-words at the run's limits:
+- script-config #1: attach the domain
+- retire-subdomain #2: find the old sending subdomain
+- leaking-container #2: find the namespace and the script that owns it
+- leaking-container #2: count the objects in it
+- forwarding-setup #3: look up the zone by name
+- forwarding-setup #1: look up the zone by name
+- tenant-binding #3: add the binding
+- failed-deploy #1: attach the domain
+- scan-and-block #1: look up the zone by name
+- scan-and-block #3: look up the zone by name
+- flag-binding #1: find the flag app
+- wipe-cache-store #3: turn the store off, which a wipe needs
+- wipe-cache-store #3: start the wipe
+- wipe-cache-store #3: read the wipe status
+- record-to-tunnel #1: replace it
+- tag-trigger #1: look up the zone by name
+- tag-trigger #2: look up the zone by name
+- tag-trigger #3: check workflow mode
+
+740 rows, 0 errors, 1 not passed word for word with the limit asked, 10486343 input tokens.
