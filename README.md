@@ -129,6 +129,14 @@ Messages API runs, rows 17 to 22, with the commands in [`docs/running.md`](docs/
 - [`docs/results.md`](docs/results.md): every table, the notes behind each, the limits, and the redacted Claude Code traces.
 - [`docs/running.md`](docs/running.md): sources, variants, how to run the servers and the trials, the open-model agent loop, the deployed Workers, the Claude Code mod.
 
+## Layout
+
+- `src/`: the MCP server and its variants, with the vendored Cloudflare catalog in `src/vendor/`.
+- `mods/groups/`: the Claude Code mod.
+- `scripts/`: the runners, scorers and probes, named by experiment (`select`, `trace-`, `agent-`, `search-`, `workflow-`, `db-`, `samename-`).
+- `tasks/`: the task sets and answer keys the runners read, and the database seeds in `tasks/db/`.
+- `results/`: one folder per experiment, with files named `<date>-<experiment>-<label>`. [`docs/results.md`](docs/results.md#results-files) lists them.
+
 ## License
 
 Apache-2.0, see `LICENSE`. `src/vendor` carries generated tool definitions from cloudflare/mcp and skill files from cloudflare/skills, both Apache-2.0; `NOTICE` names them. The trace sessions are CC-BY-4.0 and say so in their README.

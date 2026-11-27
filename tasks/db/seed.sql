@@ -1,5 +1,5 @@
 -- Resets the `shop` database to the state the database tasks start from. Run with psql, one statement at a time.
--- Each planted problem is the subject of one task in scripts/db-tasks.json or scripts/db-find-tasks.json.
+-- Each planted problem is the subject of one task in tasks/db-tasks.json or tasks/db-find-tasks.json.
 SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name = 'pd-blocker';
 DROP EXTENSION IF EXISTS pg_stat_statements;
 DROP PUBLICATION IF EXISTS pd_orders_pub;
@@ -48,7 +48,7 @@ ALTER TABLE customers DISABLE TRIGGER customers_audit;
 
 CREATE VIEW order_summary AS SELECT o.id AS order_id, o.status, o.total, c.name AS customer_name FROM orders o JOIN customers c ON c.id = o.customer_id;
 
--- Objects the lookup tasks in scripts/db-find-tasks.json ask about.
+-- Objects the lookup tasks in tasks/db-find-tasks.json ask about.
 CREATE PROCEDURE purge_stale_sessions() LANGUAGE sql AS $$ DELETE FROM sessions WHERE expires_at < now() - interval '30 days' $$;
 CREATE PUBLICATION pd_orders_pub FOR TABLE orders, order_items;
 SELECT pg_create_physical_replication_slot('pd_archive_slot');

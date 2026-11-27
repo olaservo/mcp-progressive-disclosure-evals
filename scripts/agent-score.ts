@@ -1,6 +1,6 @@
 // Scores agent-run.ts and agent-ref.ts result files. Completion is re-derived from the recorded calls with the rubrics in
 // agent-tasks.ts, so a rubric change applies to old runs too.
-// Usage: tsx scripts/agent-score.ts [--as-committed] results/<file>.jsonl [more files]
+// Usage: tsx scripts/agent-score.ts [--as-committed] results/agent/<file>.jsonl [more files]
 // --as-committed scores with the string-body handling the rubrics had when they were committed, before the runs.
 import { readFileSync } from 'node:fs'
 import { CHAINS, SCENARIOS, rubricOptions, type AgentCall } from './agent-tasks.js'
@@ -25,7 +25,7 @@ const HELPERS = new Set(['list_groups', 'open_group', 'read_skill', 'call_tool',
 
 rubricOptions.asCommitted = process.argv.includes('--as-committed')
 const files = process.argv.slice(2).filter((arg) => !arg.startsWith('--'))
-if (files.length === 0) throw new Error('pass one or more results/*-agent-*.jsonl files')
+if (files.length === 0) throw new Error('pass one or more results/agent/*-agent-*.jsonl files')
 // A file run with --shared, where sessions share one tool block, scores as its own arm, and so do runs with padded results,
 // arm C with the lenient call_tool wrapper, runs against a server other than the two deployed subset Workers, and runs
 // sent to a provider's own endpoint (--base-url).

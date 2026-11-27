@@ -1,4 +1,4 @@
-// Runs the database tasks (scripts/db-tasks.json) on the Messages API with two servers attached at once: the flat
+// Runs the database tasks (tasks/db-tasks.json) on the Messages API with two servers attached at once: the flat
 // Cloudflare catalog and a local MCP Toolbox for Databases server on a Postgres database. Every tool of both is sent
 // with `defer_loading`, in one of two arms:
 //   search  the BM25 tool search tool finds and loads tools. The model sees nothing about the tools first.
@@ -6,12 +6,12 @@
 //           toolbox's own groups through its `com.google.cloud/toolbox.v1` extension, which have names and no
 //           descriptions. A client tool `open_group` answers with `tool_reference` blocks for the group's tools.
 // Toolbox calls are executed against the database. Cloudflare calls are dry runs with a made-up result.
-// Before each trial the database is reset from scripts/db/seed.sql, so trials run one at a time. After it, the task's
+// Before each trial the database is reset from tasks/db/seed.sql, so trials run one at a time. After it, the task's
 // check query is run in the database and the trial passes when it returns true. A task file of lookups
-// (scripts/db-find-tasks.json) has an answer in place of a check: the trial passes when a database tool was called and
+// (tasks/db-find-tasks.json) has an answer in place of a check: the trial passes when a database tool was called and
 // what the model said holds every answer pattern. `--without` leaves toolbox tools out of the tool list and the groups.
 // Usage: tsx scripts/db-run.ts --arm search|groups [--models a,b] [--samples N] [--limit N] [--max-requests N]
-//          [--tasks scripts/db-find-tasks.json] [--without execute_sql] [--toolbox http://127.0.0.1:5055/mcp] [--container pd-toolbox-pg] [--env <.env path>] [--label name]
+//          [--tasks tasks/db-find-tasks.json] [--without execute_sql] [--toolbox http://127.0.0.1:5055/mcp] [--container pd-toolbox-pg] [--env <.env path>] [--label name]
 //        tsx scripts/db-run.ts --replay <jsonl> [<jsonl> ...]
 import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync } from 'node:fs'
 import { execFileSync, spawn } from 'node:child_process'
@@ -72,7 +72,7 @@ type Trial = {
   ms: number
   error?: string
 }
-const allTasks = JSON.parse(readFileSync(tasksFile ?? new URL('./db-tasks.json', import.meta.url), 'utf8')) as Task[]
+const allTasks = JSON.parse(readFileSync(tasksFile ?? new URL('../tasks/db-tasks.json', import.meta.url), 'utf8')) as Task[]
 const tasks = limit ? allTasks.slice(0, limit) : allTasks
 
 const SYSTEM = [
@@ -201,7 +201,7 @@ if (replayAt >= 0) {
   const anthropic = new Anthropic({ maxRetries: 4 })
 
   const psql = (sql: string, input?: string) => execFileSync('docker', ['exec', '-i', container, 'psql', '-q', '-U', 'postgres', '-d', 'shop', '-At', ...(input === undefined ? ['-c', sql] : ['-f', '-'])], { input, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim()
-  const seed = readFileSync(new URL('./db/seed.sql', import.meta.url), 'utf8')
+  const seed = readFileSync(new URL('../tasks/db/seed.sql', import.meta.url), 'utf8')
   const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
   async function reset(task: Task): Promise<void> {
     psql('', seed)
@@ -291,8 +291,8 @@ if (replayAt >= 0) {
     return trial
   }
 
-  mkdirSync('results', { recursive: true })
-  const out = `results/${new Date().toISOString().slice(0, 10)}-db-${label}.jsonl`
+  mkdirSync('results/db', { recursive: true })
+  const out = `results/db/${new Date().toISOString().slice(0, 10)}-db-${label}.jsonl`
   writeFileSync(out, JSON.stringify({ arm, flat: FLAT, grouped: arm === 'groups' ? GROUPED : undefined, toolbox: toolbox.getServerVersion(), tools: cloudflare.length + database.length, dbTools: [...dbNames], without: without.size ? [...without] : undefined, taskFile: tasksFile, groups: groups.length || undefined, tasks: tasks.length, samples, models, maxRequests, effort: 'low', system }) + '\n')
   const trials: Trial[] = []
   for (const model of models) {

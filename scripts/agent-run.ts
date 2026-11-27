@@ -15,7 +15,7 @@
 //
 // --base-url sends the requests to that endpoint with the key in --key-env, and drops the :provider suffix from the model
 // id in the request. The rows keep the id as given. Arm D worked on https://inference.baseten.co/v1 and not through the
-// Hugging Face router (results/2026-11-19-agent-probe-deferred.txt).
+// Hugging Face router (results/agent/2026-11-19-agent-probe-deferred.txt).
 //
 // Every session starts cold: its id leads the system prompt and ends the first tool's description. Both Baseten models
 // showed cache reads on tool blocks a session had never sent (2026-11-12), so the id in the system prompt alone leaves the
@@ -366,8 +366,8 @@ function padding(): string {
 
 // The chained scenarios run only when named.
 const scenarios = only ? [...SCENARIOS, ...CHAINS].filter((s) => only.includes(s.id)) : SCENARIOS
-mkdirSync('results', { recursive: true })
-const out = join('results', `${new Date().toISOString().slice(0, 10)}-agent-${label}.jsonl`)
+mkdirSync(join('results', 'agent'), { recursive: true })
+const out = join('results', 'agent', `${new Date().toISOString().slice(0, 10)}-agent-${label}.jsonl`)
 const tokenCounts = new Map<number, number>()
 /** o200k tokens of the tools array, by its length: the array only grows within an arm. */
 const toolsTokens = (tools: FnTool[]) => {

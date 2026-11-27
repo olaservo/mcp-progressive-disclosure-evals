@@ -2,7 +2,7 @@
 // group descriptions. Each writer sees only a product name from cloudflare/mcp's forge catalog: no group listing, no tool names,
 // no tool descriptions. Products are drawn in a seeded order; each writer gets 3 of the 10 subset products and 7 others.
 // Accepted answers come from scripts/v3-answers.ts afterwards, from the catalog's tool names, before any model is scored.
-// --set workflow writes a second set, results/tasks-workflow/: jobs that take three or four calls. Each writer's tasks
+// --set workflow writes a second set, results/tasks/workflow/: jobs that take three or four calls. Each writer's tasks
 // alternate between two kinds. A `single` job stays in the drawn product. A `cross` job needs the drawn product and one or
 // two others the writer picks, since groups are built per product and a job inside one product fits one group. The task
 // states the outcome and leaves at least one needed step unsaid, so an agent has to work out a step it was not told.
@@ -30,7 +30,7 @@ const WRITERS = ['claude-fable-5-2', 'gemini-3.6-flash'] as const
 const PER_WRITER = workflow ? { subset: 2, other: 8 } : { subset: 3, other: 7 }
 const SUBSET = ['turnstile', 'durableObjects', 'emailRouting', 'emailSending', 'kv', 'r2', 'queues', 'd1', 'workers', 'containers']
 const FORGE = join(import.meta.dirname, '..', '.upstream', 'cloudflare-mcp', 'src', 'generated', 'forge-mcp')
-const OUT_DIR = join(import.meta.dirname, '..', 'results', workflow ? 'tasks-workflow' : 'tasks-v3')
+const OUT_DIR = join(import.meta.dirname, '..', 'results', 'tasks', workflow ? 'workflow' : 'v3')
 if (!existsSync(FORGE)) throw new Error('run npm run vendor first, which fetches cloudflare/mcp into .upstream/')
 
 // A product with few tools has no job of three operations. The writer cannot see the count, so the draw leaves those out.

@@ -1,6 +1,6 @@
 // Derives the v3 tasks' accepted groups from the servers as served. Each task names the tools that do any step it asks
 // for (by name prefix, read from the catalog); a top-level group is accepted when it, or a group nested under it, returns
-// one of those tools from groups/get. Prints scripts/select-v3.json, which select.ts reads for --tasks v3.
+// one of those tools from groups/get. Prints tasks/select-v3.json, which select.ts reads for --tasks v3.
 // Usage: tsx scripts/v3-answers.ts [--base http://localhost:8787]   (after npm run vendor:full and npm run dev)
 import { readFileSync, writeFileSync } from 'node:fs'
 import * as z from 'zod/v4'
@@ -12,7 +12,7 @@ const Loose = z.looseObject({})
 const GROUPS = 'io.modelcontextprotocol/groups'
 const SKILLS = 'io.modelcontextprotocol/skills'
 
-/** The tools that do a step of each task, in results/tasks-v3/tasks.json order. Chosen from the catalog's tool names. */
+/** The tools that do a step of each task, in results/tasks/v3/tasks.json order. Chosen from the catalog's tool names. */
 const NEEDS: { id: string; tools: string[] }[] = [
   { id: 'sending-subdomain', tools: ['emailSending_subdomains_create', 'emailSending_subdomains_dns'] },
   { id: 'count-failed', tools: ['d1_query', 'd1_raw'] },
@@ -63,7 +63,7 @@ async function subtreeTools(variant: string): Promise<Map<string, Set<string>>> 
   return out
 }
 
-const tasks = JSON.parse(readFileSync('results/tasks-v3/tasks.json', 'utf8')) as { writer: string; product: string; task: string }[]
+const tasks = JSON.parse(readFileSync(new URL('../results/tasks/v3/tasks.json', import.meta.url), 'utf8')) as { writer: string; product: string; task: string }[]
 if (tasks.length !== NEEDS.length) throw new Error('NEEDS and tasks.json differ in length')
 const listings = { 'opt2': await subtreeTools('opt2'), 'opt2-rec': await subtreeTools('opt2-rec') }
 const result = tasks.map((task, i) => {
@@ -75,5 +75,5 @@ const result = tasks.map((task, i) => {
   }
   return { id: need.id, writer: task.writer, product: task.product, task: task.task, tools: need.tools, groups }
 })
-writeFileSync('scripts/select-v3.json', JSON.stringify(result, null, 2) + '\n')
+writeFileSync(new URL('../tasks/select-v3.json', import.meta.url), JSON.stringify(result, null, 2) + '\n')
 for (const r of result) console.log(`${r.id}: opt2 [${r.groups['opt2']!.join(', ')}] opt2-rec [${r.groups['opt2-rec']!.join(', ')}]`)

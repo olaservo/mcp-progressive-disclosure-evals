@@ -65,8 +65,8 @@ const tools: Anthropic.ToolUnion[] = [
 ]
 const anthropic = new Anthropic({ maxRetries: 4 })
 
-mkdirSync('results', { recursive: true })
-const out = `results/${new Date().toISOString().slice(0, 10)}-search-probe.jsonl`
+mkdirSync('results/search', { recursive: true })
+const out = `results/search/${new Date().toISOString().slice(0, 10)}-search-probe.jsonl`
 writeFileSync(out, JSON.stringify({ flat: FLAT, tools: listed.length, model, samples, system: SYSTEM }) + '\n')
 type Row = { query: string; want: string[]; sample: number; sent: string[]; returned: string[][]; inputTokens: number; error?: string }
 const rows: Row[] = []

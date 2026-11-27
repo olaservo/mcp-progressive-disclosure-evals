@@ -25,7 +25,7 @@ const walk = (dir: string) => {
 walk(forge)
 
 type V3 = { id: string; task: string; tools: string[] }
-const tasks = JSON.parse(readFileSync(join(root, 'scripts', 'select-v3.json'), 'utf8')) as V3[]
+const tasks = JSON.parse(readFileSync(join(root, 'tasks', 'select-v3.json'), 'utf8')) as V3[]
 const product = (name: string) => name.split('_')[0]!
 const lenient = new Map<string, (name: string) => boolean>()
 for (const task of tasks) {
@@ -35,10 +35,10 @@ for (const task of tasks) {
   lenient.set(task.task, (name) => products.has(product(name)) || (zoned && (name === 'zones_list' || name === 'zones_get')))
 }
 
-const files = readdirSync(join(root, 'results')).filter((f) => /^\d{4}-\d{2}-\d{2}-select3-full-flat.*\.jsonl$/.test(f)).sort()
+const files = readdirSync(join(root, 'results', 'select')).filter((f) => /^\d{4}-\d{2}-\d{2}-select3-full-flat.*\.jsonl$/.test(f)).sort()
 console.log('| Model | Committed (strict) | First-call rule |\n| :-- | --: | --: |')
 for (const file of files) {
-  const lines = readFileSync(join(root, 'results', file), 'utf8').split('\n').filter(Boolean)
+  const lines = readFileSync(join(root, 'results', 'select', file), 'utf8').split('\n').filter(Boolean)
   const byModel = new Map<string, { strict: number; lenient: number; n: number }>()
   for (const line of lines.slice(1)) {
     const trial = JSON.parse(line) as { model: string; task: string; pick?: string; correct: boolean }

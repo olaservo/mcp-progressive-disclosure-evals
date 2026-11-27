@@ -13,7 +13,7 @@ const opt = (name: string, fallback: string) => {
 }
 const url = opt('url', 'https://pd-groups-flat-full.olahungerford.workers.dev/mcp')
 type Task = { id: string; product: string; task: string; tools: string[] }
-const tasks = JSON.parse(readFileSync(new URL('./select-v3.json', import.meta.url), 'utf8')) as Task[]
+const tasks = JSON.parse(readFileSync(new URL('../tasks/select-v3.json', import.meta.url), 'utf8')) as Task[]
 
 const STOP = new Set('a an the and or of to in on for from with our we it its is are be so that this then me my i you your at by as if not no do does can will want need make sure also all any each every into out up new set show have has their them they us'.split(' '))
 // camelCase and snake_case names are split, so `emailSending_subdomains_create` gives email, sending, subdomains, create.

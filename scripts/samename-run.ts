@@ -1,7 +1,7 @@
 // Runs lookups on three servers that serve the same tools: three local MCP Toolbox for Databases servers, each on its own
 // database (shop_us, shop_eu, shop_staging) in one Postgres container. The client names each tool as Claude Code does,
 // `mcp__<server>__<tool>`, so the three copies differ only in that prefix. Their descriptions and schemas are the same.
-// Each database is seeded from scripts/db/samename-seed.sql with different names and values, so a lookup has a different
+// Each database is seeded from tasks/db/samename-seed.sql with different names and values, so a lookup has a different
 // answer in each. Every tool is sent with `defer_loading`, in one of two arms:
 //   search  the BM25 tool search tool finds and loads tools.
 //   groups  each server's groups, read through the toolbox's `com.google.cloud/toolbox.v1` extension, are listed in the
@@ -59,7 +59,7 @@ const DATABASES: Database[] = [
   }
 ]
 
-/** Lookups from scripts/db-find-tasks.json that depend on the database, not the server. `{db}` is the database as the task names it. */
+/** Lookups from tasks/db-find-tasks.json that depend on the database, not the server. `{db}` is the database as the task names it. */
 type Lookup = { id: string; task: string; answer: (db: Database) => string[]; tools: string[] }
 const v = (db: Database, key: string) => db.values[key]!
 const LOOKUPS: Lookup[] = [
@@ -122,7 +122,7 @@ if (replayAt >= 0) {
   for (let tries = 0; ; tries++) {
     try { psql('postgres', 'SELECT 1'); break } catch (error) { if (tries > 30) throw error; await new Promise((resolve) => setTimeout(resolve, 1000)) }
   }
-  const template = readFileSync(new URL('./db/samename-seed.sql', import.meta.url), 'utf8')
+  const template = readFileSync(new URL('../tasks/db/samename-seed.sql', import.meta.url), 'utf8')
   for (const db of DATABASES) {
     if (psql('postgres', `SELECT 1 FROM pg_database WHERE datname = '${db.database}'`) !== '1') psql('postgres', `CREATE DATABASE ${db.database}`)
     psql(db.database, '', template.replace(/\{\{([A-Z_]+)\}\}/g, (_, key: string) => db.values[key]!))
@@ -130,7 +130,7 @@ if (replayAt >= 0) {
   process.stderr.write(`seeded ${DATABASES.map((db) => db.database).join(', ')}\n`)
 
   // One toolbox per database. Their logs go to the temp directory.
-  mkdirSync('results', { recursive: true })
+  mkdirSync('results/samename', { recursive: true })
   const children: ChildProcess[] = DATABASES.map((db) =>
     spawn(toolboxBin, ['--prebuilt=postgres', '--port', String(db.port)], {
       env: { ...process.env, POSTGRES_HOST: '127.0.0.1', POSTGRES_PORT: '55432', POSTGRES_DATABASE: db.database, POSTGRES_USER: 'postgres', POSTGRES_PASSWORD: 'pd_local_only' },
@@ -266,7 +266,7 @@ if (replayAt >= 0) {
       return trial
     }
 
-    const out = `results/${new Date().toISOString().slice(0, 10)}-samename-${label}.jsonl`
+    const out = `results/samename/${new Date().toISOString().slice(0, 10)}-samename-${label}.jsonl`
     writeFileSync(out, JSON.stringify({ arm, servers: DATABASES.map(({ server, database }) => ({ server, database })), toolbox: clients.get(DATABASES[0]!.server)!.getServerVersion(), tools: tools.length - 1, without: [...without], groups: groups.length || undefined, tasks: tasks.length, samples, models, maxRequests, effort: 'low', system }) + '\n')
     const trials: Trial[] = []
     for (const model of models) {

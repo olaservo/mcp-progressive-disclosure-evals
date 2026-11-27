@@ -45,7 +45,7 @@ type Trial = {
   ms: number
   error?: string
 }
-const allTasks = JSON.parse(readFileSync(new URL('./select-v3.json', import.meta.url), 'utf8')) as Task[]
+const allTasks = JSON.parse(readFileSync(new URL('../tasks/select-v3.json', import.meta.url), 'utf8')) as Task[]
 const tasks = limit ? allTasks.slice(0, limit) : allTasks
 const byId = new Map(allTasks.map((task) => [task.id, task]))
 // A task's entries are name prefixes, as in v3-answers.ts.
@@ -131,8 +131,8 @@ if (replay) {
     return trial
   }
 
-  mkdirSync('results', { recursive: true })
-  const out = `results/${new Date().toISOString().slice(0, 10)}-search-${label}.jsonl`
+  mkdirSync('results/search', { recursive: true })
+  const out = `results/search/${new Date().toISOString().slice(0, 10)}-search-${label}.jsonl`
   writeFileSync(out, JSON.stringify({ url, tools: listed.length, taskSet: 'v3', tasks: tasks.length, samples, models, search: 'tool_search_tool_bm25_20251119', effort: 'low', system: SYSTEM }) + '\n')
   const queue = models.flatMap((model) => tasks.flatMap((task) => Array.from({ length: samples }, (_, sample) => ({ model, sample: sample + 1, task }))))
   const trials: Trial[] = []

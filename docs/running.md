@@ -57,16 +57,16 @@ Each Worker answers 429 to a client past 120 requests a minute (the Workers Rate
 
 `scripts/select.ts` shows a model what a client sees before `groups/get` and asks for one pick. It reads keys from the environment or from a `.env` file passed as `--env`: `HF_TOKEN` (or an `hf auth login`) for open models, `ANTHROPIC_API_KEY` for `claude-*`, `OPENAI_API_KEY` for `gpt-*` and `decisions:*`, `GEMINI_API_KEY` for `gemini-*`, `MOONSHOT_API_KEY` for `kimi-*`, `TYPESAFE_API_KEY` for `jev-*`. A model id routes by prefix to its vendor's SDK; anything else goes to the Hugging Face router as `<org>/<model>:<provider>`.
 
-- `--tasks v1` is the 14 product-named tasks, `--tasks v2` the 20 that describe the job without naming the product, `--tasks v3` the 20 held-out tasks from `scripts/select-v3.json`. v3 is scored on the full catalog only.
+- `--tasks v1` is the 14 product-named tasks, `--tasks v2` the 20 that describe the job without naming the product, `--tasks v3` the 20 held-out tasks from `tasks/select-v3.json`. v3 is scored on the full catalog only.
 - `--mode` is `groups`, `flat` (tool names and first lines) or `flat-schemas` (the whole `tools/list` result). Every mode also shows the server's `skills/list` index, and a `{"skill":"<name>"}` answer is accepted where the matching workflow group is, plus `workers-best-practices` for the fetch-handler question and `wrangler` for the deploy and schedule tasks.
 - `SELECT_DUMP_PROMPT=1` prints the catalog text the model sees.
-- `--reparse results/<file>.jsonl` parses again the answers a run stored as unparsed and rewrites the file, without calling a model.
-- `--replay results/<file>.jsonl` rebuilds a summary from committed raw answers without calling a model. Hosted model answers can change over time; the raw answers are committed for that reason.
+- `--reparse results/select/<file>.jsonl` parses again the answers a run stored as unparsed and rewrites the file, without calling a model.
+- `--replay results/select/<file>.jsonl` rebuilds a summary from committed raw answers without calling a model. Hosted model answers can change over time; the raw answers are committed for that reason.
 - `--list-all-skills` reads `skills/list` on a second client that declares only the Skills extension, so `opt2-rec` shows every skill (the "rewritten, duplicated" arm).
 - `--parallel` runs every model of a run at once, each through its tasks in order.
-- `--retry results/<file>.jsonl --url <the run's server>` asks again only the trials that ended in an error and rewrites the file.
+- `--retry results/select/<file>.jsonl --url <the run's server>` asks again only the trials that ended in an error and rewrites the file.
 
-The runs behind `results/`:
+The runs behind `results/select/`:
 
 ```bash
 npm run select -- --env path/to/.env --label subset-opt2-groups
@@ -101,8 +101,8 @@ GEMINI=gemini-4-argon,gemini-3.8-flash   # the same five runs as $HOSTED, labell
 The held-out set is built in three steps, each committed with its output:
 
 ```bash
-npx tsx scripts/write-tasks.ts --env path/to/.env      # Fable 5.2 and Gemini 3.6 Flash write results/tasks-v3/tasks.json; --replace a,b redraws named products with Fable
-npx tsx scripts/v3-answers.ts                           # after vendor:full and npm run dev: accepted groups from groups/get, written to scripts/select-v3.json
+npx tsx scripts/write-tasks.ts --env path/to/.env      # Fable 5.2 and Gemini 3.6 Flash write results/tasks/v3/tasks.json; --replace a,b redraws named products with Fable
+npx tsx scripts/v3-answers.ts                           # after vendor:full and npm run dev: accepted groups from groups/get, written to tasks/select-v3.json
 npx tsx scripts/v3-rescore.ts                           # the strict and first-call scores for the v3 flat runs
 ```
 
@@ -140,31 +140,31 @@ npm run agent:run -- --arm B --scenarios chain-forward,chain-reverse --pad-resul
 npm run agent:run -- --arm B --listing-in-tool --url http://localhost:8799/opt2-rec/mcp --samples 3 --label full-b-listing    # after vendor:full and wrangler dev --port 8799
 npm run agent:run -- --arm B --samples 3 --parallel 3 --models Qwen/Qwen3.6-35B-A3B:deepinfra,google/gemma-4-26B-A4B-it:deepinfra --label arm-b-deepinfra
 npm run agent:ref -- --condition groups-rec --samples 3 --label ref-groups-rec    # or flat-toolsearch
-npm run agent:score -- $(ls results/2026-11-13-agent-arm-*.jsonl | grep -v lenient) results/2026-11-13-agent-ref-*.jsonl results/2026-11-13-agent-pilot-*.jsonl    # the first run's summary; --as-committed for the rubric code as first committed
-npm run agent:score -- results/2026-11-13-agent-full-*.jsonl results/2026-11-13-agent-arm-c-lenient*.jsonl    # the follow-up summary
-npm run agent:score -- results/2026-11-13-agent-chain30-*.jsonl    # the 30-turn summary
+npm run agent:score -- $(ls results/agent/2026-11-13-agent-arm-*.jsonl | grep -v lenient) results/agent/2026-11-13-agent-ref-*.jsonl results/agent/2026-11-13-agent-pilot-*.jsonl    # the first run's summary; --as-committed for the rubric code as first committed
+npm run agent:score -- results/agent/2026-11-13-agent-full-*.jsonl results/agent/2026-11-13-agent-arm-c-lenient*.jsonl    # the follow-up summary
+npm run agent:score -- results/agent/2026-11-13-agent-chain30-*.jsonl    # the 30-turn summary
 npm run agent:run -- --arm A --shared --scenarios uploads --phases 1 --label chain30-a-shared-warm    # one session to cache the shared tool block, then the --shared chained runs
-npm run agent:score -- $(ls results/2026-11-1[345]-agent-chain30-*.jsonl | grep -v warm)    # the 30-turn summary with the 2026-11-14 sessions
+npm run agent:score -- $(ls results/agent/2026-11-1[345]-agent-chain30-*.jsonl | grep -v warm)    # the 30-turn summary with the 2026-11-14 sessions
 npm run agent:probe      # the chat templates' own mid-session tool paths, through the router. Baseten rejects this request shape; see the deferred probe below
 npx tsx scripts/agent-probe-deferred.ts --base-url https://inference.baseten.co/v1    # Baseten's defer_loading and tool_reference shape, on its own endpoint; without --base-url, through the router
 npm run select -- --env path/to/.env --tasks v2 --dedup-grouped-skills --seeds 5 --label subset-groups-dedup-s5    # each workflow listed once
 npx tsx scripts/search-run.ts --env path/to/.env --models claude-haiku-5-5,claude-opus-5-5 --samples 3 --label v3-full    # the held-out tasks through the Messages API's tool search, full catalog
 npx tsx scripts/search-overlap.ts    # a local BM25 ranking of the catalog against each held-out task, no model
-npx tsx scripts/write-tasks.ts --set workflow --env path/to/.env    # the workflow tasks, written to results/tasks-workflow/; --dry prints the prompts and the draw order and calls no model
-npx tsx scripts/workflow-answers.ts    # checks the key against the catalog and writes scripts/workflow-tasks.json
+npx tsx scripts/write-tasks.ts --set workflow --env path/to/.env    # the workflow tasks, written to results/tasks/workflow/; --dry prints the prompts and the draw order and calls no model
+npx tsx scripts/workflow-answers.ts    # checks the key against the catalog and writes tasks/workflow-tasks.json
 npx tsx scripts/workflow-run.ts --arm search --samples 3 --env path/to/.env --label haiku-search    # or --arm groups; --replay <jsonl> <jsonl> prints the tables
-npx tsx scripts/search-replay.ts results/2026-11-24-search-v3-full.jsonl    # that run's queries on a local BM25, catalog as served and renamed, no model; --show <tool> prints a tool's text under each renaming
-npx tsx scripts/search-returned.ts results/2026-11-24-search-v3-full.jsonl results/2026-11-24-workflow-haiku-search-v2.jsonl results/2026-11-24-workflow-opus-search.jsonl    # the tools the API's search returned in those runs, by kind, no model
+npx tsx scripts/search-replay.ts results/search/2026-11-24-search-v3-full.jsonl    # that run's queries on a local BM25, catalog as served and renamed, no model; --show <tool> prints a tool's text under each renaming
+npx tsx scripts/search-returned.ts results/search/2026-11-24-search-v3-full.jsonl results/workflow/2026-11-24-workflow-haiku-search-v2.jsonl results/workflow/2026-11-24-workflow-opus-search.jsonl    # the tools the API's search returned in those runs, by kind, no model
 npx tsx scripts/search-probe.ts --env path/to/.env    # 20 fixed queries passed to the API's search one at a time, with the tools each returns
 npx tsx scripts/search-mechanics.ts --env path/to/.env    # 44 requests on the full catalog in three orders and on small made-up catalogs, to see what the search indexes, how it splits words and how it breaks ties
-npx tsx scripts/search-mechanics.ts --dump catalog.json && python scripts/search-fit.py catalog.json results/2026-11-25-search-probe.jsonl results/2026-11-26-search-mechanics.jsonl    # a local BM25 against those results, no model; needs bm25s and PyStemmer
-npx tsx scripts/search-rewrite.ts results/2026-11-25-workflow-haiku-search-v3.jsonl --env path/to/.env    # that run's queries sent again on the catalog as served and with each description starting with the tool's name in words, at limit 5 and 10; --score <jsonl> [<jsonl> ...] scores saved rows
+npx tsx scripts/search-mechanics.ts --dump catalog.json && python scripts/search-fit.py catalog.json results/search/2026-11-25-search-probe.jsonl results/search/2026-11-26-search-mechanics.jsonl    # a local BM25 against those results, no model; needs bm25s and PyStemmer
+npx tsx scripts/search-rewrite.ts results/workflow/2026-11-25-workflow-haiku-search-v3.jsonl --env path/to/.env    # that run's queries sent again on the catalog as served and with each description starting with the tool's name in words, at limit 5 and 10; --score <jsonl> [<jsonl> ...] scores saved rows
 npx tsx scripts/samename-run.ts --arm search --samples 2 --env path/to/.env --label haiku-search    # or --arm groups; three toolbox servers with the same tools on three databases, started and seeded by the script; --dry checks the setup without a model
 npx tsx scripts/toolbox-probe.ts    # what a local MCP Toolbox for Databases server serves: tools, and groups through its own extension
 npx tsx scripts/db-check.ts    # each database task's check query, false on the seeded database and true after its fix, no model
 npx tsx scripts/db-run.ts --arm search --env path/to/.env --label haiku-search-smoke    # or --arm groups; the Cloudflare catalog and the toolbox together, toolbox calls executed
 npx tsx scripts/db-find-check.ts    # each lookup task's answer, looked for in the output of the tools the task lists, no model
-npx tsx scripts/db-run.ts --arm search --tasks scripts/db-find-tasks.json --without execute_sql --samples 3 --env path/to/.env --label find-haiku-search    # the lookup tasks, with the catch-all SQL tool left out
+npx tsx scripts/db-run.ts --arm search --tasks tasks/db-find-tasks.json --without execute_sql --samples 3 --env path/to/.env --label find-haiku-search    # the lookup tasks, with the catch-all SQL tool left out
 npx tsx scripts/agent-probe-toolsearch.ts --env path/to/.env --url https://pd-groups-flat-full.olahungerford.workers.dev/mcp    # the whole catalog deferred behind the Messages API's tool search
 npm run agent:run -- --arm D --base-url https://inference.baseten.co/v1 --key-env BASETEN_API_KEY --models deepseek-ai/DeepSeek-V4.1-Flash:baseten --samples 3 --label direct-d    # arm D on Baseten direct
 npm run agent:probe-order    # where the endpoint puts tools relative to the system prompt, from its cache counts
@@ -189,5 +189,5 @@ CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude --plugin-dir mods/groups
 1. In a clone of the WG repo, `git fetch origin pull/19/head:pr-19 pull/22/head:pr-22 -f` and diff against the commits named in the README.
 2. Update `src/groups.ts` and `src/variants.ts` for any change in wire shapes or option definitions.
 3. `npm run typecheck`, then `npm run deploy:all`.
-4. `npm run compare -- --urls ...` and save the output under `results/`. For the full catalog, `npm run vendor:full`, `npm run dev`, `npm run compare`, then `npm run vendor`.
+4. `npm run compare -- --urls ...` and save the output under `results/tokens/`. For the full catalog, `npm run vendor:full`, `npm run dev`, `npm run compare`, then `npm run vendor`.
 5. Re-run the selection trial only if the group names or descriptions changed.

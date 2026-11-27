@@ -1,4 +1,4 @@
-// Runs the workflow tasks (scripts/workflow-tasks.json) to completion on the Messages API, with the whole catalog sent
+// Runs the workflow tasks (tasks/workflow-tasks.json) to completion on the Messages API, with the whole catalog sent
 // with `defer_loading`, in one of two arms:
 //   search  the BM25 tool search tool finds and loads tools, as in search-run.ts. The model sees nothing about the tools first.
 //   groups  the rewritten server's group listing is in the system prompt, and a client tool `open_group` answers with
@@ -67,7 +67,7 @@ type Trial = {
   ms: number
   error?: string
 }
-const allTasks = JSON.parse(readFileSync(new URL('./workflow-tasks.json', import.meta.url), 'utf8')) as Task[]
+const allTasks = JSON.parse(readFileSync(new URL('../tasks/workflow-tasks.json', import.meta.url), 'utf8')) as Task[]
 const tasks = limit ? allTasks.slice(0, limit) : allTasks
 const byId = new Map(allTasks.map((task) => [task.id, task]))
 const done = (step: Step, called: string[]) => called.some((name) => step.tools.some((prefix) => name.startsWith(prefix)))
@@ -279,8 +279,8 @@ if (replayAt >= 0) {
     return trial
   }
 
-  mkdirSync('results', { recursive: true })
-  const out = `results/${new Date().toISOString().slice(0, 10)}-workflow-${label}.jsonl`
+  mkdirSync('results/workflow', { recursive: true })
+  const out = `results/workflow/${new Date().toISOString().slice(0, 10)}-workflow-${label}.jsonl`
   writeFileSync(out, JSON.stringify({ arm, flat: FLAT, grouped: arm === 'groups' ? GROUPED : undefined, tools: listed.length, groups: groups.length || undefined, tasks: tasks.length, samples, models, maxRequests, effort: 'low', system }) + '\n')
   const queue = models.flatMap((model) => tasks.flatMap((task) => Array.from({ length: samples }, (_, sample) => ({ model, sample: sample + 1, task }))))
   const trials: Trial[] = []

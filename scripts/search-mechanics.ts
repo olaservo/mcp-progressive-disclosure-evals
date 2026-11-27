@@ -22,7 +22,7 @@ if (envFile) {
   }
 }
 const model = opt('model', 'claude-haiku-5-5')!
-const out = opt('out', `results/${new Date().toISOString().slice(0, 10)}-search-mechanics.jsonl`)!
+const out = opt('out', `results/search/${new Date().toISOString().slice(0, 10)}-search-mechanics.jsonl`)!
 const only = opt('only')
 const FLAT = 'https://pd-groups-flat-full.olahungerford.workers.dev/mcp'
 const SYSTEM = 'Call the tool search tool once, with the query the user gives, word for word. Do not change the query. Then reply with the word done. Call no other tool.'

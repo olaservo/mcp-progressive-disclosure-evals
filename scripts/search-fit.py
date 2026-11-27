@@ -5,7 +5,7 @@
 # its input schema, including $defs, enum values, titles and defaults. k1 1.2, b 0.75.
 # Needs Python 3.11 with bm25s and PyStemmer (pip install bm25s PyStemmer). The catalog comes from
 #   npx tsx scripts/search-mechanics.ts --dump catalog.json
-# Usage: python scripts/search-fit.py catalog.json results/2026-11-25-search-probe.jsonl results/2026-11-26-search-mechanics.jsonl
+# Usage: python scripts/search-fit.py catalog.json results/search/2026-11-25-search-probe.jsonl results/search/2026-11-26-search-mechanics.jsonl
 import json, math, re, sys
 from collections import Counter
 import Stemmer

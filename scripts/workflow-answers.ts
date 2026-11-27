@@ -10,7 +10,7 @@
 // Revised again after the second run and the Opus run, from the calls made in trials that missed a step: a settings edit
 // or a version upload can add a binding or a secret, a bulk submit starts a scan, a settings update turns forwarding on,
 // and the user's memberships give the other account. `world` now answers the organization and membership lists.
-// Checks every prefix against the catalog as served and prints scripts/workflow-tasks.json.
+// Checks every prefix against the catalog as served and prints tasks/workflow-tasks.json.
 // Usage: tsx scripts/workflow-answers.ts [--url <flat mcp url>]
 import { readFileSync, writeFileSync } from 'node:fs'
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
@@ -34,7 +34,7 @@ const script = (name: string, bindings: unknown[]) => ({
 })
 
 type World = Record<string, unknown>
-/** In results/tasks-workflow/tasks.json order. `drop` gives the reason a task is left out. */
+/** In results/tasks/workflow/tasks.json order. `drop` gives the reason a task is left out. */
 const NEEDS: ({ id: string; world: World; steps: Need[] } | { id: string; drop: string })[] = [
   {
     id: 'retire-subdomain',
@@ -361,7 +361,7 @@ const NEEDS: ({ id: string; world: World; steps: Need[] } | { id: string; drop: 
 ]
 
 type Written = { writer: string; product: string; kind: 'single' | 'cross'; task: string; products?: string[]; steps: { does: string; stated: boolean; product?: string }[] }
-const written = JSON.parse(readFileSync('results/tasks-workflow/tasks.json', 'utf8')) as Written[]
+const written = JSON.parse(readFileSync(new URL('../results/tasks/workflow/tasks.json', import.meta.url), 'utf8')) as Written[]
 if (written.length !== NEEDS.length) throw new Error('NEEDS and tasks.json differ in length')
 
 const mcp = new Client({ name: 'groups-workflow-answers', version: '0.1.0' }, { versionNegotiation: { mode: 'auto' } })
@@ -391,5 +391,5 @@ for (const [at, need] of NEEDS.entries()) {
   out.push({ id: need.id, product: task.product, kind: task.kind, writer: task.writer, task: task.task, prefixes, steps: need.steps, world: need.world, writerSteps: task.steps })
   console.error(`${need.id} | ${task.kind} | ${required.length} required, ${required.filter((s) => !s.stated).length} unsaid | ${prefixes.join(' ')}`)
 }
-writeFileSync(new URL('./workflow-tasks.json', import.meta.url), JSON.stringify(out, null, 2) + '\n')
-console.error(`${out.length} tasks in scripts/workflow-tasks.json`)
+writeFileSync(new URL('../tasks/workflow-tasks.json', import.meta.url), JSON.stringify(out, null, 2) + '\n')
+console.error(`${out.length} tasks in tasks/workflow-tasks.json`)

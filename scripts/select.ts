@@ -111,7 +111,7 @@ const TASKS_V2: Task[] = [
  * The held-out third set: 20 tasks written by two models this demo does not test, from a product name alone
  * (scripts/write-tasks.ts), with answers derived from the served listings by scripts/v3-answers.ts. Full catalog only.
  */
-const V3_FILE = join(import.meta.dirname, 'select-v3.json')
+const V3_FILE = join(import.meta.dirname, '..', 'tasks', 'select-v3.json')
 const TASKS_V3: Task[] = ((existsSync(V3_FILE) ? JSON.parse(readFileSync(V3_FILE, 'utf8')) : []) as { task: string; tools: string[]; groups: Record<string, string[]> }[]).map((t) => ({
   task: t.task,
   groups: [...new Set(Object.values(t.groups).flat())],
@@ -560,8 +560,8 @@ if (retry) {
   console.error(`${mode} mode, task set ${taskSet}, against ${url}: ${tools.length} top-level tools, ${groups.length} groups, ${skills.length} skills, ${promptTokens} prompt tokens before the task`)
   if (process.env.SELECT_DUMP_PROMPT) console.error(`--- prompt ---\n${text}\n${instruction}\n--- end ---`)
 
-  mkdirSync('results', { recursive: true })
-  const out = join('results', `${new Date().toISOString().slice(0, 10)}-${taskSet === 'v3' ? 'select3' : taskSet === 'v2' ? 'select2' : 'select'}-${label}.jsonl`)
+  mkdirSync(join('results', 'select'), { recursive: true })
+  const out = join('results', 'select', `${new Date().toISOString().slice(0, 10)}-${taskSet === 'v3' ? 'select3' : taskSet === 'v2' ? 'select2' : 'select'}-${label}.jsonl`)
   const trials: Trial[] = []
   // With --parallel every model runs at once, each through its tasks in order. The file is kept in model order.
   const order = (t: Trial) => models.indexOf(t.model)

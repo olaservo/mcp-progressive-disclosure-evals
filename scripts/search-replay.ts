@@ -27,7 +27,7 @@ const show = opt('show')
 type Task = { id: string; product: string; task: string; tools: string[] }
 type Trial = { model: string; id: string; queries: string[]; returned: string[]; error?: string }
 type Listed = { name: string; description?: string; inputSchema?: unknown }
-const tasks = JSON.parse(readFileSync(new URL('./select-v3.json', import.meta.url), 'utf8')) as Task[]
+const tasks = JSON.parse(readFileSync(new URL('../tasks/select-v3.json', import.meta.url), 'utf8')) as Task[]
 const byId = new Map(tasks.map((task) => [task.id, task]))
 const does = (task: Task, name: string) => task.tools.some((prefix) => name.startsWith(prefix))
 const trials = readFileSync(file, 'utf8').split('\n').filter(Boolean).slice(1).map((line) => JSON.parse(line) as Trial).filter((trial) => !trial.error)

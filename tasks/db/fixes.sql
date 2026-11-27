@@ -1,4 +1,4 @@
--- One fix per task in scripts/db-tasks.json. scripts/db-check.ts applies these to show that every check query goes
+-- One fix per task in tasks/db-tasks.json. scripts/db-check.ts applies these to show that every check query goes
 -- from false on the seeded database to true.
 DROP INDEX orders_status_created_idx;
 VACUUM sessions;

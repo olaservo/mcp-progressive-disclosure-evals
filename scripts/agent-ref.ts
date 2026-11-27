@@ -65,8 +65,8 @@ const strip = (name: string) => PREFIXES.reduce((n, p) => (n.startsWith(p) ? n.s
 const HELPERS = new Set(['list_groups', 'open_group', 'read_skill', 'ToolSearch'])
 
 const scenarios = only ? SCENARIOS.filter((s) => only.includes(s.id)) : SCENARIOS
-mkdirSync('results', { recursive: true })
-const out = join('results', `${new Date().toISOString().slice(0, 10)}-agent-${label}.jsonl`)
+mkdirSync(join('results', 'agent'), { recursive: true })
+const out = join('results', 'agent', `${new Date().toISOString().slice(0, 10)}-agent-${label}.jsonl`)
 const commit = (() => { try { return execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim() } catch { return undefined } })()
 const arm = `ref-${condition}`
 if (!existsSync(out)) writeFileSync(out, JSON.stringify({ kind: 'header', arm, url, commit, models, scenarios: scenarios.map((s) => s.id), samples, phases: phaseLimit, settings: 'headless Claude Code, default effort, one process per scenario' }) + '\n')

@@ -35,7 +35,7 @@ type Trial = { id: string; sample: number; finds: string[]; loaded: string[] }
 type Step = { does: string; tools: string[]; stated: boolean; optional?: true }
 type Row = { catalog: string; limit: number; query: string; sent: string[]; limits: (number | null)[]; returned: string[][]; inputTokens: number; error?: string }
 const trials = readFileSync(runFile, 'utf8').split('\n').filter(Boolean).slice(1).map((line) => JSON.parse(line) as Trial)
-const tasks = new Map((JSON.parse(readFileSync('scripts/workflow-tasks.json', 'utf8')) as { id: string; steps: Step[] }[]).map((task) => [task.id, task.steps]))
+const tasks = new Map((JSON.parse(readFileSync(new URL('../tasks/workflow-tasks.json', import.meta.url), 'utf8')) as { id: string; steps: Step[] }[]).map((task) => [task.id, task.steps]))
 const queries = [...new Set(trials.flatMap((trial) => trial.finds))]
 
 const nameWords = (name: string) => name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/_/g, ' ').toLowerCase()
@@ -110,7 +110,7 @@ if (scoreAt >= 0) {
   const catalogs = opt('catalogs', 'served,name-words')!.split(',')
   const limits = opt('limits', '5,10')!.split(',').map(Number)
   const parallel = Number(opt('parallel', '4'))
-  const out = opt('out', `results/${new Date().toISOString().slice(0, 10)}-search-rewrite.jsonl`)!
+  const out = opt('out', `results/search/${new Date().toISOString().slice(0, 10)}-search-rewrite.jsonl`)!
   type Listed = { name: string; description?: string; inputSchema?: unknown }
   const flat = new Client({ name: 'groups-search-rewrite', version: '0.1.0' }, { versionNegotiation: { mode: 'auto' } })
   await flat.connect(new StreamableHTTPClientTransport(new URL(FLAT)))
