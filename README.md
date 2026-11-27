@@ -128,7 +128,6 @@ Messages API runs, rows 17 to 26, with the commands in [`docs/running.md`](docs/
 
 ## Read more
 
-- [The explainer page](https://www.olahungerford.com/mcp-progressive-disclosure-evals/explainer.html): a one-page recap with the charts.
 - [`docs/results.md`](docs/results.md): every table, the notes behind each, and the limits. The redacted Claude Code traces are in [`results/traces/`](results/traces).
 - [`docs/running.md`](docs/running.md): sources, variants, how to run the servers and the trials, the open-model agent loop, the deployed Workers, the Claude Code mod.
 
