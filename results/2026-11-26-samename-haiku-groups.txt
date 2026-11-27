@@ -1,0 +1,55 @@
+
+| Arm | Model | Trials | Passed | Called a tool on the named server | Called a tool on another server | A fitting tool of the named server loaded | Tools of another server loaded | Searches or opens | Tools loaded | Requests | Median input tokens |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: |
+| groups | claude-haiku-5-5 | 48 | 48 | 48 | 0 | 48 | 0.0 | 1.6 | 10.9 | 3.1 | 10000 |
+
+| Task | Arm | Model | Passed | Searches or opens | Calls |
+| :-- | :-- | :-- | :-- | :-- | :-- |
+| invalid-index@shop-us | groups | claude-haiku-5-5 #1 | yes | shop-us/health ; shop-us/data | shop-us/list_invalid_indexes |
+| invalid-index@shop-us | groups | claude-haiku-5-5 #2 | yes | shop-us/health ; shop-us/data | shop-us/list_invalid_indexes |
+| invalid-index@shop-eu | groups | claude-haiku-5-5 #1 | yes | shop-eu/health ; shop-eu/monitor ; shop-eu/data | shop-eu/list_invalid_indexes |
+| invalid-index@shop-eu | groups | claude-haiku-5-5 #2 | yes | shop-eu/health ; shop-eu/data | shop-eu/list_invalid_indexes |
+| invalid-index@shop-staging | groups | claude-haiku-5-5 #1 | yes | shop-staging/health ; shop-staging/data | shop-staging/list_invalid_indexes |
+| invalid-index@shop-staging | groups | claude-haiku-5-5 #2 | yes | shop-staging/health ; shop-staging/data | shop-staging/list_invalid_indexes |
+| dead-rows@shop-us | groups | claude-haiku-5-5 #1 | yes | shop-us/health | shop-us/list_top_bloated_tables |
+| dead-rows@shop-us | groups | claude-haiku-5-5 #2 | yes | shop-us/health ; shop-us/monitor | shop-us/list_top_bloated_tables |
+| dead-rows@shop-eu | groups | claude-haiku-5-5 #1 | yes | shop-eu/monitor ; shop-eu/health | shop-eu/list_top_bloated_tables |
+| dead-rows@shop-eu | groups | claude-haiku-5-5 #2 | yes | shop-eu/health | shop-eu/list_top_bloated_tables |
+| dead-rows@shop-staging | groups | claude-haiku-5-5 #1 | yes | shop-staging/health ; shop-staging/monitor | shop-staging/list_top_bloated_tables |
+| dead-rows@shop-staging | groups | claude-haiku-5-5 #2 | yes | shop-staging/health ; shop-staging/monitor | shop-staging/list_top_bloated_tables |
+| unused-index@shop-us | groups | claude-haiku-5-5 #1 | yes | shop-us/monitor ; shop-us/data | shop-us/list_indexes |
+| unused-index@shop-us | groups | claude-haiku-5-5 #2 | yes | shop-us/monitor ; shop-us/data | shop-us/list_indexes |
+| unused-index@shop-eu | groups | claude-haiku-5-5 #1 | yes | shop-eu/monitor ; shop-eu/data | shop-eu/list_indexes |
+| unused-index@shop-eu | groups | claude-haiku-5-5 #2 | yes | shop-eu/monitor ; shop-eu/data | shop-eu/list_indexes |
+| unused-index@shop-staging | groups | claude-haiku-5-5 #1 | yes | shop-staging/monitor ; shop-staging/data | shop-staging/list_indexes |
+| unused-index@shop-staging | groups | claude-haiku-5-5 #2 | yes | shop-staging/monitor ; shop-staging/data | shop-staging/list_indexes |
+| audit-trigger@shop-us | groups | claude-haiku-5-5 #1 | yes | shop-us/data ; shop-us/health | shop-us/list_triggers, shop-us/list_triggers |
+| audit-trigger@shop-us | groups | claude-haiku-5-5 #2 | yes | shop-us/data ; shop-us/health | shop-us/list_triggers, shop-us/list_triggers |
+| audit-trigger@shop-eu | groups | claude-haiku-5-5 #1 | yes | shop-eu/data ; shop-eu/health | shop-eu/list_triggers, shop-eu/list_triggers |
+| audit-trigger@shop-eu | groups | claude-haiku-5-5 #2 | yes | shop-eu/data ; shop-eu/health | shop-eu/list_triggers, shop-eu/list_triggers |
+| audit-trigger@shop-staging | groups | claude-haiku-5-5 #1 | yes | shop-staging/monitor ; shop-staging/data | shop-staging/list_triggers, shop-staging/list_tables |
+| audit-trigger@shop-staging | groups | claude-haiku-5-5 #2 | yes | shop-staging/monitor ; shop-staging/data | shop-staging/list_triggers, shop-staging/list_triggers |
+| order-ids@shop-us | groups | claude-haiku-5-5 #1 | yes | shop-us/data | shop-us/list_tables, shop-us/list_sequences |
+| order-ids@shop-us | groups | claude-haiku-5-5 #2 | yes | shop-us/data | shop-us/list_tables, shop-us/list_sequences |
+| order-ids@shop-eu | groups | claude-haiku-5-5 #1 | yes | shop-eu/data | shop-eu/list_tables, shop-eu/list_sequences |
+| order-ids@shop-eu | groups | claude-haiku-5-5 #2 | yes | shop-eu/data | shop-eu/list_tables, shop-eu/list_sequences |
+| order-ids@shop-staging | groups | claude-haiku-5-5 #1 | yes | shop-staging/data | shop-staging/list_tables, shop-staging/list_sequences |
+| order-ids@shop-staging | groups | claude-haiku-5-5 #2 | yes | shop-staging/data | shop-staging/list_tables, shop-staging/list_sequences |
+| view-columns@shop-us | groups | claude-haiku-5-5 #1 | yes | shop-us/view-config ; shop-us/data | shop-us/list_views |
+| view-columns@shop-us | groups | claude-haiku-5-5 #2 | yes | shop-us/view-config ; shop-us/data | shop-us/list_views |
+| view-columns@shop-eu | groups | claude-haiku-5-5 #1 | yes | shop-eu/view-config ; shop-eu/data | shop-eu/list_views |
+| view-columns@shop-eu | groups | claude-haiku-5-5 #2 | yes | shop-eu/view-config ; shop-eu/data | shop-eu/list_views |
+| view-columns@shop-staging | groups | claude-haiku-5-5 #1 | yes | shop-staging/view-config ; shop-staging/data | shop-staging/list_views |
+| view-columns@shop-staging | groups | claude-haiku-5-5 #2 | yes | shop-staging/view-config ; shop-staging/data | shop-staging/list_views |
+| procedure@shop-us | groups | claude-haiku-5-5 #1 | yes | shop-us/data | shop-us/list_stored_procedure |
+| procedure@shop-us | groups | claude-haiku-5-5 #2 | yes | shop-us/data | shop-us/list_stored_procedure |
+| procedure@shop-eu | groups | claude-haiku-5-5 #1 | yes | shop-eu/data | shop-eu/list_stored_procedure |
+| procedure@shop-eu | groups | claude-haiku-5-5 #2 | yes | shop-eu/data | shop-eu/list_stored_procedure |
+| procedure@shop-staging | groups | claude-haiku-5-5 #1 | yes | shop-staging/data | shop-staging/list_stored_procedure |
+| procedure@shop-staging | groups | claude-haiku-5-5 #2 | yes | shop-staging/data | shop-staging/list_stored_procedure |
+| publication@shop-us | groups | claude-haiku-5-5 #1 | yes | shop-us/replication | shop-us/list_publication_tables |
+| publication@shop-us | groups | claude-haiku-5-5 #2 | yes | shop-us/replication | shop-us/list_publication_tables |
+| publication@shop-eu | groups | claude-haiku-5-5 #1 | yes | shop-eu/replication | shop-eu/list_publication_tables |
+| publication@shop-eu | groups | claude-haiku-5-5 #2 | yes | shop-eu/replication | shop-eu/list_publication_tables |
+| publication@shop-staging | groups | claude-haiku-5-5 #1 | yes | shop-staging/replication | shop-staging/list_publication_tables |
+| publication@shop-staging | groups | claude-haiku-5-5 #2 | yes | shop-staging/replication | shop-staging/list_publication_tables |

@@ -1,0 +1,42 @@
+54 trials, 176 distinct queries, 210 required steps.
+
+Searches whose ten served results at limit 10 the trial loaded in full: 50 of 263.
+Tools returned per search in the run, inferred: 1 in 6, 2 in 7, 3 in 17, 4 in 15, 5 in 117, 6 in 14, 7 in 8, 8 in 19, 9 in 10, 10 in 50, of 263 searches. Trials whose loaded tools the served catalog at the run's limits gives exactly: 53 of 54.
+
+| Tools returned by | Required steps with a fitting tool returned |
+| :-- | --: |
+| the run, as recorded | 209 of 210 |
+| served at 5 | 192 of 210 |
+| served at 10 | 209 of 210 |
+| served at the run's limits | 209 of 210 |
+
+No fitting tool returned, the run, as recorded:
+- traffic-monitoring #3: read the configuration
+
+No fitting tool returned, served at 5:
+- tenant-binding #2: add the binding
+- tenant-binding #3: add the binding
+- failed-deploy #1: attach the domain
+- scan-and-block #2: get the report
+- traffic-monitoring #1: find the rule
+- traffic-monitoring #2: find the rule
+- traffic-monitoring #3: read the configuration
+- record-to-tunnel #3: find the tunnel
+- tag-trigger #1: check workflow mode
+- tag-trigger #1: read the configuration
+- tag-trigger #1: add the trigger
+- tag-trigger #2: check workflow mode
+- tag-trigger #2: read the configuration
+- tag-trigger #2: add the trigger
+- tag-trigger #3: check workflow mode
+- tag-trigger #3: read the configuration
+- tag-trigger #3: add the trigger
+- vector-index #1: add the binding
+
+No fitting tool returned, served at 10:
+- traffic-monitoring #3: read the configuration
+
+No fitting tool returned, served at the run's limits:
+- traffic-monitoring #3: read the configuration
+
+352 rows, 0 errors, 1 not passed word for word with the limit asked, 5422150 input tokens.

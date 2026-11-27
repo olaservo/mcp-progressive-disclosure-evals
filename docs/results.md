@@ -878,7 +878,7 @@ The run above suggests some list tools are missed because their descriptions lac
 
 `scripts/search-rewrite.ts` sends the 185 distinct queries of the third Haiku run's search arm, 215 searches in 54 trials, to the API's search again. Each query is one request on Haiku 5.5, with the catalog as served and rewritten, at `limit` 5 and 10. That is 740 requests, with no errors. Haiku passed every query word for word, and sent one query twice in its request. The limit-5 rows were sent with no limit and each search returned five tools. The limit-10 rows asked for 10 and each returned ten. A required step counts when a tool that fits it is among the tools returned for its trial's queries. The model was not run on the tasks, so each trial keeps the queries it wrote against the served catalog.
 
-The search returns five tools unless the model passes `limit`. In one request on the traffic-monitoring task, Haiku passed `limit: 10` on both its searches and got ten tools back from each. The workflow runner recorded the query and not the limit. A search in the run is taken to have used limit 10 when all ten tools the served catalog returns at 10 are among the tools its trial loaded. That holds for 118 of the 215 searches. With those limits the served rows give exactly the tools each trial loaded, in 54 of 54 trials.
+The search returns five tools unless the model passes `limit`. In one request on the traffic-monitoring task, Haiku passed `limit: 10` on both its searches and got ten tools back from each. The workflow runner recorded the query and not the limit. A search in the run is taken to have used limit 10 when all ten tools the served catalog returns at 10 are among the tools its trial loaded. That holds for 118 of the 215 searches. With those limits the served rows give exactly the tools each trial loaded, in 54 of 54 trials. The scorer now infers each search's count as in the next section, which gives the same counts in the table below.
 
 | Tools returned by | Required steps with a fitting tool returned |
 | :-- | --: |
@@ -894,7 +894,52 @@ The search returns five tools unless the model passes `limit`. In one request on
 - Eleven of the 18 steps with no fitting tool in the run still had none under the rewrite. In one trial of the cache task the queries never mention Cache Reserve, the product of the three steps that trial missed.
 - On the served catalog, limit 10 in place of 5 raised the count from 156 to 193.
 - The groups arm of that run had a fitting tool loaded for 210 of 210 steps. On this catalog and these queries, the rewrite does not narrow that gap.
-- A one-request check sent before the run, which showed the `limit`, is not kept. The promotional credit on the billing page fell from $152.31 to $149.29 over these requests. That includes the limit-10 batch on the rewritten catalog, which was sent twice because its first rows were overwritten. The kept rows hold 10.5 million input tokens. The fall is more than those tokens price at, and other use of the account in that time is not ruled out.
+- A one-request check sent before the run, which showed the `limit`, is not kept. The promotional credit on the billing page fell from $152.31 to $149.29 over these requests. That includes the limit-10 batch on the rewritten catalog, which was sent twice because its first rows were overwritten. The kept rows hold 10.5 million input tokens. The fall is more than those tokens price at, and other use of the account in that time is not ruled out. The Cost page, as of 8:56 PM UTC, shows $1.62 of Haiku for 2026-11-26 UTC, which covers these requests and the run in the previous section.
+
+## How many tools a search returns, 2026-11-26
+
+The same replay, at more limits and on the Opus run's queries. `scripts/search-rewrite.ts` sent the third Haiku run's 185 queries to the served catalog at limit 20, and the 176 distinct queries of the Opus search run of 2026-11-24 (263 searches in 54 trials) at limits 5 and 10. That is 537 requests, with no errors. One request on the traffic-monitoring task's first query at limit 50 returned 50 tools.
+
+A smaller limit returned the first tools of a larger limit's results for the same query, in 911 of 911 comparisons. So the number of tools a search in a run returned is inferred as the longest run of the served catalog's results, from the top, that the trial loaded. That is an upper bound: another search of the same trial can have loaded the next tools.
+
+| Queries | Limit 5 | Limit 10 | Limit 20 | The run's limits, inferred | The run, as recorded |
+| :-- | --: | --: | --: | --: | --: |
+| Haiku, third run | 156 of 210 | 193 of 210 | 202 of 210 | 192 of 210 | 192 of 210 |
+| Opus, 2026-11-24 | 192 of 210 | 209 of 210 | not sent | 209 of 210 | 209 of 210 |
+
+- The cells count required steps with a fitting tool among the tools returned for the trial's queries. The groups arms had a fitting tool loaded for 210 of 210 in the Haiku run and 210 of 210 in the Opus run.
+- At limit 20, eight steps of the Haiku run still had no fitting tool: the old sending subdomain in two trials, the Durable Object namespace in two, and the container app, the object count, the wipe status and the Zaraz workflow mode in one each.
+- Opus's searches are inferred to have returned five tools in 117 of 263, ten in 50, and between one and nine in the other 96. So Opus passed limits other than 5 and 10. Some counts below five may be queries that matched fewer tools. The inferred limits rebuild the tools each Opus trial loaded exactly in 53 of 54 trials.
+- For Haiku the inferred counts are 5 or 10 in 168 of 215 searches and other values in 47, where another search of the trial loaded the next tools. All ten tools returned at limit 10 were loaded in 118 of the 215 searches.
+- At limit 5, Opus's queries reach a fitting tool for 192 of 210 steps and Haiku's for 156. The difference is in the queries.
+- The limit-20 requests used 8.2 million input tokens and the Opus replay 5.4 million. With the next section's runs, they raised the Cost page's 30-day total from $74.97 to $76.38, read as of 9:54 PM UTC, which may not hold the last requests. The promotional credit on the billing page fell from $149.29 to $145.37 over the same requests.
+
+## Three servers with the same tools, 2026-11-26
+
+`scripts/samename-run.ts` starts three MCP Toolbox for Databases servers, v1.18.0 with `--prebuilt=postgres`, each on its own database in one Postgres 18 container: `shop-us` on `shop_us`, `shop-eu` on `shop_eu` and `shop-staging` on `shop_staging`. The client names each tool as Claude Code does, `mcp__<server>__<tool>`, so the three copies of a tool differ only in that prefix. Their descriptions and schemas are the same. `execute_sql` is left out, which leaves 28 tools per server and 84 in all, every one sent with `defer_loading`. The system prompt says which server is which database.
+
+Each database is seeded from `scripts/db/samename-seed.sql` with its own names and values: a different invalid index, unused index, disabled trigger, dead-row table and count, sequence value, view column, procedure and publication. Eight lookups from `scripts/db-find-tasks.json` that depend on the database each name one database, for 24 tasks. A trial passes when a tool on the named database's server was called and the answer matches that database. The search arm has the BM25 tool search. The groups arm lists each server's five toolbox groups by server, names without descriptions, and `open_group` takes a server and a group.
+
+Haiku 5.5 at effort low, two samples per task, 48 trials per arm, no errors.
+
+| | Search | Groups |
+| :-- | --: | --: |
+| Passed | 46 of 48 | 48 of 48 |
+| Called a tool on the named server | 48 | 48 |
+| Called a tool on another server | 0 | 0 |
+| A fitting tool of the named server loaded | 43 | 48 |
+| Tools of another server loaded, per trial | 8.0 | 0 |
+| Searches or opens per trial | 2.1 | 1.6 |
+| Requests per trial | 2.1 | 3.1 |
+| Median input tokens per trial | 12,023 | 10,000 |
+| Input tokens, all trials | 692,462 | 442,183 |
+
+- Neither arm called a tool on the wrong server.
+- 78 of the search arm's 103 queries name a server, such as "shop-staging query postgres". The search does not split tool names, so a server's name in the query matches nothing, and the three copies of a tool tie. Ties come back in the order the request lists the tools, which here is `shop-us`, `shop-eu`, `shop-staging`.
+- In three trials, all on staging, the search returned the US and EU copies of the fitting tool and not the staging copy. In each the model called `mcp__shop-staging__list_indexes` or `mcp__shop-staging__list_sequences` anyway, the API returned the call, and the trial passed. The search had not returned that tool.
+- The two failures are the view-columns task on EU and on staging. The model searched for a way to run SQL, which was left out, no search returned `list_views` or `list_tables` for any server, and the model gave up.
+- The groups listing here is 15 group names, so the groups arm read fewer input tokens than search.
+- The cost of both arms is in the figures of the previous section.
 
 ## Limits
 
@@ -1012,6 +1057,19 @@ The search returns five tools unless the model passes `limit`. In one request on
 - One rule on one catalog, with one run's queries and one sample per request. Prose written by hand, or a rule applied to list tools only, was not tested.
 - The limit each search in the run used is inferred, as described in that section.
 
+### How many tools a search returns
+
+- The queries are the ones the models wrote at the limits they chose. A model given more tools per search might search less often or write other queries.
+- The inferred counts are upper bounds, and a query that matches fewer tools than the limit returns fewer.
+- Limit 20 was sent for the Haiku run's queries only. Limits above 20 were sent once, at 50.
+
+### Three servers with the same tools
+
+- Three servers, so the three copies of a tool fit in a search of five. With more servers than the limit, a tie would leave the later servers' copies out. That was not tested.
+- One model, two samples per task, eight lookups. The lookups are read-only, and the databases differ only in the planted names and values.
+- The Cloudflare catalog was not attached. The toolbox's groups have no descriptions, and the server names carried the distinction in the groups arm.
+- That the API returns a call to a deferred tool the search did not return was seen in three trials. It was not tested on its own.
+
 ### Follow-up runs
 
 - The chained sessions are two per cell, one per order, on GLM and for cold arm A with dry-run results. The other DeepSeek cells are six after 2026-11-14. The padding is filler of a fixed size, a stand-in for real response bodies and not a measurement of them. The full catalog was served by a local dev server. Arm C in these runs uses the tolerant wrapper.
@@ -1042,7 +1100,9 @@ The search returns five tools unless the model passes `limit`. In one request on
 - `tasks-workflow/`: the workflow tasks and every writer reply. `2026-11-24-workflow-haiku-search.jsonl` and `-groups.jsonl`: their run on Haiku, one row per trial with the searches or opens, the tools loaded and the tools called. `2026-11-24-workflow-haiku.txt` is `scripts/workflow-run.ts --replay` over both, printed with the first key. The `-v2` files are the second run. `2026-11-24-workflow-opus-search.jsonl`, `-groups.jsonl` and `2026-11-24-workflow-opus.txt` are the Opus run. `scripts/workflow-tasks.json` now holds the revised key, so `--replay` over the first run's files scores them with it. `2026-11-25-workflow-haiku-search-v3.jsonl`, `-groups-v3.jsonl` and `2026-11-25-workflow-haiku-v3.txt` are the third Haiku run, with a `calls` field holding each call's arguments. The key was revised again before it, so `--replay` over the earlier files now gives the rescored counts.
 - `2026-11-24-search-returned.txt`: `scripts/search-returned.ts` over the three search files. `2026-11-25-search-probe.jsonl` and `.txt`: the 20-query probe of the search, one row per query with the query sent and the tools returned.
 - `2026-11-26-search-mechanics.jsonl`: the run on what the search indexes, how it splits words and how it breaks ties, one row per request. `scripts/search-fit.py` prints the figures from it.
-- `2026-11-26-search-rewrite.jsonl` and `-10.jsonl`: the third Haiku run's queries sent again on the served and rewritten catalogs, at limit 5 and at limit 10, one row per request with the query and limit sent and the tools returned. `2026-11-26-search-rewrite.txt` is `scripts/search-rewrite.ts --score` over both.
+- `2026-11-26-search-rewrite-20.jsonl`: the third Haiku run's queries at limit 20 on the served catalog. `2026-11-26-search-replay-opus.jsonl` and `.txt`: the Opus search run's queries at limits 5 and 10, and their score.
+- `2026-11-26-samename-haiku-search.jsonl`, `-groups.jsonl` and their `.txt`: the three servers with the same tools, one row per trial with the searches or opens, the tools loaded and each call with its server. `npx tsx scripts/samename-run.ts --replay` prints the tables.
+- `2026-11-26-search-rewrite.jsonl` and `-10.jsonl`: the third Haiku run's queries sent again on the served and rewritten catalogs, at limit 5 and at limit 10, one row per request with the query and limit sent and the tools returned. `2026-11-26-search-rewrite.txt` is `scripts/search-rewrite.ts --score` over these and the limit-20 file.
 - `2026-11-25-db-haiku-search-smoke.jsonl` and `-groups-smoke.jsonl`: the two-server database run, one row per trial with the searches or opens, the tools loaded, each call with its arguments, and whether the check passed. `npx tsx scripts/db-run.ts --replay` prints the tables.
 - `2026-11-25-db-find-haiku-search.jsonl`, `-groups.jsonl` and `2026-11-25-db-find-haiku.txt`: the lookup tasks on the two servers with `execute_sql` left out, and the tables printed from both files.
 

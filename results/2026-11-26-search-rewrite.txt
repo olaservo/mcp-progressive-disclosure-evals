@@ -1,12 +1,14 @@
 54 trials, 185 distinct queries, 210 required steps.
 
-Searches in the run taken as limit 10: 118 of 215. Trials whose loaded tools the served catalog at the run's limits gives exactly: 54 of 54.
+Searches whose ten served results at limit 10 the trial loaded in full: 118 of 215.
+Tools returned per search in the run, inferred: 5 in 75, 6 in 14, 7 in 5, 8 in 3, 10 in 93, 11 in 9, 12 in 6, 13 in 4, 14 in 1, 15 in 3, 17 in 1, 18 in 1, of 215 searches. Trials whose loaded tools the served catalog at the run's limits gives exactly: 54 of 54.
 
 | Tools returned by | Required steps with a fitting tool returned |
 | :-- | --: |
 | the run, as recorded | 192 of 210 |
 | served at 5 | 156 of 210 |
 | served at 10 | 193 of 210 |
+| served at 20 | 202 of 210 |
 | name-words at 5 | 168 of 210 |
 | name-words at 10 | 197 of 210 |
 | served at the run's limits | 192 of 210 |
@@ -105,6 +107,16 @@ No fitting tool returned, served at 10:
 - wipe-cache-store #3: start the wipe
 - wipe-cache-store #3: read the wipe status
 - tag-trigger #1: look up the zone by name
+- tag-trigger #3: check workflow mode
+
+No fitting tool returned, served at 20:
+- retire-subdomain #2: find the old sending subdomain
+- retire-subdomain #1: find the old sending subdomain
+- leaking-container #1: find the container app
+- leaking-container #1: find the namespace and the script that owns it
+- leaking-container #2: find the namespace and the script that owns it
+- leaking-container #2: count the objects in it
+- wipe-cache-store #3: read the wipe status
 - tag-trigger #3: check workflow mode
 
 No fitting tool returned, name-words at 5:
@@ -206,4 +218,4 @@ No fitting tool returned, name-words at the run's limits:
 - tag-trigger #2: look up the zone by name
 - tag-trigger #3: check workflow mode
 
-740 rows, 0 errors, 1 not passed word for word with the limit asked, 10486343 input tokens.
+925 rows, 0 errors, 2 not passed word for word with the limit asked, 18692882 input tokens.

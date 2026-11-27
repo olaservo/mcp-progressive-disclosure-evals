@@ -1,0 +1,55 @@
+
+| Arm | Model | Trials | Passed | Called a tool on the named server | Called a tool on another server | A fitting tool of the named server loaded | Tools of another server loaded | Searches or opens | Tools loaded | Requests | Median input tokens |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: |
+| search | claude-haiku-5-5 | 48 | 46 | 48 | 0 | 43 | 8.0 | 2.1 | 11.8 | 2.1 | 12023 |
+
+| Task | Arm | Model | Passed | Searches or opens | Calls |
+| :-- | :-- | :-- | :-- | :-- | :-- |
+| invalid-index@shop-us | search | claude-haiku-5-5 #1 | yes | {"query":"shop-us postgres query"} ; {"query":"run SQL query indexes pg_index indisvalid"} ; {"query":"list indexes invalid unusable table index status"} | shop-us/list_invalid_indexes |
+| invalid-index@shop-us | search | claude-haiku-5-5 #2 | yes | {"query":"shop-us query postgres execute sql"} ; {"query":"shop-us run SQL query read-only list indexes pg_index invalid"} | shop-us/list_invalid_indexes |
+| invalid-index@shop-eu | search | claude-haiku-5-5 #1 | yes | {"query":"shop-eu postgres query execute sql"} ; {"query":"run SQL query on shop-eu database indexes pg_index invalid"} | shop-eu/list_invalid_indexes |
+| invalid-index@shop-eu | search | claude-haiku-5-5 #2 | yes | {"query":"shop-eu query postgres database"} ; {"query":"execute SQL query indexes invalid pg_index","limit":10} | shop-eu/list_invalid_indexes |
+| invalid-index@shop-staging | search | claude-haiku-5-5 #1 | yes | {"query":"shop-staging query postgres"} ; {"query":"run SQL query indexes pg_index invalid","limit":10} | shop-staging/list_invalid_indexes |
+| invalid-index@shop-staging | search | claude-haiku-5-5 #2 | yes | {"query":"shop-staging query postgres"} ; {"query":"run SQL query staging database indexes pg_index"} ; {"query":"list indexes invalid indisvalid table schema"} | shop-staging/list_invalid_indexes |
+| dead-rows@shop-us | search | claude-haiku-5-5 #1 | yes | {"query":"shop-us query postgres database","limit":10} ; {"query":"table statistics dead tuples vacuum bloat","limit":10} | shop-us/list_top_bloated_tables |
+| dead-rows@shop-us | search | claude-haiku-5-5 #2 | yes | {"query":"shop-us postgres query execute SQL"} ; {"query":"shop-us dead tuples table statistics vacuum"} | shop-us/list_top_bloated_tables |
+| dead-rows@shop-eu | search | claude-haiku-5-5 #1 | yes | {"query":"shop-eu query postgresql database"} ; {"query":"dead tuples table bloat statistics vacuum"} | shop-eu/list_top_bloated_tables |
+| dead-rows@shop-eu | search | claude-haiku-5-5 #2 | yes | {"query":"shop-eu postgres query"} ; {"query":"dead tuples table bloat vacuum statistics","limit":10} | shop-eu/list_top_bloated_tables |
+| dead-rows@shop-staging | search | claude-haiku-5-5 #1 | yes | {"query":"shop-staging query postgres"} ; {"query":"dead tuples table statistics vacuum bloat"} | shop-staging/list_top_bloated_tables |
+| dead-rows@shop-staging | search | claude-haiku-5-5 #2 | yes | {"query":"shop-staging query postgres","limit":10} ; {"query":"dead tuples table statistics vacuum bloat","limit":10} | shop-staging/list_top_bloated_tables |
+| unused-index@shop-us | search | claude-haiku-5-5 #1 | yes | {"query":"shop-us query postgres execute sql"} ; {"query":"shop-us index usage pg_stat_user_indexes idx_scan"} | shop-us/list_indexes |
+| unused-index@shop-us | search | claude-haiku-5-5 #2 | yes | {"query":"shop-us query PostgreSQL execute sql"} ; {"query":"list indexes usage statistics idx_scan"} | shop-us/list_indexes |
+| unused-index@shop-eu | search | claude-haiku-5-5 #1 | yes | {"query":"shop-eu query postgres database"} ; {"query":"index usage statistics unused indexes scans","limit":10} | shop-eu/list_indexes |
+| unused-index@shop-eu | search | claude-haiku-5-5 #2 | yes | {"query":"shop-eu query postgres SQL"} ; {"query":"execute read-only SQL query shop-eu database"} ; {"query":"index usage statistics unused indexes pg_stat_user_indexes"} | shop-eu/list_indexes |
+| unused-index@shop-staging | search | claude-haiku-5-5 #1 | yes | {"query":"shop-staging query postgres execute sql"} ; {"query":"shop-staging index usage statistics unused indexes"} | shop-staging/list_indexes |
+| unused-index@shop-staging | search | claude-haiku-5-5 #2 | yes | {"query":"shop-staging query postgres"} ; {"query":"index usage statistics unused indexes idx_scan"} | shop-staging/list_indexes |
+| audit-trigger@shop-us | search | claude-haiku-5-5 #1 | yes | {"query":"shop-us postgres query"} ; {"query":"execute SQL query shop-us database triggers"} | shop-us/list_triggers, shop-us/list_triggers |
+| audit-trigger@shop-us | search | claude-haiku-5-5 #2 | yes | {"query":"shop-us postgres query triggers"} | shop-us/list_triggers, shop-us/list_triggers |
+| audit-trigger@shop-eu | search | claude-haiku-5-5 #1 | yes | {"query":"shop-eu query postgres triggers","limit":10} | shop-eu/list_triggers, shop-eu/list_triggers |
+| audit-trigger@shop-eu | search | claude-haiku-5-5 #2 | yes | {"query":"shop-eu query postgres database"} ; {"query":"execute SQL query trigger audit","limit":10} | shop-eu/list_triggers, shop-eu/list_triggers |
+| audit-trigger@shop-staging | search | claude-haiku-5-5 #1 | yes | {"query":"shop-staging postgres query"} ; {"query":"execute SQL query triggers pg_trigger staging","limit":10} | shop-staging/list_triggers |
+| audit-trigger@shop-staging | search | claude-haiku-5-5 #2 | yes | {"query":"shop-staging postgres query triggers audit customers","limit":10} | shop-staging/list_triggers, shop-staging/list_triggers |
+| order-ids@shop-us | search | claude-haiku-5-5 #1 | yes | {"query":"shop-us query postgres"} ; {"query":"shop-us execute SQL query sequence","limit":10} | shop-us/list_sequences |
+| order-ids@shop-us | search | claude-haiku-5-5 #2 | yes | {"query":"shop-us postgres query"} ; {"query":"execute SQL query shop-us database"} ; {"query":"postgres run read-only SQL select sequence last_value","limit":10} | shop-us/list_sequences |
+| order-ids@shop-eu | search | claude-haiku-5-5 #1 | yes | {"query":"shop-eu query postgres"} ; {"query":"execute SQL query shop-eu database"} ; {"query":"sequence last value orders id"} | shop-eu/list_sequences |
+| order-ids@shop-eu | search | claude-haiku-5-5 #2 | yes | {"query":"shop-eu query postgres database"} ; {"query":"execute SQL query shop-eu"} ; {"query":"run query sequence last value table schema"} | shop-eu/list_sequences |
+| order-ids@shop-staging | search | claude-haiku-5-5 #1 | yes | {"query":"shop-staging query postgres sql"} ; {"query":"shop-staging run SQL query read-only"} ; {"query":"execute sql statement sequence last_value orders"} | shop-staging/list_sequences |
+| order-ids@shop-staging | search | claude-haiku-5-5 #2 | yes | {"query":"shop-staging postgres query"} ; {"query":"execute SQL query sequence last value"} | shop-staging/list_sequences |
+| view-columns@shop-us | search | claude-haiku-5-5 #1 | yes | {"query":"shop-us query PostgreSQL execute sql"} ; {"query":"shop-us run SQL query tool read-only"} ; {"query":"shop-us list tables schema describe view definition"} | shop-us/list_views |
+| view-columns@shop-us | search | claude-haiku-5-5 #2 | yes | {"query":"shop-us postgresql query execute SQL"} ; {"query":"shop-us run SQL query read-only database schema view definition"} | shop-us/list_views |
+| view-columns@shop-eu | search | claude-haiku-5-5 #1 | no | {"query":"shop-eu query postgres"} ; {"query":"execute SQL query shop-eu database schema views columns"} ; {"query":"run read-only SQL query against database and list tables"} | shop-eu/get_query_plan, shop-eu/get_query_plan (error) |
+| view-columns@shop-eu | search | claude-haiku-5-5 #2 | yes | {"query":"shop-eu query postgres columns view","limit":10} | shop-eu/list_views |
+| view-columns@shop-staging | search | claude-haiku-5-5 #1 | no | {"query":"shop-staging query postgres"} ; {"query":"execute SQL query shop-staging database"} ; {"query":"run read-only SQL query tables views schema columns"} | shop-staging/get_column_cardinality, shop-staging/get_query_plan, shop-staging/get_query_plan (error) |
+| view-columns@shop-staging | search | claude-haiku-5-5 #2 | yes | {"query":"shop-staging query postgres"} ; {"query":"execute SQL query read-only staging database","limit":10} ; {"query":"list columns of table or view schema information","limit":10} ; {"query":"run arbitrary SQL statement select information_schema view definition","limit":10} | shop-staging/list_tables, shop-staging/list_schemas, shop-staging/list_tables, shop-staging/list_views |
+| procedure@shop-us | search | claude-haiku-5-5 #1 | yes | {"query":"shop-us postgres query stored procedures"} | shop-us/list_stored_procedure |
+| procedure@shop-us | search | claude-haiku-5-5 #2 | yes | {"query":"shop-us query postgres stored procedure"} | shop-us/list_stored_procedure |
+| procedure@shop-eu | search | claude-haiku-5-5 #1 | yes | {"query":"shop-eu query PostgreSQL database"} ; {"query":"shop-eu execute SQL query run"} ; {"query":"list stored procedures functions schema"} | shop-eu/list_stored_procedure |
+| procedure@shop-eu | search | claude-haiku-5-5 #2 | yes | {"query":"shop-eu query database execute SQL"} ; {"query":"shop-eu run SQL query stored procedures functions list"} | shop-eu/list_stored_procedure |
+| procedure@shop-staging | search | claude-haiku-5-5 #1 | yes | {"query":"shop-staging query PostgreSQL stored procedures functions"} | shop-staging/list_stored_procedure |
+| procedure@shop-staging | search | claude-haiku-5-5 #2 | yes | {"query":"shop-staging query stored procedures","limit":10} | shop-staging/list_stored_procedure |
+| publication@shop-us | search | claude-haiku-5-5 #1 | yes | {"query":"shop-us query postgres publication logical replication"} | shop-us/list_publication_tables |
+| publication@shop-us | search | claude-haiku-5-5 #2 | yes | {"query":"shop-us query postgres database"} ; {"query":"shop-us execute sql query publication pg_publication_tables"} ; {"query":"run SQL query shop-us database tables list"} ; {"query":"execute read-only SQL select statement logical replication publication"} | shop-us/list_publication_tables |
+| publication@shop-eu | search | claude-haiku-5-5 #1 | yes | {"query":"shop-eu query postgres database","limit":10} ; {"query":"execute SQL query publication pg_publication_tables logical replication","limit":10} | shop-eu/list_publication_tables |
+| publication@shop-eu | search | claude-haiku-5-5 #2 | yes | {"query":"shop-eu query PostgreSQL database"} ; {"query":"execute SQL query shop-eu"} ; {"query":"list tables schema publication logical replication"} | shop-eu/list_publication_tables |
+| publication@shop-staging | search | claude-haiku-5-5 #1 | yes | {"query":"shop-staging query postgres"} ; {"query":"publication tables logical replication","limit":10} | shop-staging/list_publication_tables |
+| publication@shop-staging | search | claude-haiku-5-5 #2 | yes | {"query":"shop-staging query postgres"} ; {"query":"logical replication publication tables"} | shop-staging/list_publication_tables |
